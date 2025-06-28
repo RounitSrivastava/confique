@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, Calendar as CalendarIcon, MessageCircle, User, Plus, X, Image, MapPin, Clock, Heart, MessageCircle as MessageIcon, Share2, Bell, Search, Send, ArrowLeft, Info, CalendarPlus, Landmark, Languages, Timer, Ticket } from 'lucide-react'; // Added Landmark, Languages, Timer, Ticket
+import { Home, Calendar as CalendarIcon, MessageCircle, User, Plus, X, Image as ImageIcon, MapPin, Clock, Heart, MessageCircle as MessageIcon, Share2, Bell, Search, Send, ArrowLeft, Info, CalendarPlus, Landmark, Languages, Timer, Ticket } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './App.css';
 
-// Sample data (Keep your existing initialPosts)
 const initialPosts = [
     {
         id: '1',
@@ -37,27 +36,42 @@ const initialPosts = [
         likes: 156,
         comments: 23,
         location: 'Central Park',
-        eventDate: new Date(2025, 7, 1, 10, 0), // Note: Month is 0-indexed, so 7 is August
-        price: 0, // Added price
-        language: 'English', // Added language
-        duration: '3 Hours', // Added duration
-        ticketsNeeded: 'All ages', // Added ticketsNeeded
-        venueAddress: '123 Main St, Central Park, City, Country', // Added venueAddress
+        eventDate: new Date(2025, 7, 1, 10, 0),
+        price: 0,
+        language: 'English',
+        duration: '3 Hours',
+        ticketsNeeded: 'All ages',
+        venueAddress: '123 Main St, Central Park, City, Country',
+        registrationLink: 'https://example.com/art-festival',
+        registrationOpen: true,
         commentData: [
             { id: 'c3', author: 'EventFan', text: 'Can\'t wait for this!', timestamp: new Date(2024, 5, 8, 9, 30) },
         ]
     },
     {
         id: '3',
-        type: 'confession',
-        title: 'Small Victory',
-        content: 'I finally worked up the courage to ask my crush out today. They said yes! I\'m still in shock. Sometimes taking that leap of faith really pays off.',
-        images: ['https://images.pexels.com/photos/1415131/pexels-photo-1415131.jpeg?auto=compress&cs=tinysrgb&w=400'],
-        author: 'Anonymous',
-        timestamp: new Date(2024, 5, 12, 16, 45),
+        type: 'event',
+        title: 'Past Music Concert',
+        content: 'This was an amazing concert that already happened last month.',
+        images: [
+            'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400'
+        ],
+        author: 'Music Events Inc',
+        timestamp: new Date(2024, 3, 15, 14, 0),
         likes: 89,
         comments: 12,
-        commentData: []
+        location: 'City Stadium',
+        eventDate: new Date(2024, 4, 15, 19, 0), // Past date
+        price: 50,
+        language: 'English',
+        duration: '4 Hours',
+        ticketsNeeded: 'All ages',
+        venueAddress: '456 Stadium Road, City, Country',
+        registrationLink: 'https://example.com/music-concert',
+        registrationOpen: false, // Registration closed
+        commentData: [
+            { id: 'c4', author: 'ConcertGoer', text: 'Had a great time!', timestamp: new Date(2024, 4, 16, 10, 0) },
+        ]
     },
     {
         id: '4',
@@ -73,104 +87,38 @@ const initialPosts = [
         likes: 201,
         comments: 38,
         location: 'Innovation Hub',
-        eventDate: new Date(2025, 8, 5, 18, 30), // Note: Month is 0-indexed, so 8 is September
-        price: 479, // Added price
-        language: 'English', // Added language
-        duration: '2 Hours', // Added duration
-        ticketsNeeded: '3 yrs & above', // Added ticketsNeeded
-        venueAddress: 'joypee wishtown, I-7, Aoparpur, Sector 131, Noida, Uttar Pradesh 201304, India', // Added venueAddress
+        eventDate: new Date(2025, 8, 5, 18, 30),
+        price: 479,
+        language: 'English',
+        duration: '2 Hours',
+        ticketsNeeded: '3 yrs & above',
+        venueAddress: 'joypee wishtown, I-7, Aoparpur, Sector 131, Noida, Uttar Pradesh 201304, India',
+        registrationLink: 'https://example.com/tech-meetup',
+        registrationOpen: true,
         commentData: []
     },
     {
         id: '5',
-        type: 'news',
-        title: 'Local Library Announces New Digital Archive',
-        content: 'The City Library has launched a new online portal providing access to thousands of historical documents, photographs, and oral histories. A significant step in preserving local heritage.',
-        images: ['https://images.pexels.com/photos/2034851/pexels-photo-2034851.jpeg?auto=compress&cs=tinysrgb&w=400'],
-        author: 'City Council',
-        timestamp: new Date(2025, 5, 12, 10, 0),
-        likes: 78,
-        comments: 10,
-        commentData: []
-    },
-    {
-        id: '6',
-        type: 'news',
-        title: 'New Park Section Opens to Public',
-        content: 'A new section of Riverside Park, featuring renovated walking trails and a new playground, officially opened this morning. The expansion aims to provide more green space for residents.',
-        images: [
-            'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=400',
-            'https://images.pexels.com/photos/2649117/pexels-photo-2649117.jpeg?auto=compress&cs=tinysrgb&w=400'
-        ],
-        author: 'Parks & Rec Dept.',
-        timestamp: new Date(2025, 5, 11, 15, 0),
-        likes: 112,
-        comments: 20,
-        commentData: []
-    },
-    {
-        id: '7',
-        type: 'news',
-        title: 'Community Garden Harvest Festival Announced',
-        content: 'The annual community garden harvest festival will be held next month, celebrating a season of growth and bounty. Expect fresh produce, local crafts, and family activities.',
-        images: ['https://images.pexels.com/photos/265386/pexels-photo-265386.jpeg?auto=compress&cs=tinysrgb&w=400'],
-        author: 'Community Garden Association',
-        timestamp: new Date(2025, 5, 13, 9, 0),
-        likes: 65,
-        comments: 8,
-        commentData: []
-    },
-    {
-        id: '8',
-        type: 'news',
-        title: 'City Launches "Green Horizons" Environmental Initiative',
-        content: 'The Mayor\'s office today unveiled the "Green Horizons" program, a comprehensive environmental initiative focused on urban reforestation, waste reduction, and promoting sustainable living among residents. The program includes community workshops and volunteer tree-planting drives starting next month.',
-        images: ['https://images.pexels.com/photos/221540/pexels-photo-221540.jpeg?auto=compress&cs=tinysrgb&w=600'],
-        author: 'Mayor\'s Office',
-        timestamp: new Date(2025, 5, 13, 16, 0),
-        likes: 95,
+        type: 'event',
+        title: 'Free Yoga in the Park',
+        content: 'Join us every Saturday morning for free yoga sessions in the park. All levels welcome!',
+        images: ['https://images.pexels.com/photos/1812964/pexels-photo-1812964.jpeg?auto=compress&cs=tinysrgb&w=400'],
+        author: 'Community Wellness',
+        timestamp: new Date(2024, 5, 12, 8, 0),
+        likes: 89,
         comments: 15,
+        location: 'City Park',
+        eventDate: new Date(2025, 6, 5, 8, 0),
+        price: 0,
+        language: 'English',
+        duration: '1 Hour',
+        ticketsNeeded: 'All ages',
+        venueAddress: '789 Park Avenue, City, Country',
+        registrationOpen: true,
         commentData: []
-    },
-    {
-        id: '9',
-        type: 'news',
-        title: 'Annual Summer Music Festival Breaks Attendance Records',
-        content: 'The highly anticipated annual Summer Music Festival concluded last weekend, drawing record-breaking crowds to Central Plaza. Local and national artists performed across three stages, delighting thousands of music lovers. Organizers hailed it as the most successful festival to date.',
-        images: ['https://images.pexels.com/photos/1763075/pexels-photo-1763075.jpeg?auto=compress&cs=tinysrgb&w=600'],
-        author: 'Cultural Events Board',
-        timestamp: new Date(2025, 5, 10, 20, 0),
-        likes: 180,
-        comments: 25,
-        commentData: []
-    },
-    {
-        id: '10',
-        type: 'news',
-        title: 'Local Businesses Report Strong Q2 Growth',
-        content: 'Despite economic uncertainties, local businesses in the downtown district have reported significant growth in the second quarter of the year. Retail sales and service industry revenues saw an average increase =of 8%, indicating a robust local economy. Chamber of Commerce attributes success to community support and innovative business strategies.',
-        images: ['https://images.pexels.com/photos/3183186/pexels-photo-3183186.jpeg?auto=compress&cs=tinysrgb&w=600'],
-        author: 'Chamber of Commerce',
-        timestamp: new Date(2025, 5, 13, 23, 0),
-        likes: 105,
-        comments: 18,
-        commentData: []
-    },
-    {
-        id: '11',
-        type: 'news',
-        title: 'New Vocational Training Center Opens Downtown',
-        content: 'A state-of-the-art vocational training center has officially opened its doors in the downtown area, offering free and low-cost courses in various trades, including coding, culinary arts, and renewable energy. The initiative aims to equip local residents with valuable skills for the modern workforce. Enrollments are now open for the fall session.',
-        images: ['https://images.pexels.com/photos/3771077/pexels-photo-3771077.jpeg?auto=compress&cs=tinysrgb&w=600'],
-        author: 'City Education Dept.',
-        timestamp: new Date(2025, 6, 14, 10, 0),
-        likes: 70,
-        comments: 9,
-        commentData: []
-    },
+    }
 ];
 
-// CommentItem Component (No changes)
 const CommentItem = ({ comment }) => (
     <div className="comment-item">
         <div className="comment-avatar"></div>
@@ -186,7 +134,6 @@ const CommentItem = ({ comment }) => (
     </div>
 );
 
-// CommentSection Component (No changes)
 const CommentSection = ({ comments, onAddComment, onCloseComments }) => {
     const [newCommentText, setNewCommentText] = useState('');
 
@@ -231,17 +178,96 @@ const CommentSection = ({ comments, onAddComment, onCloseComments }) => {
     );
 };
 
-// AddPostModal Component (No changes)
+const RegistrationFormModal = ({ isOpen, onClose, event }) => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        alert(`Thank you ${name} for registering for ${event.title}! A confirmation has been sent to ${email}.`);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content">
+                <div className="modal-header">
+                    <h2 className="modal-title">Register for {event.title}</h2>
+                    <button className="modal-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="modal-form-container">
+                    <form onSubmit={handleSubmit} className="modal-form">
+                        <div className="form-group">
+                            <label className="form-label">Full Name</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input
+                                type="email"
+                                className="form-input"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Phone Number</label>
+                            <input
+                                type="tel"
+                                className="form-input"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={onClose}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn-primary">
+                                Submit Registration
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
     const [formData, setFormData] = useState({
         type: 'confession',
         title: '',
         content: '',
-        images: [''],
         author: '',
         location: '',
         eventDate: '',
+        price: 0,
+        language: 'English',
+        duration: '',
+        ticketsNeeded: '',
+        venueAddress: '',
+        registrationLink: '',
+        registrationOpen: true,
+        enableRegistrationForm: false,
+        registrationFields: ''
     });
+    
+    const [imagePreviews, setImagePreviews] = useState([]);
+    const fileInputRef = useRef(null);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -253,11 +279,20 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
             type: formData.type,
             title: formData.title,
             content: formData.content,
-            images: formData.images.filter(img => img.trim() !== ''),
+            images: imagePreviews,
             author: formData.author || 'Anonymous',
             ...(formData.type === 'event' && {
                 location: formData.location,
                 eventDate: formData.eventDate ? new Date(formData.eventDate) : undefined,
+                price: formData.price,
+                language: formData.language,
+                duration: formData.duration,
+                ticketsNeeded: formData.ticketsNeeded,
+                venueAddress: formData.venueAddress,
+                registrationLink: formData.registrationLink,
+                registrationOpen: formData.registrationOpen,
+                enableRegistrationForm: formData.enableRegistrationForm,
+                registrationFields: formData.registrationFields
             }),
             commentData: []
         };
@@ -266,32 +301,54 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
             type: 'confession',
             title: '',
             content: '',
-            images: [''],
             author: '',
             location: '',
             eventDate: '',
+            price: 0,
+            language: 'English',
+            duration: '',
+            ticketsNeeded: '',
+            venueAddress: '',
+            registrationLink: '',
+            registrationOpen: true,
+            enableRegistrationForm: false,
+            registrationFields: ''
         });
+        setImagePreviews([]);
         onClose();
     };
 
-    const addImageField = () => {
-        if (formData.images.length < 4) {
-            setFormData(prev => ({ ...prev, images: [...prev.images, ''] }));
-        }
-    };
+    const handleImageUpload = (e) => {
+        const files = Array.from(e.target.files);
+        e.target.value = null; // Reset input to allow same file selection
+        
+        if (!files.length) return;
 
-    const updateImage = (index, value) => {
-        setFormData(prev => ({
-            ...prev,
-            images: prev.images.map((img, i) => i === index ? value : img)
-        }));
+        const availableSlots = 4 - imagePreviews.length;
+        if (availableSlots <= 0) {
+            alert('You can only add up to 4 images');
+            return;
+        }
+
+        const filesToProcess = files.slice(0, availableSlots);
+        const newPreviews = [];
+
+        filesToProcess.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                newPreviews.push(e.target.result);
+                if (newPreviews.length === filesToProcess.length) {
+                    setImagePreviews(prev => [...prev, ...newPreviews]);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
     };
 
     const removeImage = (index) => {
-        setFormData(prev => ({
-            ...prev,
-            images: prev.images.filter((_, i) => i !== index)
-        }));
+        const newPreviews = [...imagePreviews];
+        newPreviews.splice(index, 1);
+        setImagePreviews(newPreviews);
     };
 
     if (!isOpen) return null;
@@ -311,132 +368,263 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="modal-form">
-                    <div className="form-group">
-                        <label className="form-label">Type</label>
-                        <select
-                            className="form-select"
-                            value={formData.type}
-                            onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                        >
-                            <option value="confession">Confession</option>
-                            <option value="event">Event</option>
-                            <option value="news">News</option>
-                        </select>
-                    </div>
+                <div className="modal-form-container">
+                    <form onSubmit={handleSubmit} className="modal-form">
+                        <div className="form-group">
+                            <label className="form-label">Type</label>
+                            <select
+                                className="form-select"
+                                value={formData.type}
+                                onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                            >
+                                <option value="confession">Confession</option>
+                                <option value="event">Event</option>
+                            </select>
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label">Title</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.title}
-                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            required
-                        />
-                    </div>
+                        <div className="form-group">
+                            <label className="form-label">Title</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={formData.title}
+                                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                                required
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label">Content</label>
-                        <textarea
-                            className="form-textarea"
-                            value={formData.content}
-                            onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                            rows={4}
-                            required
-                        />
-                    </div>
+                        <div className="form-group">
+                            <label className="form-label">Content</label>
+                            <textarea
+                                className="form-textarea"
+                                value={formData.content}
+                                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                                rows={4}
+                                required
+                            />
+                        </div>
 
-                    <div className="form-group">
-                        <label className="form-label">Author</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.author}
-                            onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                            placeholder="Anonymous"
-                        />
-                    </div>
+                        <div className="form-group">
+                            <label className="form-label">Author</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={formData.author}
+                                onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
+                                placeholder="Anonymous"
+                            />
+                        </div>
 
-                    {formData.type === 'event' && (
-                        <>
-                            <div className="form-group">
-                                <label className="form-label">Location</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={formData.location}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Event Date</label>
-                                <input
-                                    type="datetime-local"
-                                    className="form-input"
-                                    value={formData.eventDate}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    <div className="form-group">
-                        <label className="form-label">Images (Max 4)</label>
-                        {formData.images.map((image, index) => (
-                            <div key={index} className="image-input-group">
-                                <input
-                                    type="url"
-                                    className="form-input"
-                                    value={image}
-                                    onChange={(e) => updateImage(index, e.target.value)}
-                                    placeholder="Image URL"
-                                />
-                                {formData.images.length > 1 && (
-                                    <button
-                                        type="button"
-                                        className="remove-image-btn"
-                                        onClick={() => removeImage(index)}
+        {formData.type === 'event' && (
+                            <div className="event-form-section">
+                                <div className="form-group">
+                                    <label className="form-label">Location</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.location}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Venue Address</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.venueAddress}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, venueAddress: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Event Date</label>
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input"
+                                        value={formData.eventDate}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Price (₹)</label>
+                                    <input
+                                        type="number"
+                                        className="form-input"
+                                        value={formData.price}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value ? parseFloat(e.target.value) : 0 }))}
+                                        min="0"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Registration Open</label>
+                                    <select
+                                        className="form-select"
+                                        value={formData.registrationOpen}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, registrationOpen: e.target.value === 'true' }))}
                                     >
-                                        <X size={16} />
-                                    </button>
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Language</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.language}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Duration</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.duration}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                                        placeholder="e.g., 3 Hours"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Tickets Needed For</label>
+                                    <input
+                                        type="text"
+                                        className="form-input"
+                                        value={formData.ticketsNeeded}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, ticketsNeeded: e.target.value }))}
+                                        placeholder="e.g., All ages"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Registration Link</label>
+                                    <input
+                                        type="url"
+                                        className="form-input"
+                                        value={formData.registrationLink}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, registrationLink: e.target.value }))}
+                                        placeholder="https://example.com/register"
+                                    />
+                                </div>
+                                
+                                <div className="form-group">
+                                    <label className="form-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.enableRegistrationForm}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, enableRegistrationForm: e.target.checked }))}
+                                        />
+                                        Enable Registration Form
+                                    </label>
+                                </div>
+                                
+                                {formData.enableRegistrationForm && (
+                                    <div className="form-group">
+                                        <label className="form-label">Registration Form Fields</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.registrationFields}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, registrationFields: e.target.value }))}
+                                            placeholder="Add fields (e.g., name, email, phone)"
+                                        />
+                                        <p className="form-hint">Enter comma-separated field names for your registration form</p>
+                                    </div>
                                 )}
                             </div>
-                        ))}
-                        {formData.images.length < 4 && (
-                            <button
-                                type="button"
-                                className="add-image-btn"
-                                onClick={addImageField}
-                            >
-                                <Image size={16} />
-                                Add Image
-                            </button>
                         )}
-                    </div>
 
-                    <div className="modal-actions">
-                        <button type="button" className="btn-secondary" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary">
-                            Post
-                        </button>
-                    </div>
-                </form>
+                        <div className="form-group">
+                            <label className="form-label">Images (Max 4)</label>
+                            <div className="image-upload-container">
+                                <div className="upload-btn-wrapper">
+                                    <div className="upload-btn">
+                                        <ImageIcon size={16} />
+                                        <span>Upload Images</span>
+                                    </div>
+                                    <input 
+                                        ref={fileInputRef}
+                                        type="file" 
+                                        accept="image/*" 
+                                        multiple 
+                                        onChange={handleImageUpload}
+                                    />
+                                </div>
+                                
+                                {imagePreviews.length > 0 && (
+                                    <div className="image-upload-preview">
+                                        {imagePreviews.map((preview, index) => (
+                                            <div key={index} className="image-preview-item">
+                                                <img src={preview} alt={`Preview ${index + 1}`} />
+                                                <button 
+                                                    type="button" 
+                                                    className="remove-image-btn"
+                                                    onClick={() => removeImage(index)}
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={onClose}>
+                                Cancel
+                            </button>
+                            <button type="submit" className="btn-primary">
+                                Post
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     );
 };
 
-// NEW: EventDetailPage Component
 const EventDetailPage = ({ event, onClose }) => {
     const [showFullContent, setShowFullContent] = useState(false);
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
     if (!event) return null;
 
     const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
     const hasMoreContent = event.content.length > 200;
+    
+    // Check if event is in the past
+    const isEventPast = new Date() > event.eventDate;
+    // Check if registration is open
+    const isRegistrationOpen = event.registrationOpen && !isEventPast;
+    // Check if registration method exists
+    const hasRegistrationMethod = event.registrationLink || event.enableRegistrationForm;
+
+    const handleGetDirections = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const { latitude, longitude } = position.coords;
+                const destination = encodeURIComponent(event.venueAddress);
+                const origin = `${latitude},${longitude}`;
+                
+                window.open(
+                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`,
+                    '_blank'
+                );
+            }, (error) => {
+                alert('Could not get your location. Please enable location services.');
+                console.error('Geolocation error:', error);
+            });
+        } else {
+            alert('Geolocation is not supported by your browser');
+        }
+    };
 
     return (
         <div className="event-detail-page-container">
@@ -466,14 +654,46 @@ const EventDetailPage = ({ event, onClose }) => {
                     </div>
                     <div className="event-detail-meta-item">
                         <MapPin size={18} />
-                        <span>Prometheus School, Noida. {event.venueAddress}</span> {/* Assuming this is part of location or a separate field */}
+                        <span>{event.venueAddress}</span>
                     </div>
 
                     <div className="event-detail-price-book">
                         <span className="event-detail-price">
                             {event.price === 0 ? 'FREE' : `₹${event.price}`}
                         </span>
-                        <button className="event-detail-book-button">BOOK TICKETS</button>
+                        {isEventPast ? (
+                            <button className="event-detail-book-button disabled" disabled>
+                                EVENT ENDED
+                            </button>
+                        ) : !isRegistrationOpen ? (
+                            <button className="event-detail-book-button disabled" disabled>
+                                REGISTRATION CLOSED
+                            </button>
+                        ) : !hasRegistrationMethod ? (
+                            <button className="event-detail-book-button disabled" disabled>
+                                NO REGISTRATION REQUIRED
+                            </button>
+                        ) : event.enableRegistrationForm ? (
+                            <button 
+                                className="event-detail-book-button"
+                                onClick={() => setShowRegistrationForm(true)}
+                            >
+                                REGISTER NOW
+                            </button>
+                        ) : event.registrationLink ? (
+                            <a 
+                                href={event.registrationLink} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="event-detail-book-button"
+                            >
+                                REGISTER NOW
+                            </a>
+                        ) : (
+                            <button className="event-detail-book-button disabled" disabled>
+                                REGISTRATION NOT AVAILABLE
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -520,27 +740,87 @@ const EventDetailPage = ({ event, onClose }) => {
                             <p><strong>{event.location}</strong></p>
                             <p>{event.venueAddress}</p>
                         </div>
-                        <button className="get-directions-button">
+                        <button className="get-directions-button" onClick={handleGetDirections}>
                             <MapPin size={16} /> GET DIRECTIONS
                         </button>
                     </div>
                 </div>
             </div>
+            
+            {showRegistrationForm && (
+                <RegistrationFormModal 
+                    isOpen={showRegistrationForm}
+                    onClose={() => setShowRegistrationForm(false)}
+                    event={event}
+                />
+            )}
         </div>
     );
 };
 
+const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
+    const upcomingEvents = events.filter(e => 
+        e.type === 'event' && 
+        e.id !== currentEvent?.id && 
+        e.eventDate > new Date()
+    ).slice(0, 3);
 
-// Post Card Component
-const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail }) => {
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Upcoming Events</h3>
+            </div>
+            <div className="widget-content">
+                {upcomingEvents.length > 0 ? (
+                    <div className="widget-list">
+                        {upcomingEvents.map(event => (
+                            <div 
+                                key={event.id} 
+                                className="sidebar-event-item clickable"
+                                onClick={() => onOpenEventDetail(event)}
+                            >
+                                <h4 className="sidebar-event-title">{event.title}</h4>
+                                <div className="sidebar-event-date">
+                                    {event.eventDate?.toLocaleDateString('en-US', { 
+                                        month: 'short', 
+                                        day: 'numeric' 
+                                    })}
+                                </div>
+                                <div className="sidebar-event-time">
+                                    {event.eventDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="no-events-message">
+                        <CalendarPlus size={24} />
+                        <p>No upcoming events found</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar }) => {
     const overlayRef = useRef(null);
-    // Removed showEventDetails local state, now managed by onOpenEventDetail
-    // const [showEventDetails, setShowEventDetails] = useState(false); // REMOVE THIS LINE
+    const [showFullContent, setShowFullContent] = useState(false);
+    const contentRef = useRef(null);
+    const [needsShowMore, setNeedsShowMore] = useState(false);
 
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
     };
+
+    useEffect(() => {
+        if (contentRef.current) {
+            const lineHeight = parseInt(getComputedStyle(contentRef.current).lineHeight);
+            const maxHeight = lineHeight * 3;
+            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+        }
+    }, [post.content]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -587,16 +867,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
             const timeOptions = { hour: '2-digit', minute: '2-digit' };
             const formattedDate = post.eventDate.toLocaleDateString('en-US', dateOptions);
             const formattedTime = post.eventDate.toLocaleTimeString('en-US', timeOptions);
-            alert(`Event "${post.title}" on ${formattedDate} at ${formattedTime} has been notionally added to your calendar!`);
+            alert(`Event "${post.title}" on ${formattedDate} at ${formattedTime} has been added to your calendar!`);
+            onAddToCalendar(post);
         }
     };
-
-    // Removed handleRegisterClick from here, it will be in EventDetailPage now
-    // const handleRegisterClick = () => {
-    //     if (post.type === 'event') {
-    //         alert(`You are now registered for the event: "${post.title}"!`);
-    //     }
-    // };
 
     const renderPostCardContent = () => (
         <>
@@ -615,7 +889,22 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
 
             <div className="post-content">
                 <h2 className="post-title">{post.title}</h2>
-                <p className="post-text">{post.content}</p>
+                <div className="post-text-container">
+                    <p 
+                        ref={contentRef}
+                        className={`post-text ${showFullContent ? 'expanded' : ''}`}
+                    >
+                        {post.content}
+                    </p>
+                    {needsShowMore && (
+                        <button 
+                            className="show-more-button"
+                            onClick={() => setShowFullContent(!showFullContent)}
+                        >
+                            {showFullContent ? 'Show Less' : 'Show More'}
+                        </button>
+                    )}
+                </div>
 
                 {post.type === 'event' && (
                     <div className="event-details">
@@ -648,10 +937,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
 
             {isInteractive && (
                 <>
-                    {/* NEW POSITION for Event Specific Buttons */}
                     {post.type === 'event' && (
                         <div className="event-action-buttons-top">
-                            {/* This button now calls onOpenEventDetail from App */}
                             <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
                                 <Info size={20} />
                                 <span>Details</span>
@@ -677,9 +964,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
                             <span>Share</span>
                         </button>
                     </div>
-
-                    {/* Removed Expanded Event Details Section from here */}
-                    {/* The EventDetailPage component now handles this outside PostCard */}
 
                     {isCommentsOpen && (
                         <CommentSection
@@ -708,8 +992,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
     );
 };
 
-// HomeComponent, EventsComponent, ConfessionsComponent - Pass onOpenEventDetail
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -731,6 +1014,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 isCommentsOpen={openCommentPostId === post.id}
                                 setOpenCommentPostId={setOpenCommentPostId}
                                 onOpenEventDetail={onOpenEventDetail}
+                                onAddToCalendar={onAddToCalendar}
                             />
                         ))}
                     </div>
@@ -750,6 +1034,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         isCommentsOpen={openCommentPostId === post.id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
                     />
                 ))}
             </div>
@@ -757,7 +1042,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     );
 };
 
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -774,6 +1059,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         isCommentsOpen={openCommentPostId === post.id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
                     />
                 ))}
             </div>
@@ -781,7 +1067,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -793,11 +1079,12 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         isLikedByUser={likedPosts.has(post.id)}
                         isCommentsOpen={openCommentPostId === post.id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
                     />
                 ))}
             </div>
@@ -805,7 +1092,6 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-// UsersComponent, Right Sidebar Components (No changes)
 const UsersComponent = () => (
     <div>
         <h2 className="page-title">Profile</h2>
@@ -839,11 +1125,15 @@ const HomeRightSidebar = ({ posts }) => {
     );
 };
 
-const EventsRightSidebar = ({ posts }) => {
+const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
+    
+    // Combine all events for calendar indicators
+    const allEvents = [...posts, ...myCalendarEvents];
+    
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
-            const hasEvent = posts.some(post =>
+            const hasEvent = allEvents.some(post =>
                 post.type === 'event' &&
                 post.eventDate &&
                 post.eventDate.getDate() === date.getDate() &&
@@ -854,6 +1144,12 @@ const EventsRightSidebar = ({ posts }) => {
         }
         return null;
     };
+    
+    // Get upcoming events from user's calendar
+    const upcomingCalendarEvents = myCalendarEvents
+        .filter(e => e.eventDate > new Date())
+        .slice(0, 3);
+
     return (
         <>
             <div className="calendar-widget">
@@ -868,11 +1164,39 @@ const EventsRightSidebar = ({ posts }) => {
                         locale="en-US"
                     />
                 </div>
-                <button className="add-event-calendar-btn">
-                    <Plus size={20} />
-                    Add Event
-                </button>
+                {/* Removed the "Add Event" button */}
             </div>
+
+            {/* My Calendar Events section */}
+            {upcomingCalendarEvents.length > 0 && (
+                <div className="sidebar-widget my-calendar-events">
+                    <div className="widget-header">
+                        <h3 className="widget-title">My Calendar Events</h3>
+                    </div>
+                    <div className="widget-content">
+                        <div className="widget-list">
+                            {upcomingCalendarEvents.map(event => (
+                                <div 
+                                    key={event.id} 
+                                    className="sidebar-event-item clickable"
+                                    onClick={() => onOpenEventDetail(event)}
+                                >
+                                    <h4 className="sidebar-event-title">{event.title}</h4>
+                                    <div className="sidebar-event-date">
+                                        {event.eventDate?.toLocaleDateString('en-US', { 
+                                            month: 'short', 
+                                            day: 'numeric' 
+                                        })}
+                                    </div>
+                                    <div className="sidebar-event-time">
+                                        {event.eventDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
@@ -918,27 +1242,42 @@ const UsersRightSidebar = () => (
     </div>
 );
 
-// Main App component
 const App = () => {
     const [activeSection, setActiveSection] = useState('home');
     const [posts, setPosts] = useState(initialPosts);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [likedPosts, setLikedPosts] = useState(new Set());
-    const [openCommentPostId, setOpenCommentPostId] = useState(null); // State to track which post has comments open
-    const [selectedEvent, setSelectedEvent] = useState(null); // NEW state for event detail page
+    const [openCommentPostId, setOpenCommentPostId] = useState(null);
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [myCalendarEvents, setMyCalendarEvents] = useState([]);
 
-    // Effect to manage body overflow when a post's comments are open or event detail is open
     useEffect(() => {
-        if (openCommentPostId || selectedEvent) {
+        if (openCommentPostId || selectedEvent || isModalOpen) {
             document.body.classList.add('modal-open');
         } else {
             document.body.classList.remove('modal-open');
         }
-        // Cleanup function
         return () => {
             document.body.classList.remove('modal-open');
         };
-    }, [openCommentPostId, selectedEvent]);
+    }, [openCommentPostId, selectedEvent, isModalOpen]);
+
+    const filteredPosts = posts.filter(post => 
+        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const handleAddToCalendar = (event) => {
+        setMyCalendarEvents(prev => {
+            // Check if event is already added
+            if (prev.some(e => e.id === event.id)) {
+                return prev;
+            }
+            return [...prev, event];
+        });
+    };
 
     const handleAddPost = (newPost) => {
         const post = {
@@ -996,13 +1335,13 @@ const App = () => {
     };
 
     const handleShareClick = async (postId, postTitle, postContent) => {
-        const shareUrl = `${window.location.origin}/posts/${postId}`; // Construct a hypothetical URL for the post
+        const shareUrl = `${window.location.origin}/posts/${postId}`;
 
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''), // Share a snippet of the content
+                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
                     url: shareUrl,
                 });
                 console.log('Post shared successfully!');
@@ -1010,10 +1349,9 @@ const App = () => {
                 console.error('Error sharing:', error);
             }
         } else {
-            // Fallback for browsers that don't support Web Share API
             try {
                 await navigator.clipboard.writeText(shareUrl);
-                alert('Link copied to clipboard!'); // Provide user feedback
+                alert('Link copied to clipboard!');
                 console.log('Link copied to clipboard:', shareUrl);
             } catch (err) {
                 console.error('Failed to copy text: ', err);
@@ -1022,17 +1360,14 @@ const App = () => {
         }
     };
 
-    // NEW: Function to open event detail page
     const handleOpenEventDetail = (event) => {
         setSelectedEvent(event);
-        setOpenCommentPostId(null); // Ensure comments are closed if an event detail is opened
+        setOpenCommentPostId(null);
     };
 
-    // NEW: Function to close event detail page
     const handleCloseEventDetail = () => {
         setSelectedEvent(null);
     };
-
 
     const menuItems = [
         {
@@ -1040,14 +1375,15 @@ const App = () => {
             label: 'Home',
             icon: <Home className="nav-icon" />,
             component: () => <HomeComponent
-                posts={posts}
+                posts={filteredPosts}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
                 setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail} // Pass the handler
+                onOpenEventDetail={handleOpenEventDetail}
+                onAddToCalendar={handleAddToCalendar}
             />,
             rightSidebar: () => <HomeRightSidebar posts={posts} />,
         },
@@ -1056,30 +1392,36 @@ const App = () => {
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
             component: () => <EventsComponent
-                posts={posts}
+                posts={filteredPosts.filter(post => post.type === 'event')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
                 setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail} // Pass the handler
+                onOpenEventDetail={handleOpenEventDetail}
+                onAddToCalendar={handleAddToCalendar}
             />,
-            rightSidebar: () => <EventsRightSidebar posts={posts.filter(p => p.type === 'event')} />,
+            rightSidebar: () => <EventsRightSidebar 
+                posts={posts.filter(p => p.type === 'event')}
+                myCalendarEvents={myCalendarEvents}
+                onOpenEventDetail={handleOpenEventDetail}
+            />,
         },
         {
             id: 'confessions',
             label: 'Confessions',
             icon: <MessageCircle className="nav-icon" />,
             component: () => <ConfessionsComponent
-                posts={posts}
+                posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
                 setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail} // Pass the handler
+                onOpenEventDetail={handleOpenEventDetail}
+                onAddToCalendar={handleAddToCalendar}
             />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
         },
@@ -1120,18 +1462,9 @@ const App = () => {
             id: 'add',
             label: 'Add',
             icon: <Plus className="nav-icon" />,
-            onClick: () => setIsModalOpen(true),
-            component: () => <HomeComponent // This component is a placeholder as 'Add' button triggers a modal
-                posts={posts}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail} // Pass the handler
-            />,
+            component: null,
             rightSidebar: null,
+            action: () => setIsModalOpen(true)
         },
     ];
 
@@ -1139,7 +1472,7 @@ const App = () => {
     const CurrentRightSidebar = menuItems.find(item => item.id === activeSection)?.rightSidebar || (() => null);
 
     return (
-        <div className={`app ${selectedEvent ? 'event-detail-open' : ''}`}> {/* Add class to body/app for overflow */}
+        <div className={`app ${selectedEvent || isModalOpen ? 'modal-open' : ''}`}>
             <header className="header">
                 <div className="header-container">
                     <div className="header-content">
@@ -1152,7 +1485,13 @@ const App = () => {
                         <div className="header-search">
                             <div className="search-container">
                                 <Search className="search-icon" />
-                                <input type="text" placeholder="Search..." className="search-input" />
+                                <input 
+                                    type="text" 
+                                    placeholder="Search..." 
+                                    className="search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                         </div>
                         <div className="header-right">
@@ -1162,7 +1501,7 @@ const App = () => {
                 </div>
             </header>
 
-            <div className="main-layout-container">
+            <div className={`main-layout-container ${selectedEvent ? 'event-detail-open' : ''}`}>
                 <aside className="left-sidebar">
                     <nav className="sidebar-nav">
                         {menuItems.map(item => (
@@ -1170,12 +1509,12 @@ const App = () => {
                                 key={item.id}
                                 className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
                                 onClick={() => {
-                                    if (item.onClick) {
-                                        item.onClick();
+                                    if (item.action) {
+                                        item.action();
                                     } else {
                                         setActiveSection(item.id);
-                                        setOpenCommentPostId(null); // Close any open comments when switching sections
-                                        setSelectedEvent(null); // Close event detail when switching sections
+                                        setOpenCommentPostId(null);
+                                        setSelectedEvent(null);
                                     }
                                 }}
                             >
@@ -1189,10 +1528,13 @@ const App = () => {
                 <main className="main-content">
                     <div className="content-padding">
                         {selectedEvent ? (
-                            <EventDetailPage event={selectedEvent} onClose={handleCloseEventDetail} />
+                            <EventDetailPage 
+                                event={selectedEvent} 
+                                onClose={handleCloseEventDetail} 
+                            />
                         ) : (
                             <CurrentComponent
-                                posts={posts} // Pass posts and handlers down
+                                posts={filteredPosts}
                                 onLike={handleLikePost}
                                 onShare={handleShareClick}
                                 onAddComment={handleAddComment}
@@ -1200,15 +1542,24 @@ const App = () => {
                                 openCommentPostId={openCommentPostId}
                                 setOpenCommentPostId={setOpenCommentPostId}
                                 onOpenEventDetail={handleOpenEventDetail}
+                                onAddToCalendar={handleAddToCalendar}
                             />
                         )}
                     </div>
                 </main>
-
                 <aside className="right-sidebar">
                     <div className="right-sidebar-content">
-                        {/* Only show right sidebar if no event is selected */}
-                        {!selectedEvent && <CurrentRightSidebar posts={posts} />}
+                        {!isModalOpen && (
+                            selectedEvent ? (
+                                <EventDetailSidebar 
+                                    events={posts} 
+                                    currentEvent={selectedEvent} 
+                                    onOpenEventDetail={handleOpenEventDetail}
+                                />
+                            ) : (
+                                <CurrentRightSidebar posts={posts} />
+                            )
+                        )}
                     </div>
                 </aside>
             </div>
