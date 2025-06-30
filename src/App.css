@@ -1,3 +1,47 @@
+/* App.css */
+/* ===== THEME VARIABLES ===== */
+:root {
+  /* Light theme variables */
+  --bg-primary: #f9fafb;
+  --bg-secondary: #f3f4f6;
+  --text-primary: #374151;
+  --text-secondary: #4b5563;
+  --border-color: #e5e7eb;
+  --card-bg: #ffffff;
+  --sidebar-bg: #ffffff;
+  --header-bg: #ffffff;
+  --icon-color: #4b5563;
+  --action-btn-bg: #f3f4f6;
+  --action-btn-hover: #e5e7eb;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+  --modal-bg: #ffffff;
+  --input-bg: #ffffff;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --placeholder-bg: #ffffff;
+  --placeholder-text: #6b7280;
+}
+
+[data-theme="dark"] {
+  /* Dark theme variables */
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #333333;
+  --card-bg: #1e1e1e;
+  --sidebar-bg: #161616;
+  --header-bg: #1a1a1a;
+  --icon-color: #bb86fc;
+  --action-btn-bg: #333333;
+  --action-btn-hover: #444444;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --modal-bg: #242424;
+  --input-bg: #333333;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --placeholder-bg: #2d2d2d;
+  --placeholder-text: #9ca3af;
+}
+
 /* Universal Box-Sizing for predictable layout */
 *,
 *::before,
@@ -7,13 +51,14 @@
 
 /* Global Styles */
 html, body {
-  background-color: #f9fafb;
+  background-color: var(--bg-primary);
   margin: 0;
   padding: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.5;
-  color: #374151; /* Default text color */
-  overflow-x: hidden; /* Prevents horizontal scrolling, important for fixed layouts */
+  color: var(--text-primary);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .min-h-screen {
@@ -21,11 +66,11 @@ html, body {
 }
 
 /* Background Colors */
-.bg-gray-100 { background-color: #f3f4f6; }
-.bg-white { background-color: #ffffff; }
-.bg-gray-50 { background-color: #f9fafb; }
-.bg-gray-400 { background-color: #9ca3af; }
-.bg-gray-900 { background-color: #111827; }
+.bg-gray-100 { background-color: var(--bg-secondary); }
+.bg-white { background-color: var(--card-bg); }
+.bg-gray-50 { background-color: var(--bg-primary); }
+.bg-gray-400 { background-color: var(--text-secondary); }
+.bg-gray-900 { background-color: var(--header-bg); }
 
 /* Header Styles */
 .header {
@@ -33,11 +78,12 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  background-color: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--header-bg);
+  box-shadow: 0 1px 3px 0 var(--shadow-color), 0 1px 2px 0 var(--shadow-color);
+  border-bottom: 1px solid var(--border-color);
   z-index: 50;
   padding: 0.5rem 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .header-container {
@@ -76,17 +122,17 @@ html, body {
   transform: translateY(-50%);
   width: 1rem;
   height: 1rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .search-input {
   width: 100%;
   padding: 0.6rem 1rem 0.6rem 2.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
   font-size: 0.875rem;
-  background-color: #f9fafb;
-  color: #374151;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
   transition: all 0.2s ease-in-out;
 }
 
@@ -94,7 +140,7 @@ html, body {
   outline: none;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   border-color: #3b82f6;
-  background-color: #ffffff;
+  background-color: var(--input-bg);
 }
 
 .header-right {
@@ -108,42 +154,167 @@ html, body {
   height: 2.25rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 50%;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px 0 var(--shadow-color), 0 1px 2px 0 var(--shadow-color);
+}
+
+.login-button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.login-button:hover {
+  background: #2563eb;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+}
+
+/* Profile Dropdown Styles */
+.profile-dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-dropdown-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.profile-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  min-width: 200px;
+  z-index: 100;
+  overflow: hidden;
+  margin-top: 8px;
+  animation: fadeIn 0.2s ease;
+  border: 1px solid var(--border-color);
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.profile-avatar {
+  margin-right: 12px;
+}
+
+.profile-avatar .avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.profile-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.profile-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-phone {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: var(--action-btn-hover);
+}
+
+.logout-btn {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.logout-btn:hover {
+  background-color: #fee2e2;
+}
+
+.logout-icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* Main Layout Container for Sidebar + Content */
 .main-layout-container {
-  padding-top: 4rem; /* Adjusted from 4.5rem */
-  display: flex; /* Make it a flex container for sidebars and main content */
-  height: calc(100vh - 4rem); /* Fill remaining viewport height, adjust for new padding-top */
+  padding-top: 4rem;
+  display: flex;
+  height: calc(100vh - 4rem);
 }
 
 /* Left Sidebar Styles */
 .left-sidebar {
-  width: 4rem; /* Collapsed width */
+  width: 4rem;
   flex-shrink: 0;
-  background-color: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
   padding: 1.5rem 0.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1.5rem;
-  box-shadow: 1px 0 3px 0 rgba(0, 0, 0, 0.05);
-
-  /* Fixed positioning */
+  box-shadow: 1px 0 3px 0 var(--shadow-color);
   position: fixed;
   left: 0;
-  top: 4rem; /* MODIFIED: Position below the new header height */
-  height: calc(100vh - 4rem); /* Fill the remaining height, adjust for new top */
-  overflow-y: auto; /* Allow internal scrolling if content overflows */
+  top: 4rem;
+  height: calc(100vh - 4rem);
+  overflow-y: auto;
   z-index: 40;
-  /* Hide scrollbar */
-  -ms-overflow-style: none;   /* IE and Edge */
-  scrollbar-width: none;   /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .left-sidebar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 
@@ -163,7 +334,7 @@ html, body {
   padding: 0.75rem 0;
   border: none;
   background-color: transparent;
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 0.5rem;
@@ -175,6 +346,8 @@ html, body {
   width: 1.5rem;
   height: 1.5rem;
   margin-bottom: 0.25rem;
+  color: var(--icon-color);
+  transition: color 0.3s ease;
 }
 
 .nav-button .nav-label {
@@ -183,74 +356,58 @@ html, body {
 
 
 .nav-button.active {
-  background-color: #e0f2fe;
+  background-color: var(--action-btn-hover);
   color: #2563eb;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px 0 var(--shadow-color);
 }
 
 .nav-button:hover:not(.active) {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
 }
 
 /* Main Content Styles */
 .main-content {
   flex-grow: 1;
   padding: 1.5rem;
-  /* Margins to account for fixed sidebars */
-  margin-left: 4rem;     /* Default margin for collapsed left sidebar on mobile */
-  margin-right: 0;       /* No right sidebar on smaller screens by default */
-  overflow-y: auto; /* Enable scrolling for main content */
-  height: 100%; /* Ensure it takes full height within flex container */
-  /* Hide scrollbar */
-  -ms-overflow-style: none;   /* IE and Edge */
-  scrollbar-width: none;   /* Firefox */
+  margin-left: 4rem;
+  margin-right: 0;
+  overflow-y: auto;
+  height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .main-content::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
-}
-
-/* NEW: Remove padding when event detail is shown */
-.main-content.no-padding {
-  padding: 0;
+  display: none;
 }
 
 .content-padding {
   padding: 1rem;
-  max-width: 700px; /* Max width for content column */
-  margin: 0 auto;        /* Center content within its allocated space */
-}
-
-/* NEW: Full width for event detail page */
-.content-padding.full-width {
-  max-width: none;
-  width: 100%;
-  padding: 0;
+  max-width: 700px;
+  margin: 0 auto;
 }
 
 .page-title {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin-bottom: 1.5rem;
   text-align: center;
 }
 
-/* Added for new section subtitle */
 .section-subtitle {
-  font-size: 1.35rem; /* Slightly smaller than page-title */
+  font-size: 1.35rem;
   font-weight: 600;
-  color: #1f2937;
-  margin-top: 2rem; /* Space above the subtitle */
+  color: var(--text-primary);
+  margin-top: 2rem;
   margin-bottom: 1rem;
-  border-bottom: 2px solid #e5e7eb; /* Subtle underline */
+  border-bottom: 2px solid var(--border-color);
   padding-bottom: 0.5rem;
 }
 
-/* Added for visual separator */
 .section-divider {
   border: none;
-  border-top: 1px dashed #d1d5db;
+  border-top: 1px dashed var(--border-color);
   margin: 2rem 0;
 }
 
@@ -261,35 +418,35 @@ html, body {
 }
 
 .placeholder-card {
-  background-color: #ffffff;
+  background-color: var(--placeholder-bg);
   padding: 2rem;
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
   text-align: center;
 }
 
 .placeholder-text {
   font-size: 1.125rem;
-  color: #6b7280;
+  color: var(--placeholder-text);
 }
 
 /* Post Card Styles */
 .post-card {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  border: 1px solid #e5e7eb;
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add transition for hover effects */
-  position: relative; /* For comment section positioning if needed */
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  position: relative;
 }
 
 .post-card:hover {
-  transform: translateY(-3px); /* Lift effect on hover */
-  box-shadow: 0 6px 10px -2px rgba(0, 0, 0, 0.15), 0 3px 6px -1px rgba(0, 0, 0, 0.08); /* More prominent shadow */
+  transform: translateY(-3px);
+  box-shadow: 0 6px 10px -2px var(--shadow-color), 0 3px 6px -1px var(--shadow-color);
 }
 
 
@@ -315,13 +472,13 @@ html, body {
 .post-author {
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .post-timestamp {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin: 0;
 }
 
@@ -345,6 +502,12 @@ html, body {
   color: #059669;
 }
 
+.post-type-badge.user-post {
+  background-color: #dbeafe;
+  color: #2563eb;
+  top: 25px;
+}
+
 .post-content {
   display: flex;
   flex-direction: column;
@@ -354,7 +517,7 @@ html, body {
 .post-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -366,13 +529,13 @@ html, body {
 
 .post-text {
   font-size: 0.95rem;
-  color: #374151;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.6;
-  max-height: 4.5em; /* Show 3 lines (1.5 line-height * 3) */
+  max-height: 4.5em;
   overflow: hidden;
   transition: max-height 0.3s ease;
-  mask-image: none !important; /* Remove gradient mask */
+  mask-image: none !important;
 }
 
 .post-text.expanded {
@@ -402,7 +565,7 @@ html, body {
   flex-wrap: wrap;
   gap: 0.75rem;
   font-size: 0.875rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   margin-top: 0.5rem;
 }
 
@@ -461,7 +624,7 @@ html, body {
   justify-content: space-around;
   align-items: center;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   margin-top: 1rem;
   flex-wrap: wrap;
   gap: 10px;
@@ -473,8 +636,8 @@ html, body {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border: none;
-  background-color: transparent;
-  color: #6b7280;
+  background-color: var(--action-btn-bg);
+  color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
   border-radius: 0.5rem;
@@ -484,8 +647,8 @@ html, body {
 }
 
 .action-btn:hover {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
 }
 
 .action-btn.liked svg {
@@ -494,7 +657,7 @@ html, body {
 }
 
 .action-btn svg {
-  color: #9ca3af;
+  color: var(--icon-color);
   transition: color 0.2s ease, fill 0.2s ease;
   min-width: 20px;
   min-height: 20px;
@@ -511,23 +674,22 @@ html, body {
     gap: 10px;
     margin-bottom: 1rem;
     padding-bottom: 1rem;
-    border-bottom: 1px dashed #e5e7eb;
+    border-bottom: 1px dashed var(--border-color);
 }
 
 .event-action-buttons-top .action-btn {
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
     background-color: transparent;
-    color: #000000;
-    border: 1px solid #d1d5db;
-    /* MODIFIED: Remove side curves */
-    border-radius: 0px; /* Set to 0 for sharp corners, or a small value like 2px if desired */
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 0px;
 }
 
 .event-action-buttons-top .action-btn:hover {
-    background-color: #f3f4f6;
-    color: #1f2937;
-    border-color: #9ca3af;
+    background-color: var(--action-btn-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 }
 
 /* --- Event Detail Overlay/Modal Styles --- */
@@ -537,17 +699,16 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #f9fafb;
+  background-color: var(--bg-primary);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   overflow-y: auto;
   z-index: 90;
-  padding-top: 4rem; /* MODIFIED: Reduced padding-top to match new main content padding */
+  padding-top: 4rem;
   padding-bottom: 20px;
   -webkit-overflow-scrolling: touch;
   display: none;
-  /* Hide scrollbar */
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -562,13 +723,13 @@ html, body {
 
 /* --- Event Detail Page Content Container Styles --- */
 .event-detail-page-container {
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--shadow-color);
   overflow: hidden;
-  margin: 0; /* Removed margin to fix width issues */
-  width: 100%; /* Full width */
-  max-width: none; /* No max-width */
+  margin: 0;
+  width: 100%;
+  max-width: none;
   position: relative;
 }
 
@@ -576,7 +737,7 @@ html, body {
   position: relative;
   height: 300px;
   overflow: hidden;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .event-detail-header img {
@@ -584,8 +745,8 @@ html, body {
   height: 100%;
   object-fit: cover;
   display: block;
-  position: relative; /* Crucial for z-index to work */
-  z-index: 1; /* Image is behind overlay and button */
+  position: relative;
+  z-index: 1;
 }
 
 .event-detail-header-overlay {
@@ -596,14 +757,15 @@ html, body {
   height: 100%;
   background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 50%);
   display: flex;
-  align-items: flex-start; /* Align back button to top-left */
+  align-items: flex-start;
   padding: 15px;
   box-sizing: border-box;
-  z-index: 2; /* Overlay is above the image but below the button */
+  z-index: 2;
 }
 
 .event-detail-back-button {
-  background: rgba(0,0,0,0.5);
+  background: var(--card-bg);
+  color: var(--text-primary);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -612,16 +774,15 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* MODIFIED: Ensure back button is absolutely positioned relative to .event-detail-header */
-  position: absolute; /* Changed from just z-index, now positions relative to header */
-  top: 15px; /* Adjust as needed */
-  left: 15px; /* Adjust as needed */
-  z-index: 10; /* Ensure it's on top of everything else in the header */
-  color: #fff; /* Ensure button text/icon is white to contrast with dark overlay */
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 10;
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .event-detail-back-button:hover {
-  background: rgba(0,0,0,0.7);
+  background: var(--action-btn-hover);
 }
 
 .event-detail-content-section {
@@ -629,12 +790,12 @@ html, body {
 }
 
 .event-detail-title-card {
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-top: -80px; /* Pulls the card up over the image */
+  box-shadow: 0 2px 4px var(--shadow-color);
+  margin-top: -80px;
   position: relative;
-  z-index: 5; /* Ensure title card is above the header image and overlay */
+  z-index: 5;
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -643,7 +804,7 @@ html, body {
   font-size: 24px;
   margin-top: 0;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .event-detail-meta-item {
@@ -651,12 +812,12 @@ html, body {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  color: #555;
+  color: var(--text-secondary);
   font-size: 15px;
 }
 
 .event-detail-meta-item svg {
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .event-detail-price-book {
@@ -665,13 +826,13 @@ html, body {
   align-items: center;
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
 }
 
 .event-detail-price {
   font-size: 22px;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .event-detail-book-button {
@@ -690,39 +851,34 @@ html, body {
   background-color: #dc2626;
 }
 
+.event-detail-book-button.disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.event-detail-book-button.disabled:hover {
+  background-color: #9ca3af;
+}
+
 .event-detail-about-section {
   margin-top: 20px;
   padding: 20px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .event-detail-about-section h2 {
   font-size: 20px;
   margin-top: 0;
   margin-bottom: 15px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .event-detail-about-section p {
   line-height: 1.6;
-  color: #444;
+  color: var(--text-secondary);
   margin-bottom: 10px;
-}
-
-.show-more-button {
-  background: none;
-  border: none;
-  color: #007bff;
-  cursor: pointer;
-  padding: 0;
-  font-size: 15px;
-  margin-top: 10px;
-}
-
-.show-more-button:hover {
-  text-decoration: underline;
 }
 
 .event-detail-info-grid {
@@ -731,41 +887,41 @@ html, body {
   gap: 15px;
   margin-top: 20px;
   padding: 20px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .info-grid-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #555;
+  color: var(--text-secondary);
   font-size: 15px;
 }
 
 .info-grid-item svg {
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .info-grid-item strong {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .event-detail-venue-section {
   margin-top: 20px;
   padding: 20px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .event-detail-venue-section h2 {
   font-size: 20px;
   margin-top: 0;
   margin-bottom: 15px;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .venue-info {
@@ -778,7 +934,7 @@ html, body {
 
 .venue-info p {
   margin: 0;
-  color: #444;
+  color: var(--text-secondary);
   font-size: 15px;
 }
 
@@ -787,7 +943,7 @@ html, body {
   align-items: center;
   gap: 5px;
   background: none;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 8px 15px;
   border-radius: 5px;
   cursor: pointer;
@@ -797,8 +953,8 @@ html, body {
 }
 
 .get-directions-button:hover {
-  background-color: #f0f0f0;
-  border-color: #ccc;
+  background-color: var(--action-btn-hover);
+  border-color: var(--text-secondary);
 }
 
 
@@ -830,27 +986,27 @@ html, body {
 .app-title {
     font-weight: bold;
     font-size: 1.1em;
-    color: #333;
+    color: var(--text-primary);
 }
 
 /* Adjusted for PostDetailComponent placeholder */
 .main-content-placeholder {
     padding: 40px;
     text-align: center;
-    background-color: #fff;
+    background-color: var(--card-bg);
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 /* --- Comment Section Styles --- */
 .comment-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background-color: #fcfcfc;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
   border-radius: 0.75rem;
   padding: 1.5rem;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: inset 0 1px 3px var(--shadow-color);
   display: flex;
   flex-direction: column;
 }
@@ -865,7 +1021,7 @@ html, body {
 .comment-section-title {
   font-size: 1.3rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -877,14 +1033,13 @@ html, body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #6b7280;
+  color: var(--text-primary);
   border-radius: 50%;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .back-to-post-btn:hover {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--action-btn-hover);
 }
 
 .comment-input-form {
@@ -896,11 +1051,11 @@ html, body {
 .comment-input {
   flex-grow: 1;
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
   font-size: 0.9rem;
-  background-color: #ffffff;
-  color: #374151;
+  background-color: var(--input-bg);
+  color: var(--text-primary);
   transition: all 0.2s ease-in-out;
 }
 
@@ -936,7 +1091,6 @@ html, body {
   max-height: 300px;
   overflow-y: auto;
   padding-right: 5px;
-  /* Hide scrollbar */
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -950,10 +1104,10 @@ html, body {
   display: flex;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 0.5rem;
-  border: 1px solid #f3f4f6;
-  box-shadow: 0 0px 2px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 0px 2px var(--shadow-color);
 }
 
 .comment-avatar {
@@ -977,28 +1131,28 @@ html, body {
 
 .comment-author {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: 0.9rem;
 }
 
 .comment-timestamp {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: var(--text-secondary);
 }
 
 .comment-text {
   font-size: 0.9rem;
-  color: #374151;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.5;
 }
 
 .no-comments-message {
   text-align: center;
-  color: #6b7280;
+  color: var(--placeholder-text);
   font-style: italic;
   padding: 1rem;
-  background-color: #f3f4f6;
+  background-color: var(--bg-secondary);
   border-radius: 0.5rem;
   margin-top: 1rem;
 }
@@ -1008,22 +1162,20 @@ html, body {
 .right-sidebar {
   width: 18rem;
   flex-shrink: 0;
-  background-color: #ffffff;
-  border-left: 1px solid #e5e7eb;
+  background-color: var(--sidebar-bg);
+  border-left: 1px solid var(--border-color);
   padding: 1.5rem 1rem;
-  box-shadow: -1px 0 3px 0 rgba(0, 0, 0, 0.05);
-
-  /* Fixed positioning */
+  box-shadow: -1px 0 3px 0 var(--shadow-color);
   position: fixed;
   right: 0;
-  top: 4rem; /* MODIFIED: Position below the new header height */
-  height: calc(100vh - 4rem); /* Fill remaining height, adjusted */
+  top: 4rem;
+  height: calc(100vh - 4rem);
   overflow-y: auto;
   z-index: 40;
   display: none;
-  /* Hide scrollbar */
   -ms-overflow-style: none;
   scrollbar-width: none;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 .right-sidebar::-webkit-scrollbar {
   display: none;
@@ -1037,23 +1189,23 @@ html, body {
 }
 
 .sidebar-widget {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 0.75rem;
-  box-shadow: 0 2px 5px -1px rgba(0, 0, 0, 0.08), 0 1px 3px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 5px -1px var(--shadow-color), 0 1px 3px -1px var(--shadow-color);
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
 .widget-header {
   padding: 0.75rem 1rem;
-  background-color: #f3f4f6;
-  border-bottom: 1px solid #d1d5db;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .widget-title {
   font-size: 1rem;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -1072,9 +1224,9 @@ html, body {
 
 .widget-item {
   font-size: 0.9rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   padding: 0.4rem 0;
-  border-bottom: 1px dashed #e5e7eb;
+  border-bottom: 1px dashed var(--border-color);
 }
 
 .widget-item:last-child {
@@ -1084,13 +1236,13 @@ html, body {
 .widget-item-title {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--text-primary);
     margin-bottom: 0.25rem;
 }
 
 .popular-post-item, .recent-confession-item {
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-color);
     margin-bottom: 0.75rem;
 }
 
@@ -1103,34 +1255,34 @@ html, body {
     display: flex;
     gap: 0.75rem;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .confession-preview {
     font-style: italic;
-    color: #6b7280;
+    color: var(--text-secondary);
     font-size: 0.85rem;
 }
 
 .event-date {
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   margin-top: 0.25rem;
 }
 
 .widget-stat {
     font-weight: 600;
-    color: #374151;
+    color: var(--text-primary);
 }
 
-/* Modal Styles - Only for general modals, not comment section specific */
+/* Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: var(--modal-overlay);
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -1140,16 +1292,20 @@ html, body {
 }
 
 .modal-content {
-  background-color: #ffffff;
+  background-color: var(--modal-bg);
   border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -2px var(--shadow-color);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   animation: fadeIn 0.3s ease-out;
-  overflow: hidden; /* Prevent any overflow */
+  overflow: hidden;
+}
+
+.login-modal {
+  max-width: 400px;
 }
 
 .modal-header {
@@ -1157,24 +1313,24 @@ html, body {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  background: white;
+  background: var(--modal-bg);
   z-index: 10;
 }
 
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .modal-close {
   background: none;
   border: none;
-  color: #6b7280;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 50%;
@@ -1182,15 +1338,15 @@ html, body {
 }
 
 .modal-close:hover {
-  background-color: #f3f4f6;
-  color: #374151;
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
 }
 
 .modal-form-container {
   padding: 0 1.5rem 1.5rem;
   overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  max-height: 70vh; /* Limit height to prevent overflow */
+  overflow-x: hidden;
+  max-height: 70vh;
 }
 
 .modal-form {
@@ -1199,43 +1355,80 @@ html, body {
   gap: 1.25rem;
 }
 
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
-  border-radius: 0.75rem; /* Add curved corners */
-  padding: 1rem; /* Add padding */
-  background-color: #f9fafb; /* Light background */
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
   transition: background-color 0.2s ease;
 }
 
 .form-group:hover {
-  background-color: #f3f4f6; /* Slightly darker on hover */
+  background-color: var(--action-btn-hover);
 }
 
 .form-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .form-input, .form-textarea, .form-select {
   padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.75rem; /* More curved corners */
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
   font-size: 0.95rem;
-  color: #374151;
-  background-color: #ffffff;
+  color: var(--text-primary);
+  background-color: var(--input-bg);
   transition: all 0.2s ease-in-out;
   resize: vertical;
-  max-width: 100%; /* Prevent overflow */
+  max-width: 100%;
+}
+
+.phone-input-container {
+  display: flex;
+}
+
+.country-code {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.otp-input {
+  text-align: center;
+  letter-spacing: 8px;
+  font-size: 20px;
+}
+
+.otp-instructions {
+  margin-bottom: 15px;
+  color: var(--text-secondary);
+}
+
+.error-message {
+  color: #ef4444;
+  margin-top: 5px;
+  font-size: 14px;
 }
 
 .form-input:focus, .form-textarea:focus, .form-select:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   border-color: #3b82f6;
-  background-color: #ffffff;
+  background-color: var(--input-bg);
 }
 
 /* Image upload styles */
@@ -1251,13 +1444,13 @@ html, body {
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 0.5rem;
   margin-top: 0.5rem;
-  overflow-x: hidden; /* Prevent horizontal scroll */
-  max-width: 100%; /* Contain within parent */
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 .image-preview-item {
   position: relative;
-  border-radius: 0.75rem; /* Curved corners */
+  border-radius: 0.75rem;
   overflow: hidden;
   height: 100px;
 }
@@ -1288,8 +1481,8 @@ html, body {
   position: relative;
   overflow: hidden;
   display: inline-block;
-  border-radius: 0.75rem; /* Curved corners */
-  overflow: hidden; /* Contain children */
+  border-radius: 0.75rem;
+  overflow: hidden;
 }
 
 .upload-btn {
@@ -1297,10 +1490,10 @@ html, body {
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px dashed #d1d5db;
-  border-radius: 0.75rem; /* Curved corners */
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px dashed var(--border-color);
+  border-radius: 0.75rem;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -1308,8 +1501,8 @@ html, body {
 }
 
 .upload-btn:hover {
-  background-color: #e5e7eb;
-  border-color: #9ca3af;
+  background-color: var(--action-btn-hover);
+  border-color: var(--text-secondary);
 }
 
 .upload-btn input[type="file"] {
@@ -1328,12 +1521,12 @@ html, body {
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary, .btn-secondary {
   padding: 0.75rem 1.5rem;
-  border-radius: 9999px; /* Fully rounded buttons */
+  border-radius: 9999px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -1351,13 +1544,13 @@ html, body {
 }
 
 .btn-secondary {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: 1px solid #d1d5db;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background-color: #e5e7eb;
+  background-color: var(--action-btn-hover);
 }
 
 /* Animations */
@@ -1366,7 +1559,7 @@ html, body {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* CALENDAR SPECIFIC STYLES - REVISED FOR VISIBILITY */
+/* CALENDAR SPECIFIC STYLES */
 .calendar-widget {
   display: flex;
   flex-direction: column;
@@ -1392,15 +1585,15 @@ html, body {
 }
 
 .react-calendar {
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 0.75rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   line-height: 1.125em;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 8px -2px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
   padding: 15px;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
 }
 
 .react-calendar__navigation {
@@ -1415,7 +1608,7 @@ html, body {
   background: none;
   font-size: 1.2em;
   padding: 6px 0;
-  color: #374151;
+  color: var(--text-primary);
   border-radius: 6px;
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
   font-weight: 500;
@@ -1423,14 +1616,14 @@ html, body {
 
 .react-calendar__navigation button:enabled:hover,
 .react-calendar__navigation button:enabled:focus {
-  background-color: #e5e7eb;
-  color: #1f2937;
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
 }
 
 .react-calendar__navigation__label {
   font-weight: 700;
   font-size: 1.05em;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .react-calendar__navigation__arrow {
@@ -1443,13 +1636,13 @@ html, body {
   font-weight: 600;
   font-size: 0.7em;
   padding-bottom: 8px;
-  color: #6b7280;
-  border-bottom: 1px solid #f3f4f6;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 5px;
 }
 
 .react-calendar__month-view__days__day {
-  color: #374151;
+  color: var(--text-primary);
   font-size: 0.9em;
 }
 
@@ -1500,7 +1693,7 @@ html, body {
 
 .react-calendar__tile:enabled:hover,
 .react-calendar__tile:enabled:focus {
-  background-color: #e5e7eb;
+  background-color: var(--action-btn-hover);
 }
 
 /* Event dot on calendar */
@@ -1545,38 +1738,31 @@ html, body {
 .sidebar-event-item {
   padding: 12px;
   border-radius: 8px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
   transition: all 0.2s ease;
   margin-bottom: 8px;
   cursor: pointer;
 }
 
 .sidebar-event-item:hover {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
+  background-color: var(--action-btn-hover);
+  border-color: var(--border-color);
   transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px var(--shadow-color);
 }
 
 .sidebar-event-title {
   font-size: 15px;
   font-weight: 500;
-  color: #1f2937;
+  color: var(--text-primary);
   margin: 0;
-}
-
-/* Hide other event details in sidebar */
-.event-thumbnail,
-.event-meta,
-.event-price {
-  display: none;
 }
 
 .no-events-message {
   text-align: center;
   padding: 20px;
-  color: #6b7280;
+  color: var(--placeholder-text);
 }
 
 .no-events-message p {
@@ -1591,7 +1777,7 @@ html, body {
 /* My Calendar Events styles */
 .my-calendar-events {
   margin-top: 20px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border-color);
   padding-top: 15px;
 }
 
@@ -1599,13 +1785,13 @@ html, body {
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 10px;
-  background-color: #f8f9fa;
+  background-color: var(--bg-secondary);
   border-left: 3px solid #3b82f6;
   transition: all 0.2s ease;
 }
 
 .sidebar-event-item:hover {
-  background-color: #f0f7ff;
+  background-color: var(--action-btn-hover);
   transform: translateX(2px);
 }
 
@@ -1613,12 +1799,12 @@ html, body {
   font-size: 0.9rem;
   margin: 0;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text-primary);
 }
 
 .sidebar-event-date {
   font-size: 0.8rem;
-  color: #4b5563;
+  color: var(--text-secondary);
   margin-top: 4px;
   display: flex;
   align-items: center;
@@ -1627,28 +1813,67 @@ html, body {
 
 .sidebar-event-time {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-/* Calendar dots */
-.react-calendar__tile .event-dot {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: #3b82f6;
+/* Profile Header Styles */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
+  margin-bottom: 1.5rem;
+}
+
+.profile-avatar .avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.profile-info {
+  flex-grow: 1;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
 }
 
 /* Responsive adjustments */
-@media (max-width: 767px) { /* Small screens (mobile) */
+@media (max-width: 767px) {
   .post-text {
-    max-height: 3em; /* Show 2 lines on mobile */
+    max-height: 3em;
   }
   
   .image-upload-preview {
@@ -1669,16 +1894,23 @@ html, body {
     padding-bottom: 0.5rem;
   }
 
+  .header-left {
+    order: 1;
+    width: 30%;
+    justify-content: flex-start;
+  }
+
   .header-search {
-    order: 3;
-    width: 100%;
-    margin: 0.75rem 0;
+    order: 2;
+    width: 40%;
+    margin: 0.75rem auto;
     max-width: none;
   }
-  .header-left, .header-right {
-    width: auto;
-    flex-grow: 1;
-    justify-content: space-between;
+
+  .header-right {
+    order: 3;
+    width: 30%;
+    justify-content: flex-end;
     padding-right: 0.5rem;
   }
 
@@ -1693,8 +1925,8 @@ html, body {
     padding: 0.5rem 1rem;
     flex-direction: row;
     justify-content: space-around;
-    border-top: 1px solid #e5e7eb;
-    box-shadow: 0 -1px 3px 0 rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -1px 3px 0 var(--shadow-color);
     z-index: 40;
   }
 
@@ -1705,7 +1937,7 @@ html, body {
   }
 
   .main-layout-container {
-    padding-top: 4rem; /* Match new header height */
+    padding-top: 4rem;
     padding-bottom: 4rem;
   }
 
@@ -1738,7 +1970,7 @@ html, body {
     font-size: 0.9rem;
   }
 
-    /* Event Detail Page Mobile Adjustments (within the overlay) */
+  /* Event Detail Page Mobile Adjustments */
   .event-detail-header {
     height: 200px;
   }
@@ -1777,9 +2009,20 @@ html, body {
     flex-direction: column;
     align-items: flex-start;
   }
+  
+  /* Profile Header Mobile */
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 1rem;
+  }
+  .profile-stats {
+    justify-content: center;
+    gap: 1rem;
+  }
 }
 
-@media (min-width: 768px) { /* Medium screens and up (e.g., tablets, desktops) */
+@media (min-width: 768px) {
   .left-sidebar {
     width: 14rem;
     padding: 1.5rem;
@@ -1799,7 +2042,6 @@ html, body {
 
   .main-content {
     padding: 2rem;
-    /* Adjust margins for expanded fixed sidebars */
     margin-left: 14rem;
     margin-right: 18rem;
   }
@@ -1810,14 +2052,14 @@ html, body {
   }
 
   .header-content {
-    height: 4rem; /* Adjusted header height */
+    height: 4rem;
   }
   .main-layout-container {
-    padding-top: 4rem; /* Match new header height */
+    padding-top: 4rem;
   }
 
   /* Event detail overlay for larger screens */
   .event-detail-overlay {
-      padding-top: 4rem; /* Match new header height */
+      padding-top: 4rem;
   }
 }
