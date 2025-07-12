@@ -19,6 +19,12 @@
   --shadow-color: rgba(0, 0, 0, 0.1);
   --placeholder-bg: #ffffff;
   --placeholder-text: #6b7280;
+  
+  /* Scrollbar variables */
+  --scrollbar-track: #f1f1f1;
+  --scrollbar-thumb: #c1c1c1;
+  --scrollbar-thumb-hover: #a8a8a8;
+  --scrollbar-border: #e5e7eb;
 }
 
 [data-theme="dark"] {
@@ -40,6 +46,12 @@
   --shadow-color: rgba(0, 0, 0, 0.3);
   --placeholder-bg: #2d2d2d;
   --placeholder-text: #9ca3af;
+  
+  /* Scrollbar variables */
+  --scrollbar-track: #2d2d2d;
+  --scrollbar-thumb: #555555;
+  --scrollbar-thumb-hover: #777777;
+  --scrollbar-border: #444444;
 }
 
 /* Universal Box-Sizing for predictable layout */
@@ -1157,14 +1169,7 @@ html, body {
   max-height: 300px;
   overflow-y: auto;
   padding-right: 5px;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }
-
-.comments-list::-webkit-scrollbar {
-  display: none;
-}
-
 
 .comment-item {
   display: flex;
@@ -1239,14 +1244,8 @@ html, body {
   overflow-y: auto;
   z-index: 40;
   display: none;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
   transition: background-color 0.3s ease, border-color 0.3s ease;
 }
-.right-sidebar::-webkit-scrollbar {
-  display: none;
-}
-
 
 .right-sidebar-content {
   display: flex;
@@ -1957,6 +1956,84 @@ html, body {
 .stat-label {
   font-size: 0.875rem;
   color: var(--text-secondary);
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+/* Custom scrollbar for right sidebar */
+.right-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.right-sidebar::-webkit-scrollbar {
+  width: 10px;
+  background-color: transparent;
+}
+
+.right-sidebar::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 5px;
+  margin: 8px 0;
+}
+
+.right-sidebar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 5px;
+  border: 2px solid var(--scrollbar-border);
+}
+
+.right-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Custom scrollbar for comments list */
+.comments-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.comments-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.comments-list::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.comments-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+.comments-list::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Custom scrollbar for modal forms */
+.modal-form-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.modal-form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-form-container::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 4px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+.modal-form-container::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* Responsive adjustments */
