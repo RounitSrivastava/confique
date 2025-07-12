@@ -66,7 +66,8 @@ const initialPosts = [
       likes: 156,
       comments: 23,
       location: 'Central Park',
-      eventDate: new Date(2025, 7, 1, 10, 0),
+      eventStartDate: new Date(2025, 7, 1, 10, 0),
+      eventEndDate: new Date(2025, 7, 2, 18, 0),
       price: 0,
       language: 'English',
       duration: '3 Hours',
@@ -92,7 +93,7 @@ const initialPosts = [
       likes: 89,
       comments: 12,
       location: 'City Stadium',
-      eventDate: new Date(2024, 4, 15, 19, 0),
+      eventStartDate: new Date(2024, 4, 15, 19, 0),
       price: 50,
       language: 'English',
       duration: '4 Hours',
@@ -119,7 +120,7 @@ const initialPosts = [
       likes: 201,
       comments: 38,
       location: 'Innovation Hub',
-      eventDate: new Date(2025, 8, 5, 18, 30),
+      eventStartDate: new Date(2025, 8, 5, 18, 30),
       price: 479,
       language: 'English',
       duration: '2 Hours',
@@ -127,6 +128,10 @@ const initialPosts = [
       venueAddress: 'joypee wishtown, I-7, Aoparpur, Sector 131, Noida, Uttar Pradesh 201304, India',
       registrationLink: 'https://example.com/tech-meetup',
       registrationOpen: true,
+      enableRegistrationForm: true,
+      registrationFields: 'name, email, phone, company',
+      paymentMethod: 'link',
+      paymentLink: 'https://payment.example.com/tech-meetup',
       commentData: []
   },
   {
@@ -141,7 +146,7 @@ const initialPosts = [
       likes: 89,
       comments: 15,
       location: 'City Park',
-      eventDate: new Date(2025, 6, 5, 8, 0),
+      eventStartDate: new Date(2025, 6, 5, 8, 0),
       price: 0,
       language: 'English',
       duration: '1 Hour',
@@ -211,72 +216,184 @@ const CommentSection = ({ comments, onAddComment, onCloseComments }) => {
   );
 };
 
-const RegistrationFormModal = ({ isOpen, onClose, event }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    ...(event.registrationFields ? 
+      Object.fromEntries(
+        event.registrationFields.split(',').map(field => [field.trim(), ''])
+      ) 
+      : {})
+  });
+  
+  const [showPaymentStep, setShowPaymentStep] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Get dynamic field names
+  const customFields = event.registrationFields ? 
+    event.registrationFields.split(',').map(field => field.trim()) : 
+    [];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (e) => {
-      e.preventDefault();
-      alert(`Thank you ${name} for registering for ${event.title}! A confirmation has been sent to ${email}.`);
+    e.preventDefault();
+    
+    if (!isLoggedIn) {
+      onRequireLogin();
+      return;
+    }
+    
+    setFormSubmitted(true);
+    
+    // For paid events, show payment step
+    if (event.price > 0) {
+      setShowPaymentStep(true);
+    } else {
+      // For free events, show confirmation immediately
+      alert(`Thank you ${formData.name} for registering for ${event.title}!`);
       onClose();
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-      <div className="modal-overlay">
-          <div className="modal-content">
-              <div className="modal-header">
-                  <h2 className="modal-title">Register for {event.title}</h2>
-                  <button className="modal-close" onClick={onClose}>
-                      <X size={24} />
-                  </button>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2 className="modal-title">Register for {event.title}</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+        
+        {showPaymentStep ? (
+          <div className="payment-step">
+            <h3>Complete Your Payment</h3>
+            
+            {/* Payment information moved here from details page */}
+            {event.price > 0 && (
+              <div className="event-detail-payment-section">
+                <h3>Payment Information</h3>
+                {event.paymentMethod === 'link' ? (
+                  <div className="payment-link-section">
+                    <p>Please complete your payment to finalize registration:</p>
+                    <a 
+                      href={event.paymentLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="payment-link-button"
+                    >
+                      PROCEED TO PAYMENT
+                    </a>
+                  </div>
+                ) : (
+                  <div className="qr-payment-section">
+                    <p>Scan this QR code to make payment:</p>
+                    <img 
+                      src={event.paymentQRCode} 
+                      alt="Payment QR Code" 
+                      className="payment-qr"
+                    />
+                  </div>
+                )}
               </div>
-              <div className="modal-form-container">
-                  <form onSubmit={handleSubmit} className="modal-form">
-                      <div className="form-group">
-                          <label className="form-label">Full Name</label>
-                          <input
-                              type="text"
-                              className="form-input"
-                              value={name}
-                              onChange={(e) => setName(e.target.value)}
-                              required
-                          />
-                      </div>
-                      <div className="form-group">
-                          <label className="form-label">Email</label>
-                          <input
-                              type="email"
-                              className="form-input"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              required
-                          />
-                      </div>
-                      <div className="form-group">
-                          <label className="form-label">Phone Number</label>
-                          <input
-                              type="tel"
-                              className="form-input"
-                              value={phone}
-                              onChange={(e) => setPhone(e.target.value)}
-                              required
-                          />
-                      </div>
-                      <div className="modal-actions">
-                          <button type="button" className="btn-secondary" onClick={onClose}>
-                              Cancel
-                          </button>
-                          <button type="submit" className="btn-primary">
-                              Submit Registration
-                          </button>
-                      </div>
-                  </form>
-              </div>
+            )}
+            
+            <div className="modal-actions">
+              <button 
+                type="button" 
+                className="btn-primary"
+                onClick={() => {
+                  alert(`Thank you ${formData.name} for your payment! Registration confirmed.`);
+                  onClose();
+                }}
+              >
+                I've Paid
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary"
+                onClick={() => setShowPaymentStep(false)}
+              >
+                Back to Form
+              </button>
+            </div>
           </div>
+        ) : (
+          <div className="modal-form-container">
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  className="form-input"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  className="form-input"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="off" // Disable auto-fill
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  className="form-input"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              
+              {/* Dynamically render custom fields */}
+              {customFields.map(field => (
+                field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
+                  <div key={field} className="form-group">
+                    <label className="form-label">{field}</label>
+                    <input
+                      type="text"
+                      name={field}
+                      className="form-input"
+                      value={formData[field] || ''}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                )
+              ))}
+              
+              <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={onClose}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary">
+                  {event.price > 0 ? 'Proceed to Payment' : 'Submit Registration'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
+    </div>
   );
 };
 
@@ -287,7 +404,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
       content: '',
       author: '',
       location: '',
-      eventDate: '',
+      eventStartDate: '',
+      eventEndDate: '',
       price: 0,
       language: 'English',
       duration: '',
@@ -296,11 +414,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
       registrationLink: '',
       registrationOpen: true,
       enableRegistrationForm: false,
-      registrationFields: ''
+      registrationFields: '',
+      paymentMethod: 'link',
+      paymentLink: '',
+      paymentQRCode: ''
   });
   
   const [imagePreviews, setImagePreviews] = useState([]);
+  const [paymentQRPreview, setPaymentQRPreview] = useState('');
   const fileInputRef = useRef(null);
+  const qrFileInputRef = useRef(null);
 
   const handleSubmit = (e) => {
       e.preventDefault();
@@ -316,7 +439,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
           author: formData.author || 'Anonymous',
           ...(formData.type === 'event' && {
               location: formData.location,
-              eventDate: formData.eventDate ? new Date(formData.eventDate) : undefined,
+              eventStartDate: formData.eventStartDate ? new Date(formData.eventStartDate) : undefined,
+              eventEndDate: formData.eventEndDate ? new Date(formData.eventEndDate) : undefined,
               price: formData.price,
               language: formData.language,
               duration: formData.duration,
@@ -325,7 +449,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
               registrationLink: formData.registrationLink,
               registrationOpen: formData.registrationOpen,
               enableRegistrationForm: formData.enableRegistrationForm,
-              registrationFields: formData.registrationFields
+              registrationFields: formData.registrationFields,
+              paymentMethod: formData.paymentMethod,
+              paymentLink: formData.paymentLink,
+              paymentQRCode: formData.paymentQRCode
           }),
           commentData: []
       };
@@ -336,7 +463,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
           content: '',
           author: '',
           location: '',
-          eventDate: '',
+          eventStartDate: '',
+          eventEndDate: '',
           price: 0,
           language: 'English',
           duration: '',
@@ -345,9 +473,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
           registrationLink: '',
           registrationOpen: true,
           enableRegistrationForm: false,
-          registrationFields: ''
+          registrationFields: '',
+          paymentMethod: 'link',
+          paymentLink: '',
+          paymentQRCode: ''
       });
       setImagePreviews([]);
+      setPaymentQRPreview('');
       onClose();
   };
 
@@ -378,10 +510,28 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
       });
   };
 
+  const handlePaymentQRUpload = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+          setPaymentQRPreview(e.target.result);
+          setFormData(prev => ({ ...prev, paymentQRCode: e.target.result }));
+      };
+      reader.readAsDataURL(file);
+      e.target.value = null;
+  };
+
   const removeImage = (index) => {
       const newPreviews = [...imagePreviews];
       newPreviews.splice(index, 1);
       setImagePreviews(newPreviews);
+  };
+
+  const removeQRImage = () => {
+      setPaymentQRPreview('');
+      setFormData(prev => ({ ...prev, paymentQRCode: '' }));
   };
 
   if (!isOpen) return null;
@@ -470,16 +620,33 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
                                       required
                                   />
                               </div>
+                              
+                              {/* Start Date */}
                               <div className="form-group">
-                                  <label className="form-label">Event Date</label>
+                                  <label className="form-label">Start Date & Time</label>
                                   <input
                                       type="datetime-local"
                                       className="form-input"
-                                      value={formData.eventDate}
-                                      onChange={(e) => setFormData(prev => ({ ...prev, eventDate: e.target.value }))}
+                                      value={formData.eventStartDate}
+                                      onChange={(e) => setFormData(prev => ({ ...prev, eventStartDate: e.target.value }))}
                                       required
                                   />
                               </div>
+                              
+                              {/* End Date */}
+                              <div className="form-group">
+                                  <label className="form-label">End Date & Time (optional)</label>
+                                  <input
+                                      type="datetime-local"
+                                      className="form-input"
+                                      value={formData.eventEndDate}
+                                      onChange={(e) => setFormData(prev => ({ 
+                                        ...prev, 
+                                        eventEndDate: e.target.value 
+                                      }))}
+                                  />
+                              </div>
+                              
                               <div className="form-group">
                                   <label className="form-label">Price (₹)</label>
                                   <input
@@ -569,6 +736,67 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
                                       <p className="form-hint">Enter comma-separated field names for your registration form</p>
                                   </div>
                               )}
+                              
+                              {formData.price > 0 && formData.enableRegistrationForm && (
+                                  <div className="form-group">
+                                      <label className="form-label">Payment Method</label>
+                                      <select
+                                          className="form-select"
+                                          value={formData.paymentMethod}
+                                          onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                                      >
+                                          <option value="link">Payment Link</option>
+                                          <option value="qr">QR Code</option>
+                                      </select>
+                                      
+                                      {formData.paymentMethod === 'link' && (
+                                          <div className="form-group">
+                                              <label className="form-label">Payment Link</label>
+                                              <input
+                                                  type="url"
+                                                  className="form-input"
+                                                  value={formData.paymentLink}
+                                                  onChange={(e) => setFormData(prev => ({ ...prev, paymentLink: e.target.value }))}
+                                                  placeholder="https://example.com/payment"
+                                                  required
+                                              />
+                                          </div>
+                                      )}
+                                      
+                                      {formData.paymentMethod === 'qr' && (
+                                          <div className="form-group">
+                                              <label className="form-label">QR Code Image</label>
+                                              <div className="image-upload-container">
+                                                  {paymentQRPreview ? (
+                                                      <div className="payment-qr-preview">
+                                                          <img src={paymentQRPreview} alt="Payment QR" />
+                                                          <button 
+                                                              type="button" 
+                                                              className="remove-image-btn"
+                                                              onClick={removeQRImage}
+                                                          >
+                                                              <X size={14} />
+                                                          </button>
+                                                      </div>
+                                                  ) : (
+                                                      <div className="upload-btn-wrapper">
+                                                          <div className="upload-btn">
+                                                              <ImageIcon size={16} />
+                                                              <span>Upload QR Code</span>
+                                                          </div>
+                                                          <input 
+                                                              ref={qrFileInputRef}
+                                                              type="file" 
+                                                              accept="image/*" 
+                                                              onChange={handlePaymentQRUpload}
+                                                          />
+                                                      </div>
+                                                  )}
+                                              </div>
+                                          </div>
+                                      )}
+                                  </div>
+                              )}
                           </div>
                       )}
 
@@ -623,7 +851,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
+const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin }) => {
   const [showFullContent, setShowFullContent] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
 
@@ -633,11 +861,50 @@ const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
   const hasMoreContent = event.content.length > 200;
   
   // Check if event is in the past
-  const isEventPast = new Date() > event.eventDate;
+  const isEventPast = new Date() > (event.eventEndDate || event.eventStartDate);
   // Check if registration is open
   const isRegistrationOpen = event.registrationOpen && !isEventPast;
   // Check if registration method exists
   const hasRegistrationMethod = event.registrationLink || event.enableRegistrationForm;
+
+  // Format date range
+  const formatDateRange = () => {
+    if (!event.eventStartDate) return "N/A";
+    
+    const start = new Date(event.eventStartDate);
+    const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
+    
+    if (end) {
+      // Multi-day event
+      const startDate = start.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      const endDate = end.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
+      const startTime = start.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      const endTime = end.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      
+      return `${startDate} - ${endDate}, ${startTime} to ${endTime}`;
+    }
+    
+    // Single-day event
+    return `${start.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    })}, ${start.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    })}`;
+  };
 
   const handleGetDirections = () => {
       if (navigator.geolocation) {
@@ -660,11 +927,16 @@ const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
   };
 
   const handleRegistrationClick = () => {
-      if (!event.enableRegistrationForm && event.registrationLink) {
-          window.open(event.registrationLink, '_blank');
-      } else if (event.enableRegistrationForm) {
-          setShowRegistrationForm(true);
-      }
+    if (!isLoggedIn) {
+      onRequireLogin();
+      return;
+    }
+    
+    if (event.enableRegistrationForm) {
+      setShowRegistrationForm(true);
+    } else if (event.registrationLink) {
+      window.open(event.registrationLink, '_blank');
+    }
   };
 
   return (
@@ -691,7 +963,7 @@ const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
                   </div>
                   <div className="event-detail-meta-item">
                       <CalendarIcon size={18} />
-                      <span>{event.eventDate?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}, {event.eventDate?.toLocaleDateString('en-US', { year: 'numeric' })} | {event.eventDate?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })} onwards</span>
+                      <span>{formatDateRange()}</span>
                   </div>
                   <div className="event-detail-meta-item">
                       <MapPin size={18} />
@@ -717,13 +989,7 @@ const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
                       ) : (
                           <button 
                               className="event-detail-book-button"
-                              onClick={() => {
-                                  if (onRequireLogin) {
-                                      onRequireLogin();
-                                  } else {
-                                      handleRegistrationClick();
-                                  }
-                              }}
+                              onClick={handleRegistrationClick}
                           >
                               REGISTER NOW
                           </button>
@@ -786,6 +1052,8 @@ const EventDetailPage = ({ event, onClose, onRequireLogin }) => {
                   isOpen={showRegistrationForm}
                   onClose={() => setShowRegistrationForm(false)}
                   event={event}
+                  isLoggedIn={isLoggedIn}
+                  onRequireLogin={onRequireLogin}
               />
           )}
       </div>
@@ -796,7 +1064,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
   const upcomingEvents = events.filter(e => 
       e.type === 'event' && 
       e.id !== currentEvent?.id && 
-      e.eventDate > new Date()
+      (e.eventEndDate || e.eventStartDate) > new Date()
   ).slice(0, 3);
 
   return (
@@ -815,13 +1083,13 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                           >
                               <h4 className="sidebar-event-title">{event.title}</h4>
                               <div className="sidebar-event-date">
-                                  {event.eventDate?.toLocaleDateString('en-US', { 
+                                  {new Date(event.eventStartDate).toLocaleDateString('en-US', { 
                                       month: 'short', 
                                       day: 'numeric' 
                                   })}
                               </div>
                               <div className="sidebar-event-time">
-                                  {event.eventDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                           </div>
                       ))}
@@ -899,11 +1167,11 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
   }, [isCommentsOpen, setOpenCommentPostId]);
 
   const handleAddToCalendar = () => {
-      if (post.type === 'event' && post.eventDate) {
+      if (post.type === 'event' && post.eventStartDate) {
           const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
           const timeOptions = { hour: '2-digit', minute: '2-digit' };
-          const formattedDate = post.eventDate.toLocaleDateString('en-US', dateOptions);
-          const formattedTime = post.eventDate.toLocaleTimeString('en-US', timeOptions);
+          const formattedDate = new Date(post.eventStartDate).toLocaleDateString('en-US', dateOptions);
+          const formattedTime = new Date(post.eventStartDate).toLocaleTimeString('en-US', timeOptions);
           alert(`Event "${post.title}" on ${formattedDate} at ${formattedTime} has been added to your calendar!`);
           onAddToCalendar(post);
       }
@@ -956,12 +1224,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
                               <span>{post.location}</span>
                           </div>
                       )}
-                      {post.eventDate && (
+                      {post.eventStartDate && (
                           <div className="event-detail">
                               <Clock size={16} />
                               <span>
-                                  {post.eventDate.toLocaleDateString()} at{' '}
-                                  {post.eventDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
+                                  {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                           </div>
                       )}
@@ -1255,10 +1523,10 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
       if (view === 'month') {
           const hasEvent = allEvents.some(post =>
               post.type === 'event' &&
-              post.eventDate &&
-              post.eventDate.getDate() === date.getDate() &&
-              post.eventDate.getMonth() === date.getMonth() &&
-              post.eventDate.getFullYear() === date.getFullYear()
+              post.eventStartDate &&
+              new Date(post.eventStartDate).getDate() === date.getDate() &&
+              new Date(post.eventStartDate).getMonth() === date.getMonth() &&
+              new Date(post.eventStartDate).getFullYear() === date.getFullYear()
           );
           return hasEvent ? <div className="event-dot"></div> : null;
       }
@@ -1267,7 +1535,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
   
   // Get upcoming events from user's calendar
   const upcomingCalendarEvents = myCalendarEvents
-      .filter(e => e.eventDate > new Date())
+      .filter(e => (e.eventEndDate || e.eventStartDate) > new Date())
       .slice(0, 3);
 
   return (
@@ -1302,13 +1570,13 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                               >
                                   <h4 className="sidebar-event-title">{event.title}</h4>
                                   <div className="sidebar-event-date">
-                                      {event.eventDate?.toLocaleDateString('en-US', { 
+                                      {new Date(event.eventStartDate).toLocaleDateString('en-US', { 
                                           month: 'short', 
                                           day: 'numeric' 
                                       })}
                                   </div>
                                   <div className="sidebar-event-time">
-                                      {event.eventDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                   </div>
                               </div>
                           ))}
@@ -1987,6 +2255,7 @@ const App = () => {
                             <EventDetailPage 
                                 event={selectedEvent} 
                                 onClose={handleCloseEventDetail}
+                                isLoggedIn={isLoggedIn}
                                 onRequireLogin={() => setShowLoginModal(true)}
                             />
                         ) : (
