@@ -554,6 +554,7 @@ html, body {
   max-height: none;
 }
 
+/* FIX: Remove black curve from show more button */
 .show-more-button {
   background: none;
   border: none;
@@ -565,6 +566,13 @@ html, body {
   margin-top: 0.5rem;
   display: inline-block;
   text-decoration: underline;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.show-more-button:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 .show-more-button:hover {
@@ -2185,6 +2193,47 @@ html, body {
   .profile-stats {
     justify-content: center;
     gap: 1rem;
+  }
+
+  /* FIX: Mobile comment section layout */
+  .comment-section {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+
+  .comment-input-form {
+    flex-wrap: wrap;
+    position: relative;
+    padding-bottom: 4rem; /* Space for submit button */
+  }
+
+  .comment-input {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    padding-right: 60px; /* Space for submit button */
+  }
+
+  .comment-submit-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
+  }
+
+  .main-content {
+    padding-bottom: 5rem; /* Add space for bottom navbar */
+  }
+
+  .comments-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .comment-item {
+    word-break: break-word;
   }
 }
 
