@@ -329,7 +329,6 @@ html, body {
   display: none;
 }
 
-
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -363,9 +362,8 @@ html, body {
 }
 
 .nav-button .nav-label {
-    display: none;
+  display: none;
 }
-
 
 .nav-button.active {
   background-color: var(--action-btn-hover);
@@ -376,6 +374,82 @@ html, body {
 .nav-button:hover:not(.active) {
   background-color: var(--action-btn-hover);
   color: var(--text-primary);
+}
+
+/* Post Options Styles */
+.post-options-container {
+  position: relative;
+  /* This margin-left: auto moves it to the far right */
+  margin-left: auto;
+}
+
+.post-options-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  /* FIX: Added to remove the black circle on click/focus */
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.post-options-button:hover {
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
+}
+
+.post-options-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  z-index: 100;
+  min-width: 150px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.post-option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+}
+
+.post-option-item:hover {
+  background-color: var(--action-btn-hover);
+}
+
+.post-option-item.delete {
+  color: #ef4444;
+}
+
+.post-option-item.delete:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.post-option-item svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: inherit;
 }
 
 /* Main Content Styles */
@@ -461,12 +535,13 @@ html, body {
   box-shadow: 0 6px 10px -2px var(--shadow-color), 0 3px 6px -1px var(--shadow-color);
 }
 
-
 .post-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  position: relative;
+  /* Make the header a flex container to align its children */
+  display: flex;
+  justify-content: space-between;
 }
 
 .post-avatar {
@@ -494,14 +569,21 @@ html, body {
   margin: 0;
 }
 
+/* FIX: New styling for the container holding the tag and options */
+.post-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Adds space between the badge and the three dots */
+  margin-left: auto;
+}
+
 .post-type-badge {
   padding: 0.25rem 0.6rem;
   border-radius: 9999px;
   font-size: 0.7rem;
   font-weight: 600;
-  position: absolute;
-  top: 0;
-  right: 0;
+  /* Removed absolute positioning */
+  position: static;
 }
 
 .post-type-badge.confession {
@@ -689,27 +771,27 @@ html, body {
 
 /* Event specific action buttons above the main post actions */
 .event-action-buttons-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px dashed var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--border-color);
 }
 
 .event-action-buttons-top .action-btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
-    background-color: transparent;
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    border-radius: 0px;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0px;
 }
 
 .event-action-buttons-top .action-btn:hover {
-    background-color: var(--action-btn-hover);
-    color: var(--text-primary);
-    border-color: var(--text-secondary);
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 /* --- Event Detail Overlay/Modal Styles --- */
@@ -1062,26 +1144,26 @@ html, body {
 
 /* Basic styling for app logo link */
 .app-logo-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .app-title {
-    font-weight: bold;
-    font-size: 1.1em;
-    color: var(--text-primary);
+  font-weight: bold;
+  font-size: 1.1em;
+  color: var(--text-primary);
 }
 
 /* Adjusted for PostDetailComponent placeholder */
 .main-content-placeholder {
-    padding: 40px;
-    text-align: center;
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 1px 3px var(--shadow-color);
+  padding: 40px;
+  text-align: center;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px var(--shadow-color);
 }
 
 /* --- Comment Section Styles --- */
@@ -1236,7 +1318,6 @@ html, body {
   margin-top: 1rem;
 }
 
-
 /* Right Sidebar Styles */
 .right-sidebar {
   width: 18rem;
@@ -1307,34 +1388,34 @@ html, body {
 }
 
 .widget-item-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
 }
 
 .popular-post-item, .recent-confession-item {
-    padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
 }
 
 .popular-post-item:last-child, .recent-confession-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .popular-post-stats {
-    display: flex;
-    gap: 0.75rem;
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .confession-preview {
-    font-style: italic;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .event-date {
@@ -1344,8 +1425,8 @@ html, body {
 }
 
 .widget-stat {
-    font-weight: 600;
-    color: var(--text-primary);
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 /* Modal Styles */
@@ -1377,7 +1458,7 @@ html, body {
   overflow: hidden;
 }
 
-.login-modal {
+.small-modal {
   max-width: 400px;
 }
 
@@ -1412,6 +1493,18 @@ html, body {
 
 .modal-close:hover {
   background-color: var(--action-btn-hover);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 1.5rem;
+  flex-grow: 1;
+  text-align: center;
+}
+
+.modal-message {
+  font-size: 1.125rem;
+  line-height: 1.6;
   color: var(--text-primary);
 }
 
@@ -1550,6 +1643,10 @@ html, body {
   cursor: pointer;
 }
 
+.remove-image-btn:hover {
+  background-color: #dc2626;
+}
+
 .upload-btn-wrapper {
   position: relative;
   overflow: hidden;
@@ -1618,6 +1715,11 @@ html, body {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border-color);
+}
+
+/* New CSS to center a single button in a modal */
+.modal-actions.single-button {
+  justify-content: center;
 }
 
 .btn-primary, .btn-secondary {
@@ -1774,7 +1876,6 @@ html, body {
 .react-calendar__tile--now:enabled:focus {
   background: #93c5fd;
 }
-
 
 .react-calendar__tile--active {
   background: #3b82f6 !important;
