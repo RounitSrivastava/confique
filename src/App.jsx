@@ -26,11 +26,18 @@ import {
   Moon,
   Sun,
   Edit3,
-  Trash2
+  Trash2,
+  Mail,
+  Flag
 } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './App.css';
+
+// Import predefined avatars
+import avatar1 from './assets/Confident Expression in Anime Style.png';
+import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
+
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -56,7 +63,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Custom Alert/Confirm Modal component
-const CustomMessageModal = ({ isOpen, onClose, title, message, onConfirm, showConfirm = false, confirmText = 'Confirm' }) => {
+const CustomMessageModal = ({ isOpen, onClose, title, message, showConfirm = false, confirmText = 'Confirm' }) => {
   if (!isOpen) return null;
 
   return (
@@ -71,24 +78,147 @@ const CustomMessageModal = ({ isOpen, onClose, title, message, onConfirm, showCo
         <div className="modal-body">
           <p className="modal-message">{message}</p>
         </div>
-        <div className="modal-actions">
-          {showConfirm && (
+        {showConfirm && (
+          <div className="modal-actions">
             <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          )}
-          <button className="btn-primary" onClick={() => {
-            onConfirm();
-            onClose();
-          }}>
-            {confirmText}
+            <button className="btn-primary" onClick={onClose}>
+              {confirmText}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Help & Support Modal Component
+const HelpAndSupportModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content small-modal">
+        <div className="modal-header">
+          <h2 className="modal-title">Help & Support</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
           </button>
+        </div>
+        <div className="modal-body">
+          <p className="modal-message">For any support or questions, please email us at:</p>
+          <a href="mailto:support@confique.com" className="email-link">
+            <Mail size={16} /> support@confique.com
+          </a>
         </div>
       </div>
     </div>
   );
 };
 
+// Report Post Modal Component
+const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
+  const [reason, setReason] = useState('');
+  const [reportSuccess, setReportSuccess] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setReason('');
+      setReportSuccess(false);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (reason) {
+      onReport(post.id, reason);
+      setReportSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 1500);
+    } else {
+      alert('Please select a reason for reporting.');
+    }
+  };
+
+  if (!isOpen || !post) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content report-modal">
+        <div className="modal-header">
+          <h2 className="modal-title">Report Post</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+        {reportSuccess ? (
+          <div className="modal-body">
+            <p className="modal-message">Thank you. Your report has been submitted for review.</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="report-form">
+            <div className="form-group">
+              <h4 className="modal-reason-heading">Why are you reporting this post?</h4>
+              <div className="report-options">
+                <label className="report-option">
+                  <input
+                    type="radio"
+                    name="reason"
+                    value="Offensive/Inappropriate Content"
+                    checked={reason === 'Offensive/Inappropriate Content'}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                  <span>Offensive/Inappropriate Content</span>
+                </label>
+                <label className="report-option">
+                  <input
+                    type="radio"
+                    name="reason"
+                    value="Clickbait"
+                    checked={reason === 'Clickbait'}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                  <span>Clickbait</span>
+                </label>
+                <label className="report-option">
+                  <input
+                    type="radio"
+                    name="reason"
+                    value="False or misleading information"
+                    checked={reason === 'False or misleading information'}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                  <span>False or misleading information</span>
+                </label>
+                <label className="report-option">
+                  <input
+                    type="radio"
+                    name="reason"
+                    value="Spam"
+                    checked={reason === 'Spam'}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                  <span>Spam</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" disabled={!reason}>
+                Report
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Post Options Component
-const PostOptions = ({ post, onDelete, onEdit, isProfilePage }) => {
+const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -105,17 +235,23 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage }) => {
     };
   }, []);
 
-  const handleDelete = () => {
+  const handleDelete = (e) => {
+    e.stopPropagation();
     onDelete(post.id);
     setIsOpen(false);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (e) => {
+    e.stopPropagation();
     onEdit(post);
     setIsOpen(false);
   };
 
-  if (!isProfilePage) return null;
+  const handleReport = (e) => {
+    e.stopPropagation();
+    onReport(post);
+    setIsOpen(false);
+  };
 
   return (
     <div className="post-options-container" ref={dropdownRef}>
@@ -132,19 +268,27 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage }) => {
           <circle cx="12" cy="19" r="1" />
         </svg>
       </button>
-      
+
       {isOpen && (
         <div className="post-options-menu">
-          {post.type === 'event' && (
+          {isProfilePage && post.type === 'event' && (
             <button className="post-option-item" onClick={handleEdit}>
               <Edit3 size={16} />
               <span>Edit</span>
             </button>
           )}
-          <button className="post-option-item delete" onClick={handleDelete}>
-            <Trash2 size={16} />
-            <span>Delete</span>
-          </button>
+          {isProfilePage && (
+            <button className="post-option-item delete" onClick={handleDelete}>
+              <Trash2 size={16} />
+              <span>Delete</span>
+            </button>
+          )}
+          {!isProfilePage && (
+            <button className="post-option-item report" onClick={handleReport}>
+              <Flag size={16} />
+              <span>Report</span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -159,7 +303,7 @@ const CommentItem = ({ comment }) => (
       <div className="comment-header-info">
         <span className="comment-author">{comment.author}</span>
         <span className="comment-timestamp">
-          {comment.timestamp.toLocaleDateString()} {comment.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {comment.timestamp.toLocaleDateString()} at {comment.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
       <p className="comment-text">{comment.text}</p>
@@ -212,12 +356,13 @@ const CommentSection = ({ comments, onAddComment, onCloseComments }) => {
   );
 };
 
-// Registration Form Modal Component
+// Registration Form Modal Component with QR scrolling
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    transactionId: '',
     ...(event.registrationFields ?
       Object.fromEntries(
         event.registrationFields.split(',').map(field => [field.trim(), ''])
@@ -225,9 +370,9 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
   });
   const [showPaymentStep, setShowPaymentStep] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  // State for the success modal is now managed within this component
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const qrCodeRef = useRef(null);
 
   const customFields = event.registrationFields ?
     event.registrationFields.split(',').map(field => field.trim()) :
@@ -240,27 +385,33 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!isLoggedIn) {
       onRequireLogin();
       return;
     }
-    
+
     setFormSubmitted(true);
-    
-    if (event.price > 0) {
+
+    if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
       setShowPaymentStep(true);
     } else {
       setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
       setShowSuccessModal(true);
-      onRegister(event.id);
+      onRegister(event.id, event.title);
     }
   };
-  
-  const handlePaymentConfirm = () => {
+
+  const handlePaymentConfirm = (e) => {
+    e.preventDefault();
+
+    if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
+      alert("Please enter the last 4 digits of your transaction number.");
+      return;
+    }
     setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
     setShowSuccessModal(true);
-    onRegister(event.id);
+    onRegister(event.id, event.title);
   };
 
   const handleClose = () => {
@@ -276,6 +427,118 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
   if (!isOpen) return null;
 
+  const renderFormContent = () => {
+    if (showPaymentStep) {
+      return (
+        <form onSubmit={handlePaymentConfirm} className="modal-form">
+          <div className="payment-step">
+            <h3>Complete Your Payment</h3>
+            <p>Please scan the QR code to make your payment and enter the transaction details below.</p>
+            <div className="qr-payment-section" ref={qrCodeRef}>
+              <div className="qr-code-scroll-container">
+                <img
+                  src={event.paymentQRCode}
+                  alt="Payment QR Code"
+                  className="payment-qr"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Last 4 Digits of Transaction ID</label>
+                <input
+                  type="text"
+                  name="transactionId"
+                  className="form-input"
+                  value={formData.transactionId}
+                  onChange={handleChange}
+                  placeholder="e.g., 1234"
+                  maxLength={4}
+                  required
+                />
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setShowPaymentStep(false)}
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+              >
+                Confirm Registration
+              </button>
+            </div>
+          </div>
+        </form>
+      );
+    }
+
+    return (
+      <form onSubmit={handleSubmit} className="modal-form">
+        <div className="form-group">
+          <label className="form-label">Full Name</label>
+          <input
+            type="text"
+            name="name"
+            className="form-input"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Email</label>
+          <input
+            type="email"
+            name="email"
+            className="form-input"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Phone Number</label>
+          <input
+            type="tel"
+            name="phone"
+            className="form-input"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {customFields.map(field => (
+          field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
+            <div key={field} className="form-group">
+              <label className="form-label">{field}</label>
+              <input
+                type="text"
+                name={field}
+                className="form-input"
+                value={formData[field] || ''}
+                onChange={handleChange}
+                required
+              />
+            </div>
+          )
+        ))}
+        <div className="modal-actions">
+          <button type="button" className="btn-secondary" onClick={handleClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary">
+            {event.price > 0 && event.enableRegistrationForm ? 'Proceed to Payment' : 'Submit Registration'}
+          </button>
+        </div>
+      </form>
+    );
+  };
+
   return (
     <ErrorBoundary>
       <div className="modal-overlay">
@@ -286,126 +549,15 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
               <X size={24} />
             </button>
           </div>
-          
-          {showPaymentStep ? (
-            <div className="payment-step">
-              <h3>Complete Your Payment</h3>
-              
-              {event.price > 0 && (
-                <div className="event-detail-payment-section">
-                  <h3>Payment Information</h3>
-                  {event.paymentMethod === 'link' ? (
-                    <div className="payment-link-section">
-                      <p>Please complete your payment to finalize registration:</p>
-                      <a
-                        href={event.paymentLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="payment-link-button"
-                      >
-                        PROCEED TO PAYMENT
-                      </a>
-                    </div>
-                  ) : (
-                    <div className="qr-payment-section">
-                      <p>Scan this QR code to make payment:</p>
-                      <img
-                        src={event.paymentQRCode}
-                        alt="Payment QR Code"
-                        className="payment-qr"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="modal-actions">
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={handlePaymentConfirm}
-                >
-                  I've Paid
-                </button>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowPaymentStep(false)}
-                >
-                  Back to Form
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="modal-form-container">
-              <form onSubmit={handleSubmit} className="modal-form">
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="form-input"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input
-                    type="email"
-                    name="email"
-                    className="form-input"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Phone Number</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    className="form-input"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    required
-                  />
-                </div>
-                
-                {customFields.map(field => (
-                  field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
-                    <div key={field} className="form-group">
-                      <label className="form-label">{field}</label>
-                      <input
-                        type="text"
-                        name={field}
-                        className="form-input"
-                        value={formData[field] || ''}
-                        onChange={handleChange}
-                        required
-                      />
-                    </div>
-                  )
-                ))}
-                
-                <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={handleClose}>
-                    Cancel
-                  </button>
-                  <button type="submit" className="btn-primary">
-                    {event.price > 0 ? 'Proceed to Payment' : 'Submit Registration'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+          <div className="modal-form-container">
+            {renderFormContent()}
+          </div>
           <CustomMessageModal
             isOpen={showSuccessModal}
             onClose={handleSuccessModalClose}
             title="Registration Successful!"
             message={successMessage}
-            onConfirm={handleSuccessModalClose}
+            showConfirm={false}
           />
         </div>
       </div>
@@ -414,28 +566,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 };
 
 // Add Post Modal Component
-const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
-  const [formData, setFormData] = useState(postToEdit ? {
-    type: postToEdit.type,
-    title: postToEdit.title,
-    content: postToEdit.content,
-    author: postToEdit.author,
-    location: postToEdit.location || '',
-    eventStartDate: postToEdit.eventStartDate ? new Date(postToEdit.eventStartDate).toISOString().slice(0, 16) : '',
-    eventEndDate: postToEdit.eventEndDate ? new Date(postToEdit.eventEndDate).toISOString().slice(0, 16) : '',
-    price: postToEdit.price || 0,
-    language: postToEdit.language || 'English',
-    duration: postToEdit.duration || '',
-    ticketsNeeded: postToEdit.ticketsNeeded || '',
-    venueAddress: postToEdit.venueAddress || '',
-    registrationLink: postToEdit.registrationLink || '',
-    registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
-    enableRegistrationForm: postToEdit.enableRegistrationForm || false,
-    registrationFields: postToEdit.registrationFields || '',
-    paymentMethod: postToEdit.paymentMethod || 'link',
-    paymentLink: postToEdit.paymentLink || '',
-    paymentQRCode: postToEdit.paymentQRCode || ''
-  } : {
+const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
+  const initialFormData = {
     type: 'confession',
     title: '',
     content: '',
@@ -455,10 +587,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
     paymentMethod: 'link',
     paymentLink: '',
     paymentQRCode: ''
-  });
+  };
 
-  const [imagePreviews, setImagePreviews] = useState(postToEdit?.images || []);
-  const [paymentQRPreview, setPaymentQRPreview] = useState(postToEdit?.paymentQRCode || '');
+  const [formData, setFormData] = useState(initialFormData);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [paymentQRPreview, setPaymentQRPreview] = useState('');
   const [showUploadAlert, setShowUploadAlert] = useState(false);
   const fileInputRef = useRef(null);
   const qrFileInputRef = useRef(null);
@@ -488,11 +621,47 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
       });
       setImagePreviews(postToEdit.images || []);
       setPaymentQRPreview(postToEdit.paymentQRCode || '');
+    } else {
+      setFormData(prev => ({
+        ...initialFormData,
+        author: currentUser?.name || ''
+      }));
+      setImagePreviews([]);
+      setPaymentQRPreview('');
     }
-  }, [postToEdit]);
+  }, [postToEdit, currentUser, isOpen]);
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleTypeChange = (e) => {
+    const newType = e.target.value;
+    setFormData(prev => ({
+      ...initialFormData,
+      type: newType,
+      author: newType === 'event' ? (currentUser?.name || '') : (currentUser?.name || '')
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("Form submitted. Checking validation...");
+
+    if (!formData.title || !formData.content) {
+      console.error("Form validation failed: Title or Content is missing.");
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration || !formData.ticketsNeeded)) {
+      console.error("Form validation failed: Event-specific fields are missing.");
+      alert("Please fill in all required event details.");
+      return;
+    }
+
+    console.log("Validation successful. Creating post object.");
     const newPost = {
       id: postToEdit ? postToEdit.id : Date.now().toString(),
       timestamp: postToEdit ? postToEdit.timestamp : new Date(),
@@ -502,8 +671,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
       title: formData.title,
       content: formData.content,
       images: imagePreviews,
-      author: formData.author || 'Anonymous',
-      userId: postToEdit ? postToEdit.userId : '',
+      author: formData.type === 'event' ? (currentUser.name || 'Anonymous') : (formData.author || 'Anonymous'),
+      userId: postToEdit ? postToEdit.userId : currentUser.phone,
       ...(formData.type === 'event' && {
         location: formData.location,
         eventStartDate: formData.eventStartDate ? new Date(formData.eventStartDate) : undefined,
@@ -523,37 +692,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
       }),
       commentData: postToEdit ? postToEdit.commentData || [] : []
     };
+
+    console.log("Calling onSubmit with new post:", newPost);
     onSubmit(newPost);
-    setFormData({
-      type: 'confession',
-      title: '',
-      content: '',
-      author: '',
-      location: '',
-      eventStartDate: '',
-      eventEndDate: '',
-      price: 0,
-      language: 'English',
-      duration: '',
-      ticketsNeeded: '',
-      venueAddress: '',
-      registrationLink: '',
-      registrationOpen: true,
-      enableRegistrationForm: false,
-      registrationFields: '',
-      paymentMethod: 'link',
-      paymentLink: '',
-      paymentQRCode: ''
-    });
-    setImagePreviews([]);
-    setPaymentQRPreview('');
     onClose();
   };
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
     e.target.value = null;
-    
+
     if (!files.length) return;
 
     const availableSlots = 4 - imagePreviews.length;
@@ -623,7 +771,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                 <select
                   className="form-select"
                   value={formData.type}
-                  onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                  onChange={handleTypeChange}
                 >
                   <option value="confession">Confession</option>
                   <option value="event">Event</option>
@@ -636,7 +784,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                   type="text"
                   className="form-input"
                   value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  onChange={handleFormChange}
+                  name="title"
                   required
                 />
               </div>
@@ -646,7 +795,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                 <textarea
                   className="form-textarea"
                   value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                  onChange={handleFormChange}
+                  name="content"
                   rows={4}
                   required
                 />
@@ -657,9 +807,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                 <input
                   type="text"
                   className="form-input"
-                  value={formData.author}
-                  onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                  placeholder="Anonymous"
+                  value={formData.type === 'event' ? (currentUser?.name || '') : formData.author}
+                  onChange={handleFormChange}
+                  name="author"
+                  placeholder={formData.type === 'confession' ? 'Anonymous' : ''}
+                  disabled={formData.type === 'event'}
                 />
               </div>
 
@@ -671,7 +823,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="text"
                       className="form-input"
                       value={formData.location}
-                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="location"
                       required
                     />
                   </div>
@@ -681,35 +834,35 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="text"
                       className="form-input"
                       value={formData.venueAddress}
-                      onChange={(e) => setFormData(prev => ({ ...prev, venueAddress: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="venueAddress"
                       required
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="form-label">Start Date & Time</label>
                     <input
                       type="datetime-local"
                       className="form-input"
                       value={formData.eventStartDate}
-                      onChange={(e) => setFormData(prev => ({ ...prev, eventStartDate: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="eventStartDate"
                       required
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="form-label">End Date & Time (optional)</label>
                     <input
                       type="datetime-local"
                       className="form-input"
                       value={formData.eventEndDate}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        eventEndDate: e.target.value
-                      }))}
+                      onChange={handleFormChange}
+                      name="eventEndDate"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="form-label">Price (₹)</label>
                     <input
@@ -717,6 +870,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       className="form-input"
                       value={formData.price}
                       onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value ? parseFloat(e.target.value) : 0 }))}
+                      name="price"
                       min="0"
                       required
                     />
@@ -727,6 +881,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       className="form-select"
                       value={formData.registrationOpen}
                       onChange={(e) => setFormData(prev => ({ ...prev, registrationOpen: e.target.value === 'true' }))}
+                      name="registrationOpen"
                     >
                       <option value="true">Yes</option>
                       <option value="false">No</option>
@@ -738,7 +893,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="text"
                       className="form-input"
                       value={formData.language}
-                      onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="language"
                       required
                     />
                   </div>
@@ -748,7 +904,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="text"
                       className="form-input"
                       value={formData.duration}
-                      onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="duration"
                       placeholder="e.g., 3 Hours"
                       required
                     />
@@ -759,7 +916,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="text"
                       className="form-input"
                       value={formData.ticketsNeeded}
-                      onChange={(e) => setFormData(prev => ({ ...prev, ticketsNeeded: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="ticketsNeeded"
                       placeholder="e.g., All ages"
                       required
                     />
@@ -770,11 +928,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       type="url"
                       className="form-input"
                       value={formData.registrationLink}
-                      onChange={(e) => setFormData(prev => ({ ...prev, registrationLink: e.target.value }))}
+                      onChange={handleFormChange}
+                      name="registrationLink"
                       placeholder="https://example.com/register"
                     />
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="form-label">
                       <input
@@ -785,33 +944,20 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       Enable Registration Form
                     </label>
                   </div>
-                  
-                  {formData.enableRegistrationForm && (
-                    <div className="form-group">
-                      <label className="form-label">Registration Form Fields</label>
-                      <input
-                        type="text"
-                        className="form-input"
-                        value={formData.registrationFields}
-                        onChange={(e) => setFormData(prev => ({ ...prev, registrationFields: e.target.value }))}
-                        placeholder="Add fields (e.g., name, email, phone)"
-                      />
-                      <p className="form-hint">Enter comma-separated field names for your registration form</p>
-                    </div>
-                  )}
-                  
+
                   {formData.price > 0 && formData.enableRegistrationForm && (
                     <div className="form-group">
                       <label className="form-label">Payment Method</label>
                       <select
                         className="form-select"
                         value={formData.paymentMethod}
-                        onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))}
+                        onChange={handleFormChange}
+                        name="paymentMethod"
                       >
                         <option value="link">Payment Link</option>
                         <option value="qr">QR Code</option>
                       </select>
-                      
+
                       {formData.paymentMethod === 'link' && (
                         <div className="form-group">
                           <label className="form-label">Payment Link</label>
@@ -819,13 +965,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                             type="url"
                             className="form-input"
                             value={formData.paymentLink}
-                            onChange={(e) => setFormData(prev => ({ ...prev, paymentLink: e.target.value }))}
+                            onChange={handleFormChange}
+                            name="paymentLink"
                             placeholder="https://example.com/payment"
                             required
                           />
                         </div>
                       )}
-                      
+
                       {formData.paymentMethod === 'qr' && (
                         <div className="form-group">
                           <label className="form-label">QR Code Image</label>
@@ -879,7 +1026,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
                       onChange={handleImageUpload}
                     />
                   </div>
-                  
+
                   {imagePreviews.length > 0 && (
                     <div className="image-upload-preview">
                       {imagePreviews.map((preview, index) => (
@@ -910,20 +1057,20 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit }) => {
             </form>
           </div>
         </div>
-        <CustomMessageModal
-          isOpen={showUploadAlert}
-          onClose={() => setShowUploadAlert(false)}
-          title="Image Upload Limit"
-          message="You can only add up to 4 images per post."
-          onConfirm={() => setShowUploadAlert(false)}
-        />
       </div>
+      <CustomMessageModal
+        isOpen={showUploadAlert}
+        onClose={() => setShowUploadAlert(false)}
+        title="Image Upload Limit"
+        message="You can only add up to 4 images per post."
+        showConfirm={false}
+      />
     </ErrorBoundary>
   );
 };
 
 // Event Detail Page Component
-const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister }) => {
+const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered }) => {
   const [showFullContent, setShowFullContent] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
   const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
@@ -935,17 +1082,17 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
   const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
   const hasMoreContent = event.content.length > 200;
-  
+
   const isEventPast = new Date() > (event.eventEndDate || event.eventStartDate);
   const isRegistrationOpen = event.registrationOpen && !isEventPast;
   const hasRegistrationMethod = event.registrationLink || event.enableRegistrationForm;
 
   const formatDateRange = () => {
     if (!event.eventStartDate) return "N/A";
-    
+
     const start = new Date(event.eventStartDate);
     const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
-    
+
     if (end && start.toDateString() !== end.toDateString()) {
       const startDate = start.toLocaleDateString('en-US', {
         month: 'short',
@@ -963,14 +1110,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
         hour: '2-digit',
         minute: '2-digit'
       });
-      
+
       return `${startDate} - ${endDate}, ${startTime} to ${endTime}`;
     }
-    
+
     const date = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const startTime = start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const endTime = end ? end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
-    
+
     return `${date}, ${startTime}${endTime ? ` to ${endTime}` : ''}`;
   };
 
@@ -980,9 +1127,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
         const { latitude, longitude } = position.coords;
         const destination = encodeURIComponent(event.venueAddress);
         const origin = `${latitude},${longitude}`;
-        
+
         window.open(
-          `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&travelmode=driving`,
+          `http://googleusercontent.com/maps.google.com/?q=${destination}&saddr=${origin}`,
           '_blank'
         );
       }, (error) => {
@@ -1000,7 +1147,11 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       onRequireLogin();
       return;
     }
-    
+
+    if (isRegistered) {
+      return;
+    }
+
     if (event.enableRegistrationForm) {
       setShowRegistrationForm(true);
     } else if (event.registrationLink) {
@@ -1019,6 +1170,17 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       onAddToCalendar(event);
     }
   };
+
+  const registrationButtonText = () => {
+    if (isRegistered) return "REGISTERED";
+    if (isEventPast) return "EVENT ENDED";
+    if (!isRegistrationOpen) return "REGISTRATION CLOSED";
+    if (!hasRegistrationMethod) return "NO REGISTRATION REQUIRED";
+    return "REGISTER NOW";
+  };
+
+  const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
+
 
   return (
     <ErrorBoundary>
@@ -1056,26 +1218,13 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
               <span className="event-detail-price">
                 {event.price === 0 ? 'FREE' : `₹${event.price}`}
               </span>
-              {isEventPast ? (
-                <button className="event-detail-book-button disabled" disabled>
-                  EVENT ENDED
-                </button>
-              ) : !isRegistrationOpen ? (
-                <button className="event-detail-book-button disabled" disabled>
-                  REGISTRATION CLOSED
-                </button>
-              ) : !hasRegistrationMethod ? (
-                <button className="event-detail-book-button disabled" disabled>
-                  NO REGISTRATION REQUIRED
-                </button>
-              ) : (
-                <button
-                  className="event-detail-book-button"
-                  onClick={handleRegistrationClick}
-                >
-                  REGISTER NOW
-                </button>
-              )}
+              <button
+                className={`event-detail-book-button ${isButtonDisabled ? 'disabled' : ''}`}
+                onClick={handleRegistrationClick}
+                disabled={isButtonDisabled}
+              >
+                {registrationButtonText()}
+              </button>
             </div>
           </div>
 
@@ -1128,7 +1277,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             </div>
           </div>
         </div>
-        
+
         {showRegistrationForm && (
           <RegistrationFormModal
             isOpen={showRegistrationForm}
@@ -1144,14 +1293,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
           onClose={() => setShowGeolocationAlert(false)}
           title="Geolocation Error"
           message={geolocationError}
-          onConfirm={() => setShowGeolocationAlert(false)}
+          showConfirm={false}
         />
         <CustomMessageModal
           isOpen={showAddedToCalendarAlert}
           onClose={() => setShowAddedToCalendarAlert(false)}
           title="Event Added"
           message={calendarMessage}
-          onConfirm={() => setShowAddedToCalendarAlert(false)}
+          showConfirm={false}
         />
       </div>
     </ErrorBoundary>
@@ -1205,7 +1354,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component
-const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount, isRegistered, onReportPost }) => {
   const overlayRef = useRef(null);
   const [showFullContent, setShowFullContent] = useState(false);
   const contentRef = useRef(null);
@@ -1275,14 +1424,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
     const shareUrl = `${window.location.origin}/posts/${postId}`;
 
     if (navigator.share) {
-        try {
-          await navigator.share({
-            title: postTitle,
-            text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
-            url: shareUrl,
-          });
-        } catch (error) {
-        }
+      try {
+        await navigator.share({
+          title: postTitle,
+          text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+          url: shareUrl,
+        });
+      } catch (error) {
+      }
     } else {
       try {
         document.execCommand('copy');
@@ -1296,7 +1445,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
   const renderPostCardContent = () => (
     <>
       <div className="post-header">
-        <div className="post-avatar"></div>
+        <div className="post-avatar-container">
+          <img src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${post.author}'s avatar`} className="post-avatar" />
+        </div>
         <div className="post-info">
           <h3 className="post-author">{post.author}</h3>
           <p className="post-timestamp">
@@ -1307,10 +1458,11 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
           <span className={`post-type-badge ${post.type}`}>
             {getPostTypeLabel(post.type)}
           </span>
-          <PostOptions 
-            post={post} 
-            onDelete={onDeletePost} 
-            onEdit={onEditPost} 
+          <PostOptions
+            post={post}
+            onDelete={onDeletePost}
+            onEdit={onEditPost}
+            onReport={onReportPost}
             isProfilePage={isProfilePage}
           />
         </div>
@@ -1414,7 +1566,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
         onClose={() => setShowShareAlert(false)}
         title="Link Copied!"
         message="The link has been copied to your clipboard."
-        onConfirm={() => setShowShareAlert(false)}
+        showConfirm={false}
       />
     </>
   );
@@ -1435,7 +1587,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
 };
 
 // Home Component
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, registeredUsers, onReportPost }) => {
   const newsHighlights = [...posts]
     .filter(post => post.type === 'news')
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -1461,6 +1613,8 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                 currentUser={currentUser}
                 isProfilePage={false}
                 registrationCount={registrations[post.id]}
+                isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
+                onReportPost={onReportPost}
               />
             ))}
           </div>
@@ -1469,7 +1623,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
       )}
 
       <div className="posts-container">
-        {posts.map(post => (
+        {posts.filter(p => p.type !== 'news').map(post => (
           <PostCard
             key={post.id}
             post={post}
@@ -1484,6 +1638,8 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
+            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
+            onReportPost={onReportPost}
           />
         ))}
       </div>
@@ -1492,7 +1648,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 };
 
 // Events Component
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, registeredUsers, onReportPost }) => {
   const eventPosts = posts.filter(post => post.type === 'event');
 
   return (
@@ -1513,6 +1669,8 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
+            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
+            onReportPost={onReportPost}
           />
         ))}
       </div>
@@ -1521,7 +1679,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 };
 
 // Confessions Component
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, registeredUsers, onReportPost }) => {
   const confessionPosts = posts.filter(post => post.type === 'confession');
 
   return (
@@ -1542,6 +1700,8 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
+            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
+            onReportPost={onReportPost}
           />
         ))}
       </div>
@@ -1549,8 +1709,188 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
   );
 };
 
+// Notifications Component
+const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+  const isAdmin = currentUser?.phone === '9304004546'; // Updated admin number
+  const displayNotifications = isAdmin ? adminNotifications : notifications;
+
+  return (
+    <div>
+      <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+      <div className="notifications-container">
+        {displayNotifications.length > 0 ? (
+          <div className="notifications-list">
+            {displayNotifications.map((notification) => (
+              <div key={notification.id} className={`notification-item ${notification.type || ''}`}>
+                <Bell size={20} className="notification-icon" />
+                <div className="notification-content">
+                  <p className="notification-text">
+                    {notification.message}
+                    {isAdmin && notification.reportReason && (
+                      <span className="report-reason">
+                        Report Reason: {notification.reportReason}
+                      </span>
+                    )}
+                  </p>
+                  <span className="notification-timestamp">
+                    {notification.timestamp.toLocaleDateString()}
+                  </span>
+                  {isAdmin && notification.postId && (
+                    <div className="admin-actions">
+                      <button
+                        className="btn-danger"
+                        onClick={() => onDeleteReportedPost(notification.postId)}
+                      >
+                        <Trash2 size={16} /> Delete Post
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="placeholder-card">
+            <p className="placeholder-text">
+              {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Profile Settings Modal Component
+const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
+  const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
+  const [customAvatar, setCustomAvatar] = useState('');
+  const [avatarError, setAvatarError] = useState('');
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedAvatar(currentUser?.avatar || '');
+      setCustomAvatar('');
+      setAvatarError('');
+    }
+  }, [isOpen, currentUser]);
+
+  const predefinedAvatars = [
+    { src: avatar1, alt: 'Anime style avatar' },
+    { src: avatar2, alt: 'ChatGPT avatar' }
+  ];
+
+  const handleCustomImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        setAvatarError('Image size cannot exceed 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCustomAvatar(e.target.result);
+        setSelectedAvatar(null);
+        setAvatarError('');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSave = () => {
+    if (!selectedAvatar && !customAvatar) {
+      setAvatarError('Please select or upload an avatar.');
+      return;
+    }
+    const newAvatar = customAvatar || selectedAvatar;
+    onSave(newAvatar);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content profile-settings-modal">
+        <div className="modal-header">
+          <h2 className="modal-title">Edit Profile Image</h2>
+          <button className="modal-close" onClick={onClose}>
+            <X size={24} />
+          </button>
+        </div>
+        <div className="modal-body profile-settings-body">
+          <div className="current-avatar-container">
+            <h4 className="modal-subtitle">Current Profile Image</h4>
+            <div className="current-avatar-preview">
+              <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt="Current Avatar" />
+            </div>
+          </div>
+          <div className="avatar-options-container">
+            <h4 className="modal-subtitle">Choose a new avatar</h4>
+            <div className="predefined-avatars-grid">
+              {predefinedAvatars.map((av, index) => (
+                <div
+                  key={index}
+                  className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                  onClick={() => {
+                    setSelectedAvatar(av.src);
+                    setCustomAvatar('');
+                    setAvatarError('');
+                  }}
+                >
+                  <img src={av.src} alt={av.alt} />
+                </div>
+              ))}
+            </div>
+            <div className="or-divider">
+              <span className="or-text">OR</span>
+            </div>
+            <div className="custom-avatar-upload-section">
+              <h4 className="modal-subtitle">Upload your own</h4>
+              <div className="custom-upload-container">
+                {customAvatar ? (
+                  <div className="custom-avatar-preview">
+                    <img src={customAvatar} alt="Custom Avatar" />
+                    <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <button className="upload-button" onClick={() => fileInputRef.current.click()}>
+                    <ImageIcon size={20} />
+                    <span>Upload Image</span>
+                  </button>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  onChange={handleCustomImageUpload}
+                  style={{ display: 'none' }}
+                />
+              </div>
+            </div>
+          </div>
+          {avatarError && <p className="error-message">{avatarError}</p>}
+        </div>
+        <div className="modal-actions">
+          <button className="btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn-primary" onClick={handleSave}>
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 // Users Component
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, registeredUsers, onReportPost, onEditProfile }) => {
   if (!currentUser) {
     return (
       <div>
@@ -1578,13 +1918,17 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
   return (
     <div>
       <h2 className="page-title">Your Profile</h2>
-      
+
       <div className="profile-header">
-        <div className="profile-avatar">
-          <div className="avatar"></div>
+        <div className="profile-avatar-container">
+          <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" />
+          <button className="edit-avatar-button" onClick={onEditProfile}>
+            <Edit3 size={16} />
+          </button>
         </div>
         <div className="profile-info">
-          <h3 className="profile-name">+91 {currentUser.phone}</h3>
+          <h3 className="profile-name">{currentUser.name}</h3>
+          <p className="profile-phone">+91 {currentUser.phone}</p>
           <div className="profile-stats">
             <div className="stat-item">
               <span className="stat-number">{userStats.posts}</span>
@@ -1605,9 +1949,9 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
           </div>
         </div>
       </div>
-      
+
       <h3 className="section-subtitle">Your Posts</h3>
-      
+
       {userPosts.length > 0 ? (
         <div className="posts-container">
           {userPosts.map(post => (
@@ -1627,6 +1971,8 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               onEditPost={onEditPost}
               isProfilePage={true}
               registrationCount={registrations[post.id]}
+              isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
+              onReportPost={onReportPost}
             />
           ))}
         </div>
@@ -1670,9 +2016,9 @@ const HomeRightSidebar = ({ posts }) => {
 // Events Right Sidebar Component
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
   const [value, onChange] = useState(new Date());
-  
+
   const allEvents = [...posts, ...myCalendarEvents];
-  
+
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
       const hasEvent = allEvents.some(post =>
@@ -1686,7 +2032,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     }
     return null;
   };
-  
+
   const upcomingCalendarEvents = myCalendarEvents
     .filter(e => (e.eventEndDate || e.eventStartDate) > new Date())
     .slice(0, 3);
@@ -1770,7 +2116,7 @@ const ConfessionsRightSidebar = ({ posts }) => {
 // Users Right Sidebar Component
 const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
   if (!currentUser) return null;
-  
+
   const userPosts = posts.filter(post => post.userId === currentUser.phone);
 
   const userStats = {
@@ -1799,32 +2145,118 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
   );
 };
 
+// Notifications Right Sidebar Component
+const NotificationsRightSidebar = ({ onShowHelpModal }) => {
+  return (
+    <div className="sidebar-widget">
+      <div className="widget-header">
+        <h3 className="widget-title">Help</h3>
+      </div>
+      <div className="widget-content">
+        <div className="widget-list">
+          <button className="widget-item-button" onClick={onShowHelpModal}>
+            Help & Support
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Login Modal Component
-const LoginModal = ({ isOpen, onClose, onLogin }) => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+const LoginModal = ({ isOpen, onClose, onLogin, users, onSelectAvatar }) => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('phone');
   const [error, setError] = useState('');
+  const [isNewUser, setIsNewUser] = useState(false);
+  const [showAvatarSelection, setShowAvatarSelection] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setStep('phone');
+      setError('');
+      setFormData({ name: '', email: '', phone: '' });
+      setOtp('');
+      setIsNewUser(false);
+      setShowAvatarSelection(false);
+      setSelectedAvatar(null);
+    }
+  }, [isOpen]);
 
   const handlePhoneSubmit = (e) => {
     e.preventDefault();
-    if (!phoneNumber.match(/^\d{10}$/)) {
+    const phone = formData.phone.replace(/\D/g, '');
+    if (!phone.match(/^\d{10}$/)) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
+    // Simulate sending OTP
+    console.log(`Sending OTP to +91 ${phone}`);
+    setFormData(prev => ({ ...prev, phone }));
     setStep('otp');
     setError('');
   };
 
   const handleOtpSubmit = (e) => {
     e.preventDefault();
-    if (otp === '123456') {
-      onLogin(phoneNumber);
-      onClose();
+    if (otp === '123456') { // Hardcoded OTP for demonstration
+      setError('');
+      const phone = formData.phone;
+
+      // Check if user is already registered in our mock database
+      const existingUser = users.find(user => user.phone === phone);
+
+      if (existingUser) {
+        // If user exists, log them in directly
+        onLogin(existingUser);
+        onClose();
+      } else if (phone === '9304004546') {
+        // Admin user login
+        const adminUser = { phone: '9304004546', name: 'Admin', email: 'admin@confique.com', avatar: avatar1 };
+        onLogin(adminUser);
+        onClose();
+      } else {
+        // First-time login, proceed to name, email and avatar selection step
+        setIsNewUser(true);
+        setStep('name_email');
+      }
     } else {
       setError('Invalid OTP. Please try again.');
     }
   };
+
+  const handleNameEmailSubmit = (e) => {
+    e.preventDefault();
+    if (formData.name.trim() === '' || !formData.email.includes('@')) {
+      setError('Please enter a valid name and email.');
+      return;
+    }
+    if (!selectedAvatar) {
+        setError('Please select an avatar to continue.');
+        return;
+    }
+
+    const newUser = { phone: formData.phone, name: formData.name, email: formData.email, avatar: selectedAvatar };
+    onLogin(newUser);
+    onClose();
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleAvatarSelect = (avatarSrc) => {
+    setSelectedAvatar(avatarSrc);
+  };
+
+  const predefinedAvatars = [
+    { src: avatar1, alt: 'Anime style avatar' },
+    { src: avatar2, alt: 'ChatGPT avatar' }
+  ];
+
 
   if (!isOpen) return null;
 
@@ -1833,13 +2265,13 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
       <div className="modal-overlay">
         <div className="modal-content login-modal">
           <div className="modal-header">
-            <h2 className="modal-title">{step === 'phone' ? 'Login' : 'Verify OTP'}</h2>
+            <h2 className="modal-title">{isNewUser ? 'Complete Your Profile' : 'Login / Register'}</h2>
             <button className="modal-close" onClick={onClose}>
               <X size={24} />
             </button>
           </div>
           <div className="modal-body">
-            {step === 'phone' ? (
+            {step === 'phone' && (
               <form onSubmit={handlePhoneSubmit} className="login-form">
                 <div className="form-group">
                   <label className="form-label">Phone Number</label>
@@ -1847,9 +2279,10 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                     <div className="country-code">+91</div>
                     <input
                       type="tel"
+                      name="phone"
                       className="form-input"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
+                      value={formData.phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
                       placeholder="Enter your phone number"
                       maxLength={10}
                       required
@@ -1861,11 +2294,12 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                   Send OTP
                 </button>
               </form>
-            ) : (
+            )}
+            {step === 'otp' && (
               <form onSubmit={handleOtpSubmit} className="login-form">
                 <div className="form-group">
                   <p className="otp-instructions">
-                    OTP sent to +91{phoneNumber}
+                    OTP sent to +91 {formData.phone}
                   </p>
                   <label className="form-label">Enter OTP</label>
                   <input
@@ -1881,6 +2315,50 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 </div>
                 <button type="submit" className="btn-primary">
                   Verify OTP
+                </button>
+              </form>
+            )}
+            {step === 'name_email' && (
+              <form onSubmit={handleNameEmailSubmit} className="login-form">
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    name="name"
+                    className="form-input"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="form-input"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+                <div className="avatar-selection">
+                    <h4 className="modal-subtitle">Choose an avatar</h4>
+                    <div className="predefined-avatars-grid">
+                      {predefinedAvatars.map((av, index) => (
+                          <div
+                              key={index}
+                              className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                              onClick={() => handleAvatarSelect(av.src)}
+                          >
+                              <img src={av.src} alt={av.alt} />
+                          </div>
+                      ))}
+                    </div>
+                </div>
+                {error && <p className="error-message">{error}</p>}
+                <button type="submit" className="btn-primary" disabled={!selectedAvatar}>
+                  Save and Login
                 </button>
               </form>
             )}
@@ -1915,16 +2393,19 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         className="profile-dropdown-toggle"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="avatar" title={user.phone}></div>
+        <div className="avatar-wrapper">
+          <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" />
+        </div>
       </button>
-      
+
       {isOpen && (
         <div className="profile-dropdown-menu">
           <div className="profile-info">
             <div className="profile-avatar">
-              <div className="avatar"></div>
+              <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" />
             </div>
             <div className="profile-details">
+              <div className="profile-name-display">{user.name}</div>
               <div className="profile-phone">+91 {user.phone}</div>
             </div>
           </div>
@@ -1962,13 +2443,14 @@ const App = () => {
       content: 'Sometimes I wonder if anyone else feels like they\'re just pretending to be an adult. Like, I\'m paying bills and making decisions, but inside I still feel like I\'m 16 and have no idea what I\'m doing.',
       images: ['https://images.pexels.com/photos/1939485/pexels-photo-1939485.jpeg?auto=compress&cs=tinysrgb&w=400'],
       author: 'Anonymous',
+      authorAvatar: null,
       userId: 'user123',
-      timestamp: new Date(2025, 5, 10, 14, 30),
+      timestamp: new Date('2025-06-10T14:30:00'),
       likes: 234,
       comments: 45,
       commentData: [
-        { id: 'c1', author: 'UserA', text: 'Totally relate to this!', timestamp: new Date(2025, 5, 10, 15, 0) },
-        { id: 'c2', author: 'UserB', text: 'You\'re not alone!', timestamp: new Date(2025, 5, 10, 15, 15) },
+        { id: 'c1', author: 'UserA', text: 'Totally relate to this!', timestamp: new Date('2025-06-10T15:00:00') },
+        { id: 'c2', author: 'UserB', text: 'You\'re not alone!', timestamp: new Date('2025-06-10T15:15:00') },
       ]
     },
     {
@@ -1983,13 +2465,14 @@ const App = () => {
         'https://images.pexels.com/photos/2747449/pexels-photo-2747449.jpeg?auto=compress&cs=tinysrgb&w=400'
       ],
       author: 'Community Center',
+      authorAvatar: null,
       userId: 'user456',
-      timestamp: new Date(2025, 5, 8, 9, 0),
+      timestamp: new Date('2025-06-08T09:00:00'),
       likes: 156,
       comments: 23,
       location: 'Central Park',
-      eventStartDate: new Date(2025, 7, 1, 10, 0),
-      eventEndDate: new Date(2025, 7, 2, 18, 0),
+      eventStartDate: new Date('2025-08-05T10:00:00'),
+      eventEndDate: new Date('2025-08-06T18:00:00'),
       price: 0,
       language: 'English',
       duration: '3 Hours',
@@ -1998,7 +2481,7 @@ const App = () => {
       registrationLink: 'https://example.com/art-festival',
       registrationOpen: true,
       commentData: [
-        { id: 'c3', author: 'EventFan', text: 'Can\'t wait for this!', timestamp: new Date(2025, 5, 8, 9, 30) },
+        { id: 'c3', author: 'EventFan', text: 'Can\'t wait for this!', timestamp: new Date('2025-06-08T09:30:00') },
       ]
     },
     {
@@ -2010,12 +2493,13 @@ const App = () => {
         'https://images.pexels.com/photos/1190297/pexels-photo-1190297.jpeg?auto=compress&cs=tinysrgb&w=400'
       ],
       author: 'Music Events Inc',
+      authorAvatar: null,
       userId: 'user789',
-      timestamp: new Date(2025, 3, 15, 14, 0),
+      timestamp: new Date('2025-04-15T14:00:00'),
       likes: 89,
       comments: 12,
       location: 'City Stadium',
-      eventStartDate: new Date(2025, 4, 15, 19, 0),
+      eventStartDate: new Date('2025-05-15T19:00:00'),
       price: 50,
       language: 'English',
       duration: '4 Hours',
@@ -2024,7 +2508,7 @@ const App = () => {
       registrationLink: 'https://example.com/music-concert',
       registrationOpen: false,
       commentData: [
-        { id: 'c4', author: 'ConcertGoer', text: 'Had a great time!', timestamp: new Date(2025, 4, 16, 10, 0) },
+        { id: 'c4', author: 'ConcertGoer', text: 'Had a great time!', timestamp: new Date('2025-05-16T10:00:00') },
       ]
     },
     {
@@ -2037,12 +2521,14 @@ const App = () => {
         'https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=400'
       ],
       author: 'Tech Community',
+      authorAvatar: null,
       userId: 'user101',
-      timestamp: new Date(2025, 5, 5, 11, 30),
+      timestamp: new Date('2025-06-05T11:30:00'),
       likes: 201,
       comments: 38,
       location: 'Innovation Hub',
-      eventStartDate: new Date(2025, 8, 5, 18, 30),
+      eventStartDate: new Date('2025-08-04T18:30:00'),
+      eventEndDate: new Date('2025-08-04T20:30:00'),
       price: 479,
       language: 'English',
       duration: '2 Hours',
@@ -2052,8 +2538,8 @@ const App = () => {
       registrationOpen: true,
       enableRegistrationForm: true,
       registrationFields: 'name, email, phone, company',
-      paymentMethod: 'link',
-      paymentLink: 'https://payment.example.com/tech-meetup',
+      paymentMethod: 'qr',
+      paymentQRCode: 'https://cdn.pixabay.com/photo/2016/04/20/19/23/qr-code-1340058_1280.png',
       commentData: []
     },
     {
@@ -2063,12 +2549,14 @@ const App = () => {
       content: 'Join us every Saturday morning for free yoga sessions in the park. All levels welcome!',
       images: ['https://images.pexels.com/photos/1812964/pexels-photo-1812964.jpeg?auto=compress&cs=tinysrgb&w=400'],
       author: 'Community Wellness',
+      authorAvatar: null,
       userId: 'user112',
-      timestamp: new Date(2025, 5, 12, 8, 0),
+      timestamp: new Date('2025-06-12T08:00:00'),
       likes: 89,
       comments: 15,
       location: 'City Park',
-      eventStartDate: new Date(2025, 6, 5, 8, 0),
+      eventStartDate: new Date('2025-08-10T08:00:00'),
+      eventEndDate: new Date('2025-08-10T09:00:00'),
       price: 0,
       language: 'English',
       duration: '1 Hour',
@@ -2093,27 +2581,104 @@ const App = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [postToEdit, setPostToEdit] = useState(null);
   const [registrations, setRegistrations] = useState({});
+  const [registeredUsers, setRegisteredUsers] = useState({});
+  const [notifications, setNotifications] = useState([]);
+  const [adminNotifications, setAdminNotifications] = useState([]);
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportPostData, setReportPostData] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
   useEffect(() => {
-    const savedPhone = localStorage.getItem('userPhone');
-    if (savedPhone) {
+    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (savedUser) {
       setIsLoggedIn(true);
-      setCurrentUser({ phone: savedPhone });
+      setCurrentUser(savedUser);
     }
-    
+    const savedUsers = JSON.parse(localStorage.getItem('registeredUsers'));
+    if (savedUsers) {
+      setUsers(savedUsers);
+    }
+
     document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || !!openCommentPostId || !!selectedEvent || showProfileSettingsModal;
+
+  useEffect(() => {
+    if (hasOpenModal) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.paddingRight = '15px';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+  }, [hasOpenModal]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setNotifications(prevNotifications =>
+        prevNotifications.filter(n => (now.getTime() - n.timestamp.getTime()) < 5 * 24 * 60 * 60 * 1000)
+      );
+    }, 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    if (openCommentPostId || selectedEvent || isModalOpen || showLoginModal) {
-      document.body.classList.add('modal-open');
-    } else {
-      document.body.classList.remove('modal-open');
-    }
-    return () => {
-      document.body.classList.remove('modal-open');
-    };
-  }, [openCommentPostId, selectedEvent, isModalOpen, showLoginModal]);
+    const interval = setInterval(() => {
+      const now = new Date();
+      posts.forEach(post => {
+        if (post.type === 'event' && post.eventStartDate && post.registrationOpen) {
+          const timeToEvent = new Date(post.eventStartDate).getTime() - now.getTime();
+          const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+          const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+
+          if (timeToEvent > twoDaysInMs && timeToEvent <= threeDaysInMs) {
+            const notificationExists = notifications.some(n =>
+              n.message.includes(`Registration for "${post.title}" is closing soon!`)
+            );
+
+            if (!notificationExists) {
+              const notification = {
+                id: Date.now(),
+                message: `Registration for "${post.title}" is closing soon!`,
+                timestamp: now,
+                type: 'warning'
+              };
+              setNotifications(prev => [notification, ...prev]);
+
+              const usersToNotify = new Set();
+              if (registeredUsers[post.id]) {
+                registeredUsers[post.id].forEach(phone => usersToNotify.add(phone));
+              }
+              myCalendarEvents.forEach(e => {
+                if (e.id === post.id && currentUser) {
+                  usersToNotify.add(currentUser.phone);
+                }
+              });
+
+              usersToNotify.forEach(userPhone => {
+                const userEmail = "user@example.com";
+                if (userEmail) {
+                  console.log(`Sending email to ${userEmail}: Registration for "${post.title}" is closing in less than 3 days!`);
+                }
+              });
+            }
+          }
+        }
+      });
+    }, 12 * 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [posts, notifications, registeredUsers, myCalendarEvents, currentUser]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -2133,7 +2698,7 @@ const App = () => {
       setShowLoginModal(true);
       return;
     }
-    
+
     setMyCalendarEvents(prev => {
       if (prev.some(e => e.id === event.id)) {
         return prev;
@@ -2142,11 +2707,30 @@ const App = () => {
     });
   };
 
-  const handleRegisterEvent = (eventId) => {
+  const handleRegisterEvent = (eventId, eventTitle) => {
+    if (!currentUser) return;
+
+    setRegisteredUsers(prev => ({
+      ...prev,
+      [eventId]: new Set(prev[eventId]).add(currentUser.phone)
+    }));
+
     setRegistrations(prev => ({
       ...prev,
       [eventId]: (prev[eventId] || 0) + 1
     }));
+
+    console.log(`Sending email to ${currentUser.email}: Registration for "${eventTitle}" confirmed. Thank you!`);
+
+    setNotifications(prev => [
+      {
+        id: Date.now(),
+        message: `You are now registered for "${eventTitle}". See you there!`,
+        timestamp: new Date(),
+        type: 'success'
+      },
+      ...prev
+    ]);
   };
 
   const handleAddPost = (newPost) => {
@@ -2154,7 +2738,7 @@ const App = () => {
       setShowLoginModal(true);
       return;
     }
-    
+
     if (postToEdit) {
       setPosts(prevPosts =>
         prevPosts.map(post =>
@@ -2170,18 +2754,37 @@ const App = () => {
         likes: 0,
         comments: 0,
         commentData: [],
-        userId: currentUser.phone
+        userId: currentUser.phone,
+        author: newPost.type === 'event' ? (currentUser.name || 'Anonymous') : (newPost.author || 'Anonymous'),
+        authorAvatar: newPost.type === 'event' ? (currentUser.avatar || null) : (null)
       };
       setPosts(prev => [post, ...prev]);
+
+      setNotifications(prev => [
+        {
+          id: Date.now(),
+          message: `A new ${post.type} "${post.title}" has been posted.`,
+          timestamp: new Date(),
+        },
+        ...prev
+      ]);
+
+      if (post.type === 'event') {
+        const allUsers = users;
+        console.log(`Simulating email notification to all users: A new event "${post.title}" has been created!`);
+        allUsers.forEach(user => {
+          console.log(`Sending email to ${user.email}: A new event "${post.title}" has been created!`);
+        });
+      }
     }
   };
 
   const handleDeletePost = (postId) => {
     if (!isLoggedIn) return;
-    
+
     setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
     setMyCalendarEvents(prevEvents => prevEvents.filter(event => event.id !== postId));
-    
+
     setLikedPosts(prev => {
       const newLiked = new Set(prev);
       newLiked.delete(postId);
@@ -2194,7 +2797,7 @@ const App = () => {
       setShowLoginModal(true);
       return;
     }
-    
+
     if (currentUser && post.userId === currentUser.phone) {
       setPostToEdit(post);
       setIsModalOpen(true);
@@ -2207,7 +2810,7 @@ const App = () => {
       setShowLoginModal(true);
       return;
     }
-    
+
     setPosts(prevPosts =>
       prevPosts.map(post => {
         if (post.id === postId) {
@@ -2234,15 +2837,16 @@ const App = () => {
       setShowLoginModal(true);
       return;
     }
-    
+
     setPosts(prevPosts =>
       prevPosts.map(post => {
         if (post.id === postId) {
           const newComment = {
             id: Date.now().toString(),
-            author: 'Current User',
+            author: currentUser.name || 'Current User',
             text: commentText,
             timestamp: new Date(),
+            authorAvatar: currentUser.avatar
           };
           return {
             ...post,
@@ -2275,7 +2879,7 @@ const App = () => {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        
+
         const customAlert = document.createElement('div');
         customAlert.className = 'custom-alert';
         customAlert.innerHTML = 'Link copied to clipboard!';
@@ -2297,10 +2901,88 @@ const App = () => {
     setSelectedEvent(null);
   };
 
+  const handleLogin = (user) => {
+    setIsLoggedIn(true);
+    setCurrentUser(user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+
+    if (!users.some(u => u.phone === user.phone)) {
+      setUsers(prevUsers => {
+        const newUsers = [...prevUsers, user];
+        localStorage.setItem('registeredUsers', JSON.stringify(newUsers));
+        return newUsers;
+      });
+    }
+
+    // Assign authorAvatar to existing posts for this user
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post.userId === user.phone ? { ...post, authorAvatar: user.avatar } : post
+      )
+    );
+  };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
-    localStorage.removeItem('userPhone');
+    localStorage.removeItem('currentUser');
+  };
+
+  const handleOpenReportModal = (post) => {
+    if (!currentUser) {
+      setShowLoginModal(true);
+      return;
+    }
+    setReportPostData(post);
+    setIsReportModalOpen(true);
+  };
+
+  const handleCloseReportModal = () => {
+    setIsReportModalOpen(false);
+    setReportPostData(null);
+  };
+
+  const handleReportPost = (postId, reason) => {
+    const reportedPost = posts.find(p => p.id === postId);
+    if (!reportedPost) return;
+
+    const report = {
+      id: Date.now().toString(),
+      postId: postId,
+      postTitle: reportedPost.title,
+      reporterId: currentUser.phone,
+      reporterName: currentUser.name || 'Anonymous',
+      reportReason: reason,
+      timestamp: new Date(),
+      message: `Post "${reportedPost.title}" has been reported by ${currentUser.name || 'a user'} for "${reason}".`
+    };
+
+    setAdminNotifications(prev => [report, ...prev]);
+    console.log("Post reported:", report);
+    handleCloseReportModal();
+  };
+
+  const handleDeleteReportedPost = (postId) => {
+    setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    setAdminNotifications(prevNotifications => prevNotifications.filter(n => n.postId !== postId));
+    alert('Post has been deleted.');
+  };
+
+  const handleUpdateAvatar = (newAvatar) => {
+    if (currentUser) {
+      const updatedUser = { ...currentUser, avatar: newAvatar };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+      setUsers(prevUsers => prevUsers.map(u => u.phone === updatedUser.phone ? updatedUser : u));
+
+      // Update posts with the new avatar
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.userId === updatedUser.phone ? { ...post, authorAvatar: newAvatar } : post
+        )
+      );
+    }
+    setShowProfileSettingsModal(false);
   };
 
   const menuItems = [
@@ -2320,6 +3002,8 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
+        onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <HomeRightSidebar posts={posts} />,
     },
@@ -2339,6 +3023,8 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
+        onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <EventsRightSidebar
         posts={posts.filter(p => p.type === 'event')}
@@ -2362,6 +3048,8 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
+        onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
     },
@@ -2369,27 +3057,13 @@ const App = () => {
       id: 'notifications',
       label: 'Notifications',
       icon: <Bell className="nav-icon" />,
-      component: () => (
-        <div>
-          <h2 className="page-title">Notifications</h2>
-          <div className="placeholder-card">
-            <p className="placeholder-text">No new notifications.</p>
-          </div>
-        </div>
-      ),
-      rightSidebar: () => (
-        <div className="sidebar-widget">
-          <div className="widget-header">
-            <h3 className="widget-title">Quick Links</h3>
-          </div>
-          <div className="widget-content">
-            <ul className="widget-list">
-              <li className="widget-item">Settings</li>
-              <li className="widget-item">Help & Support</li>
-            </ul>
-          </div>
-        </div>
-      ),
+      component: () => <NotificationsComponent
+        notifications={notifications}
+        adminNotifications={adminNotifications}
+        currentUser={currentUser}
+        onDeleteReportedPost={handleDeleteReportedPost}
+      />,
+      rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
     },
     {
       id: 'theme-toggle',
@@ -2429,6 +3103,8 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
+      onReportPost={handleOpenReportModal}
     />,
     events: () => <EventsComponent
       posts={filteredPosts.filter(post => post.type === 'event')}
@@ -2442,6 +3118,8 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
+      onReportPost={handleOpenReportModal}
     />,
     confessions: () => <ConfessionsComponent
       posts={filteredPosts.filter(post => post.type === 'confession')}
@@ -2455,15 +3133,15 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
+      onReportPost={handleOpenReportModal}
     />,
-    notifications: () => (
-      <div>
-        <h2 className="page-title">Notifications</h2>
-        <div className="placeholder-card">
-          <p className="placeholder-text">No new notifications.</p>
-        </div>
-      </div>
-    ),
+    notifications: () => <NotificationsComponent
+      notifications={notifications}
+      adminNotifications={adminNotifications}
+      currentUser={currentUser}
+      onDeleteReportedPost={handleDeleteReportedPost}
+    />,
     profile: () => <UsersComponent
       posts={filteredPosts}
       currentUser={currentUser}
@@ -2479,6 +3157,9 @@ const App = () => {
       onDeletePost={handleDeletePost}
       onEditPost={handleEditPost}
       registrations={registrations}
+      registeredUsers={registeredUsers}
+      onReportPost={handleOpenReportModal}
+      onEditProfile={() => setShowProfileSettingsModal(true)}
     />,
   };
 
@@ -2490,19 +3171,7 @@ const App = () => {
       onOpenEventDetail={handleOpenEventDetail}
     />,
     confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
-    notifications: () => (
-      <div className="sidebar-widget">
-        <div className="widget-header">
-          <h3 className="widget-title">Quick Links</h3>
-        </div>
-        <div className="widget-content">
-          <ul className="widget-list">
-            <li className="widget-item">Settings</li>
-            <li className="widget-item">Help & Support</li>
-          </ul>
-        </div>
-      </div>
-    ),
+    notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
     profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
   };
 
@@ -2510,17 +3179,30 @@ const App = () => {
   const CurrentRightSidebar = sectionSidebars[activeSection] || (() => null);
 
   return (
-    <div className={`app ${selectedEvent ? 'event-detail-open' : ''}`}>
+    <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLogin={(phone) => {
-          setIsLoggedIn(true);
-          setCurrentUser({ phone });
-          localStorage.setItem('userPhone', phone);
-        }}
+        onLogin={handleLogin}
+        users={users}
       />
-      
+
+      <ReportPostModal
+        isOpen={isReportModalOpen}
+        onClose={handleCloseReportModal}
+        onReport={handleReportPost}
+        post={reportPostData}
+      />
+
+      {currentUser && (
+        <ProfileSettingsModal
+          isOpen={showProfileSettingsModal}
+          onClose={() => setShowProfileSettingsModal(false)}
+          onSave={handleUpdateAvatar}
+          currentUser={currentUser}
+        />
+      )}
+
       <header className="header">
         <div className="header-container">
           <div className="header-content">
@@ -2566,7 +3248,7 @@ const App = () => {
         </div>
       </header>
 
-      <div className={`main-layout-container ${isModalOpen ? 'modal-open' : ''}`}>
+      <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
         <aside className="left-sidebar">
           <nav className="sidebar-nav">
             {menuItems.map(item => (
@@ -2599,7 +3281,8 @@ const App = () => {
                 isLoggedIn={isLoggedIn}
                 onRequireLogin={() => setShowLoginModal(true)}
                 onAddToCalendar={handleAddToCalendar}
-                onRegister={handleRegisterEvent}
+                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                isRegistered={registeredUsers[selectedEvent.id]?.has(currentUser?.phone)}
               />
             ) : (
               <CurrentComponent
@@ -2616,13 +3299,15 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 registrations={registrations}
+                onRegister={handleRegisterEvent}
+                registeredUsers={registeredUsers}
               />
             )}
           </div>
         </main>
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
-            {!isModalOpen && !showLoginModal && (
+            {!hasOpenModal && (
               selectedEvent ? (
                 <EventDetailSidebar
                   events={posts}
@@ -2645,6 +3330,12 @@ const App = () => {
         }}
         onSubmit={handleAddPost}
         postToEdit={postToEdit}
+        currentUser={currentUser}
+      />
+
+      <HelpAndSupportModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
       />
     </div>
   );
