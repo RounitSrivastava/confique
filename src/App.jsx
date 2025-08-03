@@ -298,7 +298,14 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport }) => {
 // Comment Item Component
 const CommentItem = ({ comment }) => (
   <div className="comment-item">
-    <div className="comment-avatar"></div>
+    {/* Updated to display profile photo */}
+    <div className="comment-avatar">
+      <img
+        src={comment.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+        alt={`${comment.author}'s avatar`}
+        className="comment-avatar-img"
+      />
+    </div>
     <div className="comment-content-wrapper">
       <div className="comment-header-info">
         <span className="comment-author">{comment.author}</span>
@@ -2449,8 +2456,8 @@ const App = () => {
       likes: 234,
       comments: 45,
       commentData: [
-        { id: 'c1', author: 'UserA', text: 'Totally relate to this!', timestamp: new Date('2025-06-10T15:00:00') },
-        { id: 'c2', author: 'UserB', text: 'You\'re not alone!', timestamp: new Date('2025-06-10T15:15:00') },
+        { id: 'c1', author: 'UserA', text: 'Totally relate to this!', timestamp: new Date('2025-06-10T15:00:00'), authorAvatar: 'https://placehold.co/40x40/cccccc/000000?text=A' },
+        { id: 'c2', author: 'UserB', text: 'You\'re not alone!', timestamp: new Date('2025-06-10T15:15:00'), authorAvatar: 'https://placehold.co/40x40/cccccc/000000?text=B' },
       ]
     },
     {
@@ -2481,7 +2488,7 @@ const App = () => {
       registrationLink: 'https://example.com/art-festival',
       registrationOpen: true,
       commentData: [
-        { id: 'c3', author: 'EventFan', text: 'Can\'t wait for this!', timestamp: new Date('2025-06-08T09:30:00') },
+        { id: 'c3', author: 'EventFan', text: 'Can\'t wait for this!', timestamp: new Date('2025-06-08T09:30:00'), authorAvatar: 'https://placehold.co/40x40/cccccc/000000?text=E' },
       ]
     },
     {
@@ -2508,7 +2515,7 @@ const App = () => {
       registrationLink: 'https://example.com/music-concert',
       registrationOpen: false,
       commentData: [
-        { id: 'c4', author: 'ConcertGoer', text: 'Had a great time!', timestamp: new Date('2025-05-16T10:00:00') },
+        { id: 'c4', author: 'ConcertGoer', text: 'Had a great time!', timestamp: new Date('2025-05-16T10:00:00'), authorAvatar: 'https://placehold.co/40x40/cccccc/000000?text=C' },
       ]
     },
     {

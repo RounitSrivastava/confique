@@ -244,6 +244,11 @@ body {
   align-items: center;
 }
 
+.profile-dropdown-toggle:focus {
+  outline: none;
+  box-shadow: none;
+}
+
 .profile-dropdown-menu {
   position: absolute;
   top: 100%;
@@ -1291,22 +1296,28 @@ body {
 }
 
 .comment-submit-btn {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 60px; /* Increased size */
+  height: 60px; /* Increased size */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
   flex-shrink: 0;
 }
 
 .comment-submit-btn:hover {
   background-color: #2563eb;
+  transform: scale(1.1);
+}
+
+.comment-submit-btn svg {
+  width: 32px; /* Increased icon size to fit the bigger button */
+  height: 32px; /* Increased icon size to fit the bigger button */
 }
 
 .comments-list {
@@ -1979,7 +1990,7 @@ body {
 
 .add-event-calendar-btn:hover {
   background-color: #2563eb;
-  box-shadow: 0 2px 5px rgba(59, 130, 246, 0.25);
+  box-shadow: 2px 5px rgba(59, 130, 246, 0.25);
 }
 
 /* Event Detail Sidebar Styling */
@@ -2106,16 +2117,14 @@ body {
 
 .edit-avatar-button {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
+  bottom: 0;
+  right: 0;
   background-color: var(--card-bg);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  width: 44px;
-  /* Increased size */
-  height: 44px;
-  /* Increased size */
+  width: 70px; /* Further increased size */
+  height: 70px; /* Further increased size */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2127,14 +2136,15 @@ body {
 
 .edit-avatar-button svg {
   stroke: var(--icon-color);
-  width: 24px;
-  height: 24px;
+  width: 50px; /* Further increased size */
+  height: 50px; /* Further increased size */
   transition: stroke 0.2s ease;
 }
 
 .edit-avatar-button:hover {
   background-color: var(--primary-color);
   border-color: var(--primary-color);
+  transform: scale(1.1);
 }
 
 .edit-avatar-button:hover svg {
@@ -2146,6 +2156,9 @@ body {
   text-align: center;
   min-width: 0;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .profile-name {
@@ -2179,12 +2192,12 @@ body {
   border-radius: 0.75rem;
   background-color: var(--bg-secondary);
   box-shadow: inset 0 1px 3px var(--shadow-color);
-  width: 100%;
-  margin-top: 1.5rem;
-  flex-wrap: wrap;
-  /* Ensure it wraps on smaller screens */
+  width: 90%;
+  max-width: 600px;
+  margin: 1.5rem auto 0 auto;
+  flex-wrap: nowrap;
   gap: 1rem;
-  /* Added gap */
+  overflow-x: hidden;
 }
 
 .stat-item {
@@ -2192,10 +2205,9 @@ body {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  flex-basis: 25%;
-  /* Give each item a quarter of the width on larger screens */
-  min-width: 80px;
-  /* Minimum width to prevent crushing on small screens */
+  flex: 1;
+  padding: 0 1rem;
+  min-width: 0;
   position: relative;
 }
 
@@ -2211,7 +2223,7 @@ body {
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   color: var(--primary-color);
   white-space: nowrap;
@@ -2219,14 +2231,14 @@ body {
 }
 
 .stat-label {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 /* Profile Settings Modal */
@@ -2658,9 +2670,9 @@ body.modal-open {
   .profile-stats {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 1rem;
+    gap: 0.5rem;
     border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
+    padding: 1rem 0.5rem;
     margin-top: 1rem;
   }
 
@@ -2669,14 +2681,29 @@ body.modal-open {
     flex-basis: 50%;
   }
 
-  .stat-item:nth-child(2)::after,
-  .stat-item:nth-child(4)::after {
+  .stat-item:nth-child(2)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-item:nth-child(4)::after,
+  .stat-item:nth-child(2)::after {
     content: none;
   }
 
-  .stat-item:nth-child(1)::after,
-  .stat-item:nth-child(3)::after {
-    content: '';
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    text-transform: capitalize;
   }
 
   .profile-name {
@@ -2687,57 +2714,17 @@ body.modal-open {
     margin-bottom: 1.5rem;
   }
 
+  /* Increased size of the edit circle and icon for mobile */
   .edit-avatar-button {
-    width: 32px;
-    height: 32px;
+    width: 65px; /* Further increased size */
+    height: 65px; /* Further increased size */
     bottom: 5px;
     right: 5px;
   }
+
   .edit-avatar-button svg {
-    width: 18px;
-    height: 18px;
-  }
-
-
-  /* FIX: Mobile comment section layout */
-  .comment-section {
-    margin-bottom: 1rem;
-    padding: 1rem;
-    margin-top: 1rem;
-  }
-
-  .comment-input-form {
-    flex-wrap: wrap;
-    position: relative;
-    padding-bottom: 4rem;
-  }
-
-  .comment-input {
-    width: 100%;
-    margin-bottom: 0.5rem;
-    border-radius: 0.5rem;
-    padding-right: 60px;
-  }
-
-  .comment-submit-btn {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    margin-bottom: 0.5rem;
-    margin-right: 0.5rem;
-  }
-
-  .main-content {
-    padding-bottom: 5rem;
-  }
-
-  .comments-list {
-    max-height: none;
-    overflow-y: visible;
-  }
-
-  .comment-item {
-    word-break: break-word;
+    width: 55px; /* Further increased size */
+    height: 55px; /* Further increased size */
   }
 }
 
@@ -2807,31 +2794,95 @@ body.modal-open {
   }
 
   .profile-avatar-container {
+    position: relative;
     width: 160px;
     height: 160px;
-    margin-bottom: 1rem;
+    flex-shrink: 0;
+    border-radius: 50%;
     overflow: visible;
+    border: 4px solid var(--border-color);
+    margin-bottom: 1rem;
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  /* Increased size of the edit circle and icon for desktop */
+  .edit-avatar-button {
+    width: 70px; /* Further increased size */
+    height: 70px; /* Further increased size */
+    bottom: 0;
+    right: 0;
+  }
+
+  .edit-avatar-button svg {
+    stroke: var(--icon-color);
+    width: 50px; /* Further increased size */
+    height: 50px; /* Further increased size */
+    transition: stroke 0.2s ease;
+  }
+
+  .edit-avatar-button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+  }
+
+  .edit-avatar-button:hover svg {
+    stroke: var(--text-on-primary);
   }
 
   .profile-info {
+    flex-grow: 1;
     text-align: center;
-    flex-grow: 0;
+    min-width: 0;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
+  .profile-name {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0.5rem 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .profile-phone {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 1.5rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  /* Updated Profile Stats Styling */
   .profile-stats {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 0.75rem;
     background-color: var(--bg-secondary);
     box-shadow: inset 0 1px 3px var(--shadow-color);
-    width: 100%;
-    margin-top: 1.5rem;
+    width: 90%;
+    max-width: 600px;
+    margin: 1.5rem auto 0 auto;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: hidden;
   }
 
   .stat-item {
@@ -2857,14 +2908,15 @@ body.modal-open {
   }
 
   .stat-number {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     color: var(--primary-color);
     white-space: nowrap;
+    transition: color 0.2s ease;
   }
 
   .stat-label {
-    font-size: 0.95rem;
+    font-size: 1.1rem;
     color: var(--text-secondary);
     text-transform: uppercase;
     font-weight: 500;
@@ -2882,67 +2934,34 @@ body.modal-open {
   .profile-phone {
     margin-bottom: 1.5rem;
   }
-
-  .edit-avatar-button {
-    width: 44px;
-    height: 44px;
-    bottom: 5px;
-    right: 5px;
-  }
-
-  .edit-avatar-button svg {
-    width: 24px;
-    height: 24px;
-  }
 }
 
 /* ===== SCROLLBAR STYLES ===== */
-/* Custom scrollbar for main content area and other scrollable sections */
+/* Hide scrollbars for all relevant containers */
 .main-content,
 .comments-list,
 .modal-form-container,
 .qr-code-scroll-container,
-.profile-settings-modal {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+.profile-settings-modal,
+.left-sidebar,
+.right-sidebar {
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .main-content::-webkit-scrollbar,
 .comments-list::-webkit-scrollbar,
 .modal-form-container::-webkit-scrollbar,
 .qr-code-scroll-container::-webkit-scrollbar,
-.profile-settings-modal::-webkit-scrollbar {
-  width: 10px;
-  background-color: transparent;
+.profile-settings-modal::-webkit-scrollbar,
+.left-sidebar::-webkit-scrollbar,
+.right-sidebar::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
-.main-content::-webkit-scrollbar-track,
-.comments-list::-webkit-scrollbar-track,
-.modal-form-container::-webkit-scrollbar-track,
-.qr-code-scroll-container::-webkit-scrollbar-track,
-.profile-settings-modal::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-  border-radius: 5px;
-  margin: 8px 0;
-}
-
-.main-content::-webkit-scrollbar-thumb,
-.comments-list::-webkit-scrollbar-thumb,
-.modal-form-container::-webkit-scrollbar-thumb,
-.qr-code-scroll-container::-webkit-scrollbar-thumb,
-.profile-settings-modal::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: 5px;
-  border: 2px solid var(--scrollbar-border);
-}
-
-.main-content::-webkit-scrollbar-thumb:hover,
-.comments-list::-webkit-scrollbar-thumb:hover,
-.modal-form-container::-webkit-scrollbar-thumb:hover,
-.qr-code-scroll-container::-webkit-scrollbar-thumb:hover,
-.profile-settings-modal::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
 
 /* Registration Modal Specific Styles */
 .registration-modal {
@@ -3073,6 +3092,9 @@ body.modal-open {
 
 .report-form {
   padding: 0 20px;
+  height: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
 }
 
 .modal-reason-heading {
@@ -3090,7 +3112,7 @@ body.modal-open {
 
 .report-option {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   cursor: pointer;
   padding: 8px;
@@ -3104,6 +3126,15 @@ body.modal-open {
 
 .report-option input[type="radio"] {
   margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* Make the icon bigger inside the report option */
+.report-option svg {
+  width: 24px;
+  height: 24px;
+  color: var(--icon-color);
+  flex-shrink: 0;
 }
 
 .modal-actions {
@@ -3111,4 +3142,30 @@ body.modal-open {
   justify-content: flex-end;
   gap: 10px;
   padding: 15px 0;
+}
+
+/* Custom scrollbar for report-form */
+.report-form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.report-form::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 10px;
+}
+
+.report-form::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 10px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+.report-form::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Fallback for Firefox */
+.report-form {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
 }
