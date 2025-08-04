@@ -662,7 +662,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         duration: postToEdit.duration || '',
         ticketsNeeded: postToEdit.ticketsNeeded || '',
         venueAddress: postToEdit.venueAddress || '',
-        registrationLink: postTo-edit.registrationLink || '',
+        registrationLink: postToEdit.registrationLink || '',
         registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
         enableRegistrationForm: postToEdit.enableRegistrationForm || false,
         registrationFields: postToEdit.registrationFields || '',
@@ -2654,8 +2654,9 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-  // This variable now only checks for overlay modals, not content views
-  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || !!openCommentPostId || showProfileSettingsModal;
+  // FIX: Removed `!!openCommentPostId` and the content view states from this check.
+  // This variable now only checks for true overlay modals that should block the UI.
+  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal;
 
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('currentUser'));
