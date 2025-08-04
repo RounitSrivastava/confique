@@ -2152,7 +2152,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
 };
 
 // Confessions Right Sidebar Component
-const ConfessionsRightSidebar = ({ posts }) => {
+const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
   const recentConfessions = [...posts]
     .filter(post => post.type === 'confession')
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -2165,7 +2165,11 @@ const ConfessionsRightSidebar = ({ posts }) => {
       <div className="widget-content">
         <div className="widget-list">
           {recentConfessions.map(post => (
-            <div key={post.id} className="recent-confession-item">
+            <div 
+              key={post.id} 
+              className="recent-confession-item clickable"
+              onClick={() => onOpenPostDetail(post)}
+            >
               <p className="widget-item-title">{post.title}</p>
               <p className="confession-preview">
                 {post.content.substring(0, 60)}...
@@ -3124,7 +3128,7 @@ const App = () => {
         registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
-      rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
+      rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
     },
     {
       id: 'notifications',
@@ -3242,7 +3246,7 @@ const App = () => {
       myCalendarEvents={myCalendarEvents}
       onOpenEventDetail={handleOpenEventDetail}
     />,
-    confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
+    confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
     notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
     profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
   };
