@@ -1361,7 +1361,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component
-const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount, isRegistered, onReportPost }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount, onReportPost }) => {
   const overlayRef = useRef(null);
   const [showFullContent, setShowFullContent] = useState(false);
   const contentRef = useRef(null);
@@ -1547,7 +1547,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
               <MessageIcon size={20} />
               <span>{post.commentData ? post.commentData.length : post.comments}</span>
             </button>
-            {post.type === 'event' && (
+            {post.type === 'event' && isUserPost && (
               <div className="post-stat">
                 <Ticket size={20} />
                 <span>{registrationCount || 0}</span>
@@ -1620,7 +1620,6 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                 currentUser={currentUser}
                 isProfilePage={false}
                 registrationCount={registrations[post.id]}
-                isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
                 onReportPost={onReportPost}
               />
             ))}
@@ -1645,7 +1644,6 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
-            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
             onReportPost={onReportPost}
           />
         ))}
@@ -1676,7 +1674,6 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
-            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
             onReportPost={onReportPost}
           />
         ))}
@@ -1707,7 +1704,6 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             currentUser={currentUser}
             isProfilePage={false}
             registrationCount={registrations[post.id]}
-            isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
             onReportPost={onReportPost}
           />
         ))}
@@ -1978,7 +1974,6 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               onEditPost={onEditPost}
               isProfilePage={true}
               registrationCount={registrations[post.id]}
-              isRegistered={registeredUsers[post.id]?.has(currentUser?.phone)}
               onReportPost={onReportPost}
             />
           ))}
@@ -3009,7 +3004,6 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
-        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <HomeRightSidebar posts={posts} />,
@@ -3030,7 +3024,6 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
-        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <EventsRightSidebar
@@ -3055,7 +3048,6 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
-        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
@@ -3110,7 +3102,6 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
-      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     events: () => <EventsComponent
@@ -3125,7 +3116,6 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
-      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     confessions: () => <ConfessionsComponent
@@ -3140,7 +3130,6 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
-      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     notifications: () => <NotificationsComponent
@@ -3164,7 +3153,6 @@ const App = () => {
       onDeletePost={handleDeletePost}
       onEditPost={handleEditPost}
       registrations={registrations}
-      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
       onEditProfile={() => setShowProfileSettingsModal(true)}
     />,
@@ -3289,7 +3277,6 @@ const App = () => {
                 onRequireLogin={() => setShowLoginModal(true)}
                 onAddToCalendar={handleAddToCalendar}
                 onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                isRegistered={registeredUsers[selectedEvent.id]?.has(currentUser?.phone)}
               />
             ) : (
               <CurrentComponent
@@ -3306,8 +3293,6 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 registrations={registrations}
-                onRegister={handleRegisterEvent}
-                registeredUsers={registeredUsers}
               />
             )}
           </div>
