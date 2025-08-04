@@ -39,6 +39,46 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 
+// Utility function to compress image
+const compressImage = (file, callback) => {
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const maxWidth = 800;
+      const maxHeight = 800;
+
+      let width = img.width;
+      let height = img.height;
+
+      if (width > height) {
+        if (width > maxWidth) {
+          height = height * (maxWidth / width);
+          width = maxWidth;
+        }
+      } else {
+        if (height > maxHeight) {
+          width = width * (maxHeight / height);
+          height = maxHeight;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const quality = 0.8;
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+      callback(compressedDataUrl);
+    };
+    img.src = event.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -304,6 +344,8 @@ const CommentItem = ({ comment }) => (
         src={comment.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
         alt={`${comment.author}'s avatar`}
         className="comment-avatar-img"
+        loading="lazy"
+        decoding="async"
       />
     </div>
     <div className="comment-content-wrapper">
@@ -319,13 +361,13 @@ const CommentItem = ({ comment }) => (
 );
 
 // Comment Section Component
-const CommentSection = ({ comments, onAddComment, onCloseComments }) => {
+const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }) => {
   const [newCommentText, setNewCommentText] = useState('');
 
   const handleAddCommentSubmit = (e) => {
     e.preventDefault();
     if (newCommentText.trim()) {
-      onAddComment(newCommentText);
+      onAddComment(newCommentText, currentUser);
       setNewCommentText('');
     }
   };
@@ -447,6 +489,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                   src={event.paymentQRCode}
                   alt="Payment QR Code"
                   className="payment-qr"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
               <div className="form-group">
@@ -679,6 +723,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
       content: formData.content,
       images: imagePreviews,
       author: formData.type === 'event' ? (currentUser.name || 'Anonymous') : (formData.author || 'Anonymous'),
+      authorAvatar: formData.type === 'event' ? (currentUser?.avatar || null) : (currentUser?.avatar || null),
       userId: postToEdit ? postToEdit.userId : currentUser.phone,
       ...(formData.type === 'event' && {
         location: formData.location,
@@ -721,14 +766,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const newPreviews = [];
 
     filesToProcess.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        newPreviews.push(e.target.result);
+      compressImage(file, (compressedDataUrl) => {
+        newPreviews.push(compressedDataUrl);
         if (newPreviews.length === filesToProcess.length) {
           setImagePreviews(prev => [...prev, ...newPreviews]);
         }
-      };
-      reader.readAsDataURL(file);
+      });
     });
   };
 
@@ -736,12 +779,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPaymentQRPreview(e.target.result);
-      setFormData(prev => ({ ...prev, paymentQRCode: e.target.result }));
-    };
-    reader.readAsDataURL(file);
+    compressImage(file, (compressedDataUrl) => {
+      setPaymentQRPreview(compressedDataUrl);
+      setFormData(prev => ({ ...prev, paymentQRCode: compressedDataUrl }));
+    });
     e.target.value = null;
   };
 
@@ -986,7 +1027,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                           <div className="image-upload-container">
                             {paymentQRPreview ? (
                               <div className="payment-qr-preview">
-                                <img src={paymentQRPreview} alt="Payment QR" />
+                                <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
                                 <button
                                   type="button"
                                   className="remove-image-btn"
@@ -1038,7 +1079,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                     <div className="image-upload-preview">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="image-preview-item">
-                          <img src={preview} alt={`Preview ${index + 1}`} />
+                          <img src={preview} alt={`Preview ${index + 1}`} loading="lazy" decoding="async" />
                           <button
                             type="button"
                             className="remove-image-btn"
@@ -1194,9 +1235,15 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       <div className="event-detail-page-container">
         <div className="event-detail-header">
           {event.images && event.images.length > 0 ? (
-            <img src={event.images[0]} alt={event.title} onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"} />
+            <img 
+              src={event.images[0]} 
+              alt={event.title} 
+              onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"} 
+              loading="lazy"
+              decoding="async"
+            />
           ) : (
-            <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" />
+            <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
           )}
           <div className="event-detail-header-overlay">
             <button onClick={onClose} className="event-detail-back-button">
@@ -1453,7 +1500,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
     <>
       <div className="post-header">
         <div className="post-avatar-container">
-          <img src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${post.author}'s avatar`} className="post-avatar" />
+          <img 
+            src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} 
+            alt={`${post.author}'s avatar`} 
+            className="post-avatar" 
+            loading="lazy"
+            decoding="async"
+          />
         </div>
         <div className="post-info">
           <h3 className="post-author">{post.author}</h3>
@@ -1517,7 +1570,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
         {post.images.length > 0 && (
           <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
             {post.images.map((image, index) => (
-              <img key={index} src={image} alt={`Post image ${index + 1}`} className="post-image" onError={handleImageError} />
+              <img 
+                key={index} 
+                src={image} 
+                alt={`Post image ${index + 1}`} 
+                className="post-image" 
+                onError={handleImageError} 
+                loading="lazy"
+                decoding="async"
+              />
             ))}
           </div>
         )}
@@ -1792,13 +1853,11 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         setAvatarError('Image size cannot exceed 2MB.');
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setCustomAvatar(e.target.result);
+      compressImage(file, (compressedDataUrl) => {
+        setCustomAvatar(compressedDataUrl);
         setSelectedAvatar(null);
         setAvatarError('');
-      };
-      reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -1827,7 +1886,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
           <div className="current-avatar-container">
             <h4 className="modal-subtitle">Current Profile Image</h4>
             <div className="current-avatar-preview">
-              <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt="Current Avatar" />
+              <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt="Current Avatar" loading="lazy" decoding="async" />
             </div>
           </div>
           <div className="avatar-options-container">
@@ -1843,7 +1902,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                     setAvatarError('');
                   }}
                 >
-                  <img src={av.src} alt={av.alt} />
+                  <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
                 </div>
               ))}
             </div>
@@ -1855,7 +1914,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
               <div className="custom-upload-container">
                 {customAvatar ? (
                   <div className="custom-avatar-preview">
-                    <img src={customAvatar} alt="Custom Avatar" />
+                    <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
                     <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
                       <X size={14} />
                     </button>
@@ -1893,7 +1952,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, registeredUsers, onReportPost, onEditProfile }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
   if (!currentUser) {
     return (
       <div>
@@ -1924,7 +1983,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
       <div className="profile-header">
         <div className="profile-avatar-container">
-          <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" />
+          <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
           <button className="edit-avatar-button" onClick={onEditProfile}>
             <Edit3 size={16} />
           </button>
@@ -2166,13 +2225,12 @@ const NotificationsRightSidebar = ({ onShowHelpModal }) => {
 };
 
 // Login Modal Component
-const LoginModal = ({ isOpen, onClose, onLogin, users, onSelectAvatar }) => {
+const LoginModal = ({ isOpen, onClose, onLogin, users }) => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '' });
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('phone');
   const [error, setError] = useState('');
   const [isNewUser, setIsNewUser] = useState(false);
-  const [showAvatarSelection, setShowAvatarSelection] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
   useEffect(() => {
@@ -2182,7 +2240,6 @@ const LoginModal = ({ isOpen, onClose, onLogin, users, onSelectAvatar }) => {
       setFormData({ name: '', email: '', phone: '' });
       setOtp('');
       setIsNewUser(false);
-      setShowAvatarSelection(false);
       setSelectedAvatar(null);
     }
   }, [isOpen]);
@@ -2349,11 +2406,11 @@ const LoginModal = ({ isOpen, onClose, onLogin, users, onSelectAvatar }) => {
                     <div className="predefined-avatars-grid">
                       {predefinedAvatars.map((av, index) => (
                           <div
-                              key={index}
-                              className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
-                              onClick={() => handleAvatarSelect(av.src)}
+                            key={index}
+                            className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                            onClick={() => handleAvatarSelect(av.src)}
                           >
-                              <img src={av.src} alt={av.alt} />
+                            <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
                           </div>
                       ))}
                     </div>
@@ -2396,7 +2453,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="avatar-wrapper">
-          <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" />
+          <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
         </div>
       </button>
 
@@ -2404,7 +2461,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         <div className="profile-dropdown-menu">
           <div className="profile-info">
             <div className="profile-avatar">
-              <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" />
+              <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
             </div>
             <div className="profile-details">
               <div className="profile-name-display">{user.name}</div>
@@ -2758,7 +2815,7 @@ const App = () => {
         commentData: [],
         userId: currentUser.phone,
         author: newPost.type === 'event' ? (currentUser.name || 'Anonymous') : (newPost.author || 'Anonymous'),
-        authorAvatar: newPost.type === 'event' ? (currentUser.avatar || null) : (null)
+        authorAvatar: newPost.type === 'event' ? (currentUser?.avatar || null) : (newPost.author === 'Anonymous' ? null : currentUser?.avatar || null)
       };
       setPosts(prev => [post, ...prev]);
 
@@ -2916,7 +2973,7 @@ const App = () => {
       });
     }
 
-    // Assign authorAvatar to existing posts for this user
+    // Correctly assign the new user's avatar to existing posts by this user
     setPosts(prevPosts =>
       prevPosts.map(post =>
         post.userId === user.phone ? { ...post, authorAvatar: user.avatar } : post
@@ -3004,6 +3061,7 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <HomeRightSidebar posts={posts} />,
@@ -3024,6 +3082,7 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <EventsRightSidebar
@@ -3048,6 +3107,7 @@ const App = () => {
         onAddToCalendar={handleAddToCalendar}
         currentUser={currentUser}
         registrations={registrations}
+        registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
       rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} />,
@@ -3102,6 +3162,7 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     events: () => <EventsComponent
@@ -3116,6 +3177,7 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     confessions: () => <ConfessionsComponent
@@ -3130,6 +3192,7 @@ const App = () => {
       onAddToCalendar={handleAddToCalendar}
       currentUser={currentUser}
       registrations={registrations}
+      registeredUsers={registeredUsers}
       onReportPost={handleOpenReportModal}
     />,
     notifications: () => <NotificationsComponent
@@ -3277,6 +3340,7 @@ const App = () => {
                 onRequireLogin={() => setShowLoginModal(true)}
                 onAddToCalendar={handleAddToCalendar}
                 onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                isRegistered={registeredUsers[selectedEvent.id]?.has(currentUser?.phone)}
               />
             ) : (
               <CurrentComponent
@@ -3293,6 +3357,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 registrations={registrations}
+                registeredUsers={registeredUsers}
               />
             )}
           </div>
