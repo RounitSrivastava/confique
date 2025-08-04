@@ -662,13 +662,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         duration: postToEdit.duration || '',
         ticketsNeeded: postToEdit.ticketsNeeded || '',
         venueAddress: postToEdit.venueAddress || '',
-        registrationLink: postToEdit.registrationLink || '',
+        registrationLink: postTo-edit.registrationLink || '',
         registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
         enableRegistrationForm: postToEdit.enableRegistrationForm || false,
         registrationFields: postToEdit.registrationFields || '',
         paymentMethod: postToEdit.paymentMethod || 'link',
         paymentLink: postToEdit.paymentLink || '',
-        paymentQRCode: postToEdit.paymentQRCode || ''
+        paymentQRCode: postToEdit.paymentQRCode
       });
       setImagePreviews(postToEdit.images || []);
       setPaymentQRPreview(postToEdit.paymentQRCode || '');
@@ -1235,10 +1235,10 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       <div className="event-detail-page-container">
         <div className="event-detail-header">
           {event.images && event.images.length > 0 ? (
-            <img 
-              src={event.images[0]} 
-              alt={event.title} 
-              onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"} 
+            <img
+              src={event.images[0]}
+              alt={event.title}
+              onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
               loading="lazy"
               decoding="async"
             />
@@ -1500,10 +1500,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
     <>
       <div className="post-header">
         <div className="post-avatar-container">
-          <img 
-            src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} 
-            alt={`${post.author}'s avatar`} 
-            className="post-avatar" 
+          <img
+            src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+            alt={`${post.author}'s avatar`}
+            className="post-avatar"
             loading="lazy"
             decoding="async"
           />
@@ -1570,12 +1570,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
         {post.images.length > 0 && (
           <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
             {post.images.map((image, index) => (
-              <img 
-                key={index} 
-                src={image} 
-                alt={`Post image ${index + 1}`} 
-                className="post-image" 
-                onError={handleImageError} 
+              <img
+                key={index}
+                src={image}
+                alt={`Post image ${index + 1}`}
+                className="post-image"
+                onError={handleImageError}
                 loading="lazy"
                 decoding="async"
               />
@@ -2050,7 +2050,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 };
 
 // Home Right Sidebar Component
-const HomeRightSidebar = ({ posts }) => {
+const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
   const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
   return (
     <div className="sidebar-widget">
@@ -2060,7 +2060,11 @@ const HomeRightSidebar = ({ posts }) => {
       <div className="widget-content">
         <div className="widget-list">
           {popularPosts.map(post => (
-            <div key={post.id} className="popular-post-item">
+            <div
+              key={post.id}
+              className="popular-post-item clickable"
+              onClick={() => onOpenPostDetail(post)}
+            >
               <p className="widget-item-title">{post.title}</p>
               <div className="popular-post-stats">
                 <span className="popular-stat">{post.likes} likes</span>
@@ -2632,6 +2636,7 @@ const App = () => {
   const [likedPosts, setLikedPosts] = useState(new Set());
   const [openCommentPostId, setOpenCommentPostId] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [myCalendarEvents, setMyCalendarEvents] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -2649,6 +2654,9 @@ const App = () => {
   const [users, setUsers] = useState([]);
   const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
+  // This variable now only checks for overlay modals, not content views
+  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || !!openCommentPostId || showProfileSettingsModal;
+
   useEffect(() => {
     const savedUser = JSON.parse(localStorage.getItem('currentUser'));
     if (savedUser) {
@@ -2662,8 +2670,6 @@ const App = () => {
 
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
-
-  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || !!openCommentPostId || !!selectedEvent || showProfileSettingsModal;
 
   useEffect(() => {
     if (hasOpenModal) {
@@ -2954,6 +2960,13 @@ const App = () => {
   const handleOpenEventDetail = (event) => {
     setSelectedEvent(event);
     setOpenCommentPostId(null);
+    setSelectedPost(null);
+  };
+
+  const handleOpenPostDetail = (post) => {
+    setSelectedPost(post);
+    setOpenCommentPostId(null);
+    setSelectedEvent(null);
   };
 
   const handleCloseEventDetail = () => {
@@ -3064,7 +3077,7 @@ const App = () => {
         registeredUsers={registeredUsers}
         onReportPost={handleOpenReportModal}
       />,
-      rightSidebar: () => <HomeRightSidebar posts={posts} />,
+      rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
     },
     {
       id: 'events',
@@ -3222,7 +3235,7 @@ const App = () => {
   };
 
   const sectionSidebars = {
-    home: () => <HomeRightSidebar posts={posts} />,
+    home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
     events: () => <EventsRightSidebar
       posts={posts.filter(p => p.type === 'event')}
       myCalendarEvents={myCalendarEvents}
@@ -3291,6 +3304,7 @@ const App = () => {
                     setActiveSection('profile');
                     setOpenCommentPostId(null);
                     setSelectedEvent(null);
+                    setSelectedPost(null);
                   }}
                 />
               ) : (
@@ -3320,6 +3334,7 @@ const App = () => {
                     setActiveSection(item.id);
                     setOpenCommentPostId(null);
                     setSelectedEvent(null);
+                    setSelectedPost(null);
                   }
                 }}
               >
@@ -3332,7 +3347,54 @@ const App = () => {
 
         <main className="main-content">
           <div className="content-padding">
-            {selectedEvent ? (
+            {/* Conditional rendering to show a single post at the top of the feed */}
+            {selectedPost ? (
+              <div className="single-post-and-feed">
+                <PostCard
+                  post={selectedPost}
+                  onLike={handleLikePost}
+                  onShare={handleShareClick}
+                  onAddComment={handleAddComment}
+                  isLikedByUser={likedPosts.has(selectedPost.id)}
+                  isCommentsOpen={openCommentPostId === selectedPost.id}
+                  setOpenCommentPostId={setOpenCommentPostId}
+                  onOpenEventDetail={handleOpenEventDetail}
+                  onAddToCalendar={handleAddToCalendar}
+                  currentUser={currentUser}
+                  onDeletePost={handleDeletePost}
+                  onEditPost={handleEditPost}
+                  isProfilePage={selectedPost.userId === currentUser?.phone}
+                  registrationCount={registrations[selectedPost.id]}
+                  onReportPost={handleOpenReportModal}
+                />
+                <hr className="section-divider" />
+                <h3 className="section-subtitle">More Posts</h3>
+                <div className="posts-container">
+                  {posts
+                    .filter(p => p.id !== selectedPost.id)
+                    .map(post => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        onLike={handleLikePost}
+                        onShare={handleShareClick}
+                        onAddComment={handleAddComment}
+                        isLikedByUser={likedPosts.has(post.id)}
+                        isCommentsOpen={openCommentPostId === post.id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={handleOpenEventDetail}
+                        onAddToCalendar={handleAddToCalendar}
+                        currentUser={currentUser}
+                        onDeletePost={handleDeletePost}
+                        onEditPost={handleEditPost}
+                        isProfilePage={post.userId === currentUser?.phone}
+                        registrationCount={registrations[post.id]}
+                        onReportPost={handleOpenReportModal}
+                      />
+                    ))}
+                </div>
+              </div>
+            ) : selectedEvent ? (
               <EventDetailPage
                 event={selectedEvent}
                 onClose={handleCloseEventDetail}
@@ -3358,12 +3420,14 @@ const App = () => {
                 onEditPost={handleEditPost}
                 registrations={registrations}
                 registeredUsers={registeredUsers}
+                onReportPost={handleOpenReportModal}
               />
             )}
           </div>
         </main>
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
+            {/* The sidebar is always rendered now unless a modal is open. */}
             {!hasOpenModal && (
               selectedEvent ? (
                 <EventDetailSidebar
@@ -3372,7 +3436,10 @@ const App = () => {
                   onOpenEventDetail={handleOpenEventDetail}
                 />
               ) : (
-                <CurrentRightSidebar posts={posts} />
+                <CurrentRightSidebar
+                  posts={posts}
+                  onOpenPostDetail={handleOpenPostDetail}
+                />
               )
             )}
           </div>

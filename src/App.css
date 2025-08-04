@@ -820,14 +820,18 @@ body {
 }
 
 .action-btn svg {
-  color: var(--icon-color);
+  color: var(--text-primary);
+  /* Changed from var(--primary-color) */
   transition: color 0.2s ease, fill 0.2s ease;
   min-width: 20px;
+  /* Decreased from 24px */
   min-height: 20px;
+  /* Decreased from 24px */
 }
 
 .action-btn:hover svg {
-  color: #3b82f6;
+  color: var(--text-secondary);
+  /* Changed from #2563eb */
 }
 
 /* Event specific action buttons above the main post actions */
@@ -1144,7 +1148,7 @@ body {
   border-radius: 6px;
   text-decoration: none;
   font-weight: 500;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s;
 }
 
 .payment-link-button:hover {
@@ -1261,7 +1265,8 @@ body {
 .comment-input-form {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  align-items: center;
 }
 
 .comment-input {
@@ -1273,6 +1278,7 @@ body {
   background-color: var(--input-bg);
   color: var(--text-primary);
   transition: all 0.2s ease-in-out;
+  height: 44px; /* Set a fixed height */
 }
 
 .comment-input:focus {
@@ -1286,14 +1292,16 @@ body {
   color: var(--text-on-primary);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
   flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .comment-submit-btn:hover {
@@ -1301,9 +1309,14 @@ body {
   transform: scale(1.1);
 }
 
+.comment-submit-btn:active {
+  box-shadow: none;
+}
+
 .comment-submit-btn svg {
-  width: 20px;
-  height: 20px;
+  width: 44px; /* Further increased for better visibility */
+  height: 44px; /* Further increased for better visibility */
+  color: var(--text-on-primary);
 }
 
 .comments-list {
@@ -1317,7 +1330,7 @@ body {
 
 .comment-item {
   display: flex;
-  align-items: flex-start; /* FIX: Changed to flex-start for top alignment */
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   background-color: var(--card-bg);
@@ -1369,7 +1382,7 @@ body {
   color: var(--text-primary);
   margin: 0;
   line-height: 1.5;
-  word-break: break-word; /* FIX: Added to prevent long words from overflowing */
+  word-break: break-word;
 }
 
 .no-comments-message {
@@ -2119,8 +2132,10 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  width: 70px; /* Further increased size */
-  height: 70px; /* Further increased size */
+  width: 70px;
+  /* Further increased size */
+  height: 70px;
+  /* Further increased size */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2132,8 +2147,10 @@ body {
 
 .edit-avatar-button svg {
   stroke: var(--icon-color);
-  width: 50px; /* Further increased size */
-  height: 50px; /* Further increased size */
+  width: 50px;
+  /* Further increased size */
+  height: 50px;
+  /* Further increased size */
   transition: stroke 0.2s ease;
 }
 
