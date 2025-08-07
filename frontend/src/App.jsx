@@ -37,6 +37,7 @@ import './App.css';
 // Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
+import API_URL from './api';
 
 
 // Utility function to compress image
@@ -101,8 +102,6 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
-
-const API_URL = 'http://localhost:5000/api';
 
 // Custom Alert/Confirm Modal component
 const CustomMessageModal = ({ isOpen, onClose, title, message, showConfirm = false, confirmText = 'Confirm' }) => {
