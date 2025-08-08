@@ -73,21 +73,31 @@ router.post('/login', asyncHandler(async (req, res) => {
 
 // Google OAuth routes
 // Route to initiate Google OAuth login
+console.log('Callback URL:', `${process.env.BACKEND_URL}/api/auth/google/callback`);
+
 router.get('/google', (req, res, next) => {
+  const callbackURL = `${process.env.BACKEND_URL}/api/auth/google/callback`;
+  console.log('Initiating Google OAuth with callback:', callbackURL);
+  
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     session: false,
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`
+    callbackURL // Make sure this exactly matches what's in Google Console
   })(req, res, next);
 });
 
 // Callback route after Google authentication
 router.get('/google/callback', 
-  passport.authenticate('google', {
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_failed`,
-    session: false,
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`
-  }),
+  (req, res, next) => {
+    const callbackURL = `${process.env.BACKEND_URL}/api/auth/google/callback`;
+    console.log('Processing callback at:', callbackURL);
+    
+    passport.authenticate('google', {
+      failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_failed`,
+      session: false,
+      callbackURL // Same exact URL as above
+    })(req, res, next);
+  },
   (req, res) => {
     try {
       if (!req.user) {
