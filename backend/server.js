@@ -27,16 +27,21 @@ mongoose.connect(process.env.MONGO_URI)
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: 'https://confique.vercel.app', // Your frontend URL (Vite default)
-  credentials: true // Allow cookies/sessions to be sent
+  origin: process.env.FRONTEND_URL, // Use environment variable instead of hardcoded URL
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow methods
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Session middleware (required for Passport)
+// Session middleware configuration
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false } // Set to true if using HTTPS in production
+  saveUninitialized: false,  // Changed to false for better security
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // Only use secure in production
+    sameSite: 'lax'  // Added for security
+  }
 }));
 
 // Initialize Passport
