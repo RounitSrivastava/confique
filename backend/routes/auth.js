@@ -86,7 +86,6 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback', 
   (req, res, next) => {
     const callbackURL = `${process.env.BACKEND_URL}/api/auth/google/callback`;
-    console.log('OAuth Flow - Received callback at:', req.url);
     console.log('OAuth Flow - Using callback URL:', callbackURL);
     console.log('Frontend URL for redirect:', process.env.FRONTEND_URL);
     
@@ -102,6 +101,8 @@ router.get('/google/callback',
         return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_user`);
       }
 
+      // Ensure frontend URL is properly constructed
+      const baseUrl = process.env.FRONTEND_URL.replace(/\/$/, ''); // Remove trailing slash if present
       const token = generateTokenForGoogleUser(req.user);
       const queryParams = new URLSearchParams({
         token,
@@ -109,10 +110,13 @@ router.get('/google/callback',
         email: req.user.email,
         avatar: req.user.avatar || '',
         isAdmin: req.user.isAdmin,
-        _id: req.user._id
+        _id: req.user._id,
+        redirectFrom: 'google'  // Add this to help frontend identify the source
       }).toString();
 
-      res.redirect(`${process.env.FRONTEND_URL}?${queryParams}`);
+      const redirectUrl = `${baseUrl}/?${queryParams}`;
+      console.log('Redirecting to:', redirectUrl);
+      res.redirect(redirectUrl);
     } catch (error) {
       console.error('Google auth callback error:', error);
       res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
