@@ -41,7 +41,7 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 // Define your API URL. T
-const API_URL = 'http://localhost:5000/api'; // Replace with your actual backend API URL
+const API_URL = 'https://confique.onrender.com/api'; // Replace with your actual backend API URL
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
