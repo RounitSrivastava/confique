@@ -1,9 +1,11 @@
+require('dotenv').config();
+
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
+const User = require('../models/User');  // Fix import
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
-const { passport, generateTokenForGoogleUser } = require('../config/passport-setup'); // New import
+const { passport, generateTokenForGoogleUser } = require('../config/passport-setup');
 
 const router = express.Router();
 
@@ -65,22 +67,48 @@ router.post('/login', asyncHandler(async (req, res) => {
 
 // Google OAuth routes
 // Route to initiate Google OAuth login
-router.get('/google', passport.authenticate('google', {
-  scope: ['profile', 'email'] // Request profile and email access
-}));
-
-// Callback route after Google authentication
-router.get('/google/callback', passport.authenticate('google', {
-  failureRedirect: 'http://localhost:5173/login?error=google_failed', // Redirect on failure
-  session: true // Passport uses sessions
-}), (req, res) => {
-  // Successful authentication, generate JWT and redirect to frontend
-  const token = generateTokenForGoogleUser(req.user);
-  // Redirect to frontend with token in URL (or set as cookie)
-  // For simplicity, redirecting with token in URL hash or query for frontend to pick up
-  res.redirect(`http://localhost:5173/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(req.user.avatar || '')}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
+router.get('/google', (req, res, next) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(500).json({ message: 'Google OAuth configuration missing' });
+  }
+  
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,  // Changed to false since we're using JWT
+    callbackURL: 'https://confique.onrender.com/api/auth/google/callback'
+  })(req, res, next);
 });
 
+// Callback route after Google authentication
+router.get('/google/callback', 
+  passport.authenticate('google', {
+    failureRedirect: 'http://localhost:5173/login?error=google_failed',
+    session: false,  // Changed to false
+    callbackURL: 'https://confique.onrender.com/api/auth/google/callback'
+  }),
+  (req, res) => {
+    try {
+      if (!req.user) {
+        return res.redirect('http://localhost:5173/login?error=no_user');
+      }
+
+      const token = generateTokenForGoogleUser(req.user);
+      const queryParams = new URLSearchParams({
+        token,
+        name: req.user.name,
+        email: req.user.email,
+        avatar: req.user.avatar || '',
+        isAdmin: req.user.isAdmin,
+        _id: req.user._id
+      }).toString();
+
+      res.redirect(`http://localhost:5173/?${queryParams}`);
+    } catch (error) {
+      console.error('Google auth callback error:', error);
+      res.redirect('http://localhost:5173/login?error=auth_failed');
+    }
+  }
+);
 
 // Update user profile (for avatar)
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
@@ -103,4 +131,4 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
   }
 }));
 
-module.exports = router;
+module.exports = router;  // Change to CommonJS export

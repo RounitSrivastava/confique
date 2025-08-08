@@ -3,17 +3,44 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, sparse: true }, // Make password optional for Google users
-  avatar: { type: String, default: null },
-  isAdmin: { type: Boolean, default: false },
-  googleId: { type: String, unique: true, sparse: true }, // New field for Google ID
+  email: { 
+    type: String, 
+    required: true, 
+    unique: true,
+    sparse: true 
+  },
+  password: { 
+    type: String, 
+    sparse: true 
+  },
+  phone: { 
+    type: String, 
+    sparse: true,
+    default: null 
+  },
+  avatar: { 
+    type: String, 
+    default: null 
+  },
+  isAdmin: { 
+    type: Boolean, 
+    default: false 
+  },
+  googleId: { 
+    type: String, 
+    unique: true, 
+    sparse: true 
+  },
   registrations: [{
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
     eventName: String,
     registeredAt: { type: Date, default: Date.now },
   }],
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  // Add collation for case-insensitive unique indexes
+  collation: { locale: 'en', strength: 2 }
+});
 
 // Pre-save hook for password hashing (only if password is provided/modified)
 userSchema.pre('save', async function(next) {

@@ -6,7 +6,7 @@ const cloudinary = require('cloudinary').v2;
 const session = require('express-session'); // New
 const { passport } = require('./config/passport-setup'); // New
 
-const authRoutes = require('./routes/auth');
+const authRoutes = require('./routes/auth').default;
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
 
