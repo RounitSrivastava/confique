@@ -73,29 +73,28 @@ router.post('/login', asyncHandler(async (req, res) => {
 
 // Google OAuth routes
 // Route to initiate Google OAuth login
-console.log('Callback URL:', `${process.env.BACKEND_URL}/api/auth/google/callback`);
-
 router.get('/google', (req, res, next) => {
-  const callbackURL = `${process.env.BACKEND_URL}/api/auth/google/callback`;
-  console.log('Initiating Google OAuth with callback:', callbackURL);
+  const callbackURL = 'https://confique.onrender.com/api/auth/google/callback';
+  console.log('OAuth Flow - Initiating with callback:', callbackURL);
   
   passport.authenticate('google', {
     scope: ['profile', 'email'],
     session: false,
-    callbackURL // Make sure this exactly matches what's in Google Console
+    callbackURL
   })(req, res, next);
 });
 
 // Callback route after Google authentication
 router.get('/google/callback', 
   (req, res, next) => {
-    const callbackURL = `${process.env.BACKEND_URL}/api/auth/google/callback`;
-    console.log('Processing callback at:', callbackURL);
+    const callbackURL = 'https://confique.onrender.com/api/auth/google/callback';
+    console.log('OAuth Flow - Received callback at:', req.url);
+    console.log('OAuth Flow - Using callback URL:', callbackURL);
     
     passport.authenticate('google', {
       failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_failed`,
       session: false,
-      callbackURL // Same exact URL as above
+      callbackURL
     })(req, res, next);
   },
   (req, res) => {
