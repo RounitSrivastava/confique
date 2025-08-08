@@ -1,5 +1,11 @@
 require('dotenv').config();
 
+// Add validation for required environment variables
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.FRONTEND_URL || !process.env.BACKEND_URL) {
+  console.error('Missing required environment variables');
+  process.exit(1);
+}
+
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');  // Fix import
@@ -68,28 +74,24 @@ router.post('/login', asyncHandler(async (req, res) => {
 // Google OAuth routes
 // Route to initiate Google OAuth login
 router.get('/google', (req, res, next) => {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return res.status(500).json({ message: 'Google OAuth configuration missing' });
-  }
-  
   passport.authenticate('google', {
     scope: ['profile', 'email'],
-    session: false,  // Changed to false since we're using JWT
-    callbackURL: 'https://confique.onrender.com/api/auth/google/callback'
+    session: false,
+    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`
   })(req, res, next);
 });
 
 // Callback route after Google authentication
 router.get('/google/callback', 
   passport.authenticate('google', {
-    failureRedirect: 'http://localhost:5173/login?error=google_failed',
-    session: false,  // Changed to false
-    callbackURL: 'https://confique.onrender.com/api/auth/google/callback'
+    failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_failed`,
+    session: false,
+    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`
   }),
   (req, res) => {
     try {
       if (!req.user) {
-        return res.redirect('http://localhost:5173/login?error=no_user');
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_user`);
       }
 
       const token = generateTokenForGoogleUser(req.user);
@@ -102,10 +104,10 @@ router.get('/google/callback',
         _id: req.user._id
       }).toString();
 
-      res.redirect(`http://localhost:5173/?${queryParams}`);
+      res.redirect(`${process.env.FRONTEND_URL}/?${queryParams}`);
     } catch (error) {
       console.error('Google auth callback error:', error);
-      res.redirect('http://localhost:5173/login?error=auth_failed');
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
   }
 );
