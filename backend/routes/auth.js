@@ -1,4 +1,5 @@
 require('dotenv').config();
+console.log('Server file is being executed!'); // Add this line
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
