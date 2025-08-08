@@ -1,14 +1,20 @@
 require('dotenv').config();
+console.log('Server file is being executed!'); // Add this line
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
-const session = require('express-session'); // New
-const { passport } = require('./config/passport-setup'); // New
+const session = require('express-session');
+const { passport } = require('./config/passport-setup');
+const path = require('path'); // Added for static file serving if needed
 
-const authRoutes = require('./routes/auth').default;
+// Correct the import statement for authRoutes to fix the TypeError
+const authRoutes = require('./routes/auth'); 
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
+
+// Add the notifications route to handle the API endpoint
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -27,9 +33,9 @@ mongoose.connect(process.env.MONGO_URI)
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: process.env.FRONTEND_URL, // Use environment variable instead of hardcoded URL
+  origin: [process.env.FRONTEND_URL, 'http://localhost:5173'],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Explicitly allow methods
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -37,24 +43,22 @@ app.use(cors({
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false,  // Changed to false for better security
+  saveUninitialized: false,
   cookie: { 
-    secure: process.env.NODE_ENV === 'production', // Only use secure in production
-    sameSite: 'lax'  // Added for security
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
   }
 }));
 
 // Initialize Passport
 app.use(passport.initialize());
-app.use(passport.session()); // Persistent login sessions
-
-// Serve static images from the 'uploads' folder (if still needed, though Cloudinary handles main images)
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Uncomment if you have other local uploads
+app.use(passport.session());
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationsRoutes); // New route for notifications
 
 const PORT = process.env.PORT || 5000;
 
