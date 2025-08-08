@@ -32,15 +32,18 @@ import {
 } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import './App.css';
+import './App.css'; // Assuming you have an App.css for styling
 
 // Import predefined avatars
+// NOTE: In a real application, these would ideally be served from a static asset host or backend.
+// For demonstration, these are treated as direct imports.
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
-import API_URL from './api';
 
+// Define your API URL. T
+const API_URL = 'http://localhost:5000/api'; // Replace with your actual backend API URL
 
-// Utility function to compress image
+// Utility function to compress image files before upload
 const compressImage = (file, callback) => {
   const reader = new FileReader();
   reader.onload = (event) => {
@@ -48,12 +51,13 @@ const compressImage = (file, callback) => {
     img.onload = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const maxWidth = 800;
-      const maxHeight = 800;
+      const maxWidth = 800; // Max width for the image
+      const maxHeight = 800; // Max height for the image
 
       let width = img.width;
       let height = img.height;
 
+      // Calculate new dimensions to fit within maxWidth/maxHeight while maintaining aspect ratio
       if (width > height) {
         if (width > maxWidth) {
           height = height * (maxWidth / width);
@@ -69,57 +73,61 @@ const compressImage = (file, callback) => {
       canvas.width = width;
       canvas.height = height;
 
+      // Draw image to canvas and compress
       ctx.drawImage(img, 0, 0, width, height);
 
-      const quality = 0.8;
+      const quality = 0.8; // JPEG compression quality (0 to 1)
       const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-      callback(compressedDataUrl);
+      callback(compressedDataUrl); // Call callback with compressed data URL
     };
-    img.src = event.target.result;
+    img.src = event.target.result; // Load image from file reader result
   };
-  reader.readAsDataURL(file);
+  reader.readAsDataURL(file); // Read file as data URL
 };
 
-// Error Boundary Component
+// Error Boundary Component for robust error handling in React
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
   }
 
+  // Statics method to update state when an error is caught
   static getDerivedStateFromError(error) {
     return { hasError: true };
   }
 
+  // Lifecycle method to catch error information
   componentDidCatch(error, errorInfo) {
     console.error("Error caught by ErrorBoundary:", error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
+      // Fallback UI when an error occurs
       return <div className="error-fallback">Something went wrong. Please try again.</div>;
     }
-    return this.props.children;
+    return this.props.children; // Render children if no error
   }
 }
 
-// Custom Alert/Confirm Modal component
+// Custom Alert/Confirm Modal component - replaces native alert/confirm
 const CustomMessageModal = ({ isOpen, onClose, title, message, showConfirm = false, confirmText = 'Confirm' }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null; // Don't render if not open
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content small-modal">
+    <div className="modal-overlay"> {/* Overlay to dim background */}
+      <div className="modal-content small-modal"> {/* Modal content container */}
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
           <button className="modal-close" onClick={onClose}>
-            <X size={24} />
+            <X size={24} /> {/* Close icon */}
           </button>
         </div>
         <div className="modal-body">
           <p className="modal-message">{message}</p>
         </div>
-        {showConfirm && (
+        {showConfirm && ( // Conditionally render confirm buttons
           <div className="modal-actions">
             <button className="btn-secondary" onClick={onClose}>Cancel</button>
             <button className="btn-primary" onClick={onClose}>
@@ -160,24 +168,27 @@ const HelpAndSupportModal = ({ isOpen, onClose }) => {
 const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
   const [reason, setReason] = useState('');
   const [reportSuccess, setReportSuccess] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false); // State for custom alert
 
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setReason('');
       setReportSuccess(false);
+      setShowErrorAlert(false);
     }
   }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (reason) {
-      await onReport(post.id, reason);
+      await onReport(post._id, reason); // Use post._id
       setReportSuccess(true);
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 1500); // Close after 1.5 seconds on success
     } else {
-      alert('Please select a reason for reporting.');
+      setShowErrorAlert(true); // Show custom alert if no reason
     }
   };
 
@@ -201,6 +212,7 @@ const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
             <div className="form-group">
               <h4 className="modal-reason-heading">Why are you reporting this post?</h4>
               <div className="report-options">
+                {/* Radio buttons for report reasons */}
                 <label className="report-option">
                   <input
                     type="radio"
@@ -254,14 +266,21 @@ const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
           </form>
         )}
       </div>
+      <CustomMessageModal
+        isOpen={showErrorAlert}
+        onClose={() => setShowErrorAlert(false)}
+        title="Input Required"
+        message="Please select a reason for reporting."
+        showConfirm={false}
+      />
     </div>
   );
 };
 
-// Post Options Component
+// Post Options Component (e.g., for edit, delete, report)
 const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentUser }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef(null); // Ref for detecting clicks outside
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -269,15 +288,15 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
+  // Handlers for option clicks
   const handleDelete = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent event bubbling
     onDelete(post._id);
     setIsOpen(false);
   };
@@ -294,6 +313,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
     setIsOpen(false);
   };
 
+  // Determine if the current user is the author or an admin
   const isAuthorOrAdmin = currentUser && (post.userId === currentUser._id || currentUser.isAdmin);
 
   return (
@@ -314,19 +334,19 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
       {isOpen && (
         <div className="post-options-menu">
-          {isAuthorOrAdmin && post.type === 'event' && (
+          {isAuthorOrAdmin && post.type === 'event' && ( // Only allow edit for events by author/admin
             <button className="post-option-item" onClick={handleEdit}>
               <Edit3 size={16} />
               <span>Edit</span>
             </button>
           )}
-          {isAuthorOrAdmin && (
+          {isAuthorOrAdmin && ( // Allow delete for all types by author/admin
             <button className="post-option-item delete" onClick={handleDelete}>
               <Trash2 size={16} />
               <span>Delete</span>
             </button>
           )}
-          {!isAuthorOrAdmin && (
+          {!isAuthorOrAdmin && ( // Allow report if not author/admin
             <button className="post-option-item report" onClick={handleReport}>
               <Flag size={16} />
               <span>Report</span>
@@ -338,12 +358,12 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
   );
 };
 
-// Comment Item Component
+// Comment Item Component - Renders a single comment
 const CommentItem = ({ comment }) => (
   <div className="comment-item">
     <div className="comment-avatar">
       <img
-        src={comment.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+        src={comment.authorAvatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'}
         alt={`${comment.author}'s avatar`}
         className="comment-avatar-img"
         loading="lazy"
@@ -362,15 +382,18 @@ const CommentItem = ({ comment }) => (
   </div>
 );
 
-// Comment Section Component
+// Comment Section Component - Handles displaying and adding comments
 const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }) => {
   const [newCommentText, setNewCommentText] = useState('');
+  const [showCommentAlert, setShowCommentAlert] = useState(false); // State for custom alert
 
   const handleAddCommentSubmit = (e) => {
     e.preventDefault();
     if (newCommentText.trim()) {
-      onAddComment(newCommentText, currentUser);
+      onAddComment(newCommentText, currentUser); // Pass current user for comment author info
       setNewCommentText('');
+    } else {
+      setShowCommentAlert(true); // Show custom alert if comment is empty
     }
   };
 
@@ -403,18 +426,25 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
           <p className="no-comments-message">No comments yet. Be the first to comment!</p>
         )}
       </div>
+      <CustomMessageModal
+        isOpen={showCommentAlert}
+        onClose={() => setShowCommentAlert(false)}
+        title="Empty Comment"
+        message="Please enter some text to add a comment."
+        showConfirm={false}
+      />
     </div>
   );
 };
 
-// Registration Form Modal Component with QR scrolling
+// Registration Form Modal Component for events
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     transactionId: '',
-    ...(event.registrationFields ?
+    ...(event.registrationFields ? // Initialize custom fields if present
       Object.fromEntries(
         event.registrationFields.split(',').map(field => [field.trim(), ''])
       ) : {})
@@ -423,8 +453,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const qrCodeRef = useRef(null);
+  const [showFormAlert, setShowFormAlert] = useState(false); // State for custom alert
+  const [formAlertMessage, setFormAlertMessage] = useState(''); // Message for custom alert
+  const qrCodeRef = useRef(null); // Ref for QR code scrolling
 
+  // Parse custom registration fields from event data
   const customFields = event.registrationFields ?
     event.registrationFields.split(',').map(field => field.trim()) :
     [];
@@ -438,39 +471,51 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     e.preventDefault();
 
     if (!isLoggedIn) {
-      onRequireLogin();
+      onRequireLogin(); // Prompt login if not logged in
+      return;
+    }
+
+    // Basic validation for required fields
+    if (!formData.name || !formData.email || !formData.phone) {
+      setFormAlertMessage("Please fill in all required registration fields.");
+      setShowFormAlert(true);
       return;
     }
 
     setFormSubmitted(true);
 
+    // Proceed to payment step if price > 0 and QR payment is enabled
     if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
       setShowPaymentStep(true);
     } else {
       setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
       setShowSuccessModal(true);
-      onRegister(event._id, event.title);
+      onRegister(event._id, event.title); // Register immediately if no payment or payment link
     }
   };
 
   const handlePaymentConfirm = (e) => {
     e.preventDefault();
 
+    // Validate transaction ID for QR payments
     if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
-      alert("Please enter the last 4 digits of your transaction number.");
+      setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+      setShowFormAlert(true);
       return;
     }
     setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
     setShowSuccessModal(true);
-    onRegister(event._id, event.title);
+    onRegister(event._id, event.title); // Complete registration after payment confirmation
   };
 
+  // Close handler for the main registration modal
   const handleClose = () => {
     setShowPaymentStep(false);
     setFormSubmitted(false);
     onClose();
   };
 
+  // Close handler for the success message modal
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     onClose();
@@ -478,6 +523,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
   if (!isOpen) return null;
 
+  // Render different content based on whether payment step is active
   const renderFormContent = () => {
     if (showPaymentStep) {
       return (
@@ -492,6 +538,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                 className="payment-qr"
                 loading="lazy"
                 decoding="async"
+                onError={(e) => e.target.src = "[https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error](https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error)"}
               />
               <div className="form-group">
                 <label className="form-label">Last 4 Digits of Transaction ID</label>
@@ -563,6 +610,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
           />
         </div>
 
+        {/* Render custom fields dynamically */}
         {customFields.map(field => (
           field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
             <div key={field} className="form-group">
@@ -610,19 +658,27 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             message={successMessage}
             showConfirm={false}
           />
+          <CustomMessageModal
+            isOpen={showFormAlert}
+            onClose={() => setShowFormAlert(false)}
+            title="Validation Error"
+            message={formAlertMessage}
+            showConfirm={false}
+          />
         </div>
       </div>
     </ErrorBoundary>
   );
 };
 
-// Add Post Modal Component
+// Add Post Modal Component (for creating/editing confessions and events)
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
+  // Initial form data structure
   const initialFormData = {
     type: 'confession',
     title: '',
     content: '',
-    author: '',
+    author: '', // Will be current user's name for events, or user input for confessions
     location: '',
     eventStartDate: '',
     eventEndDate: '',
@@ -635,7 +691,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     registrationOpen: true,
     enableRegistrationForm: false,
     registrationFields: '',
-    paymentMethod: 'link',
+    paymentMethod: 'link', // 'link' or 'qr'
     paymentLink: '',
     paymentQRCode: ''
   };
@@ -644,9 +700,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
   const [imagePreviews, setImagePreviews] = useState([]);
   const [paymentQRPreview, setPaymentQRPreview] = useState('');
   const [showUploadAlert, setShowUploadAlert] = useState(false);
+  const [uploadAlertMessage, setUploadAlertMessage] = useState(''); // Message for upload alert
   const fileInputRef = useRef(null);
   const qrFileInputRef = useRef(null);
 
+  // Effect to populate form data when editing an existing post
   useEffect(() => {
     if (postToEdit) {
       setFormData({
@@ -668,20 +726,22 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         registrationFields: postToEdit.registrationFields || '',
         paymentMethod: postToEdit.paymentMethod || 'link',
         paymentLink: postToEdit.paymentLink || '',
-        paymentQRCode: postToEdit.paymentQRCode
+        paymentQRCode: postToEdit.paymentQRCode || ''
       });
       setImagePreviews(postToEdit.images || []);
       setPaymentQRPreview(postToEdit.paymentQRCode || '');
     } else {
+      // Reset to initial state for new post
       setFormData(prev => ({
         ...initialFormData,
-        author: currentUser?.name || ''
+        author: currentUser?.name || '' // Set author to current user's name for new posts
       }));
       setImagePreviews([]);
       setPaymentQRPreview('');
     }
-  }, [postToEdit, currentUser, isOpen]);
+  }, [postToEdit, currentUser, isOpen]); // Re-run when modal opens or postToEdit/currentUser changes
 
+  // Handler for generic form input changes
   const handleFormChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -690,53 +750,80 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     }));
   };
 
+  // Handler for changing post type (Confession/Event)
   const handleTypeChange = (e) => {
     const newType = e.target.value;
     setFormData(prev => ({
-      ...initialFormData,
+      ...initialFormData, // Reset other fields when type changes
       type: newType,
-      author: newType === 'event' ? (currentUser?.name || '') : (currentUser?.name || '')
+      author: newType === 'event' ? (currentUser?.name || '') : '' // Set author for events, clear for confessions (can be anonymous)
     }));
   };
 
+  // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
+    // Basic validation for required fields
     if (!formData.title || !formData.content) {
-      alert("Please fill in all required fields.");
+      setUploadAlertMessage("Please fill in the Title and Content fields.");
+      setShowUploadAlert(true);
       return;
     }
 
+    // Event specific validation
     if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration || !formData.ticketsNeeded)) {
-      alert("Please fill in all required event details.");
+      setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration, Tickets Needed).");
+      setShowUploadAlert(true);
       return;
     }
-    
+
+    // Payment specific validation if registration form is enabled and price > 0
+    if (formData.type === 'event' && formData.price > 0 && formData.enableRegistrationForm) {
+      if (formData.paymentMethod === 'link' && !formData.paymentLink) {
+        setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment.");
+        setShowUploadAlert(true);
+        return;
+      }
+      if (formData.paymentMethod === 'qr' && !paymentQRPreview) {
+        setUploadAlertMessage("Please upload a QR Code image for payment.");
+        setShowUploadAlert(true);
+        return;
+      }
+    }
+
+    // Construct submission data, ensuring numeric/boolean types are correct
     const submissionData = {
-        ...formData,
-        price: parseFloat(formData.price) || 0,
-        registrationOpen: formData.registrationOpen === 'true' || formData.registrationOpen === true,
-        images: imagePreviews,
-        paymentQRCode: paymentQRPreview,
+      ...formData,
+      price: parseFloat(formData.price) || 0,
+      registrationOpen: formData.registrationOpen === 'true' || formData.registrationOpen === true, // Ensure boolean
+      images: imagePreviews,
+      paymentQRCode: paymentQRPreview,
+      // Pass userId if currentUser is available
+      userId: currentUser?._id,
+      author: formData.type === 'event' ? (currentUser?.name || 'Anonymous') : (formData.author || 'Anonymous'),
+      authorAvatar: currentUser?.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'
     };
-    
-    onSubmit(submissionData);
-    onClose();
+
+    onSubmit(submissionData); // Call parent onSubmit handler
+    onClose(); // Close modal
   };
 
+  // Handle image file selection and compression for post images
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    e.target.value = null;
+    e.target.value = null; // Clear input to allow re-uploading same file
 
     if (!files.length) return;
 
     const availableSlots = 4 - imagePreviews.length;
     if (availableSlots <= 0) {
+      setUploadAlertMessage("You can only add up to 4 images per post.");
       setShowUploadAlert(true);
       return;
     }
 
-    const filesToProcess = files.slice(0, availableSlots);
+    const filesToProcess = files.slice(0, availableSlots); // Process only available slots
     filesToProcess.forEach(file => {
       compressImage(file, (compressedDataUrl) => {
         setImagePreviews(prev => [...prev, compressedDataUrl]);
@@ -744,6 +831,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     });
   };
 
+  // Handle QR code image selection and compression
   const handlePaymentQRUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -754,12 +842,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     e.target.value = null;
   };
 
+  // Remove a selected image preview
   const removeImage = (index) => {
     const newPreviews = [...imagePreviews];
     newPreviews.splice(index, 1);
     setImagePreviews(newPreviews);
   };
 
+  // Remove the QR code image preview
   const removeQRImage = () => {
     setPaymentQRPreview('');
   };
@@ -781,6 +871,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 
           <div className="modal-form-container">
             <form onSubmit={handleSubmit} className="modal-form">
+              {/* Type selection */}
               <div className="form-group">
                 <label className="form-label">Type</label>
                 <select
@@ -793,6 +884,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 </select>
               </div>
 
+              {/* Title Input */}
               <div className="form-group">
                 <label className="form-label">Title</label>
                 <input
@@ -805,6 +897,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 />
               </div>
 
+              {/* Content Textarea */}
               <div className="form-group">
                 <label className="form-label">Content</label>
                 <textarea
@@ -817,6 +910,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 />
               </div>
 
+              {/* Author Input (disabled for events, can be anonymous for confessions) */}
               <div className="form-group">
                 <label className="form-label">Author</label>
                 <input
@@ -830,6 +924,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 />
               </div>
 
+              {/* Event-specific fields */}
               {formData.type === 'event' && (
                 <div className="event-form-section">
                   <div className="form-group">
@@ -945,12 +1040,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                       value={formData.registrationLink}
                       onChange={handleFormChange}
                       name="registrationLink"
-                      placeholder="https://example.com/register"
+                      placeholder="[https://example.com/register](https://example.com/register)"
                     />
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">
+                    <label className="form-label checkbox-label">
                       <input
                         type="checkbox"
                         checked={formData.enableRegistrationForm}
@@ -983,7 +1078,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                             value={formData.paymentLink}
                             onChange={handleFormChange}
                             name="paymentLink"
-                            placeholder="https://example.com/payment"
+                            placeholder="[https://example.com/payment](https://example.com/payment)"
                             required
                           />
                         </div>
@@ -1026,6 +1121,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 </div>
               )}
 
+              {/* Image Upload Section */}
               <div className="form-group">
                 <label className="form-label">Images (Max 4)</label>
                 <div className="image-upload-container">
@@ -1062,6 +1158,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 </div>
               </div>
 
+              {/* Modal Action Buttons */}
               <div className="modal-actions">
                 <button type="button" className="btn-secondary" onClick={onClose}>
                   Cancel
@@ -1077,15 +1174,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
       <CustomMessageModal
         isOpen={showUploadAlert}
         onClose={() => setShowUploadAlert(false)}
-        title="Image Upload Limit"
-        message="You can only add up to 4 images per post."
+        title="Input Error"
+        message={uploadAlertMessage}
         showConfirm={false}
       />
     </ErrorBoundary>
   );
 };
 
-// Event Detail Page Component
+// Event Detail Page Component - Displays detailed information about an event
 const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered }) => {
   const [showFullContent, setShowFullContent] = useState(false);
   const [showRegistrationForm, setShowRegistrationForm] = useState(false);
@@ -1094,21 +1191,25 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
   const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
   const [calendarMessage, setCalendarMessage] = useState('');
 
-  if (!event) return null;
+  if (!event) return null; // Don't render if no event is selected
 
+  // Determine how much content to display initially
   const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
   const hasMoreContent = event.content.length > 200;
 
+  // Check event status
   const isEventPast = new Date() > (event.eventEndDate || event.eventStartDate);
   const isRegistrationOpen = event.registrationOpen && !isEventPast;
   const hasRegistrationMethod = event.registrationLink || event.enableRegistrationForm;
 
+  // Function to format event date range for display
   const formatDateRange = () => {
     if (!event.eventStartDate) return "N/A";
 
     const start = new Date(event.eventStartDate);
     const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
+    // If event spans multiple days
     if (end && start.toDateString() !== end.toDateString()) {
       const startDate = start.toLocaleDateString('en-US', {
         month: 'short',
@@ -1130,6 +1231,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       return `${startDate} - ${endDate}, ${startTime} to ${endTime}`;
     }
 
+    // If event is on a single day
     const date = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const startTime = start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const endTime = end ? end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -1137,6 +1239,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     return `${date}, ${startTime}${endTime ? ` to ${endTime}` : ''}`;
   };
 
+  // Handle "Get Directions" button click
   const handleGetDirections = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition((position) => {
@@ -1149,33 +1252,41 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
           '_blank'
         );
       }, (error) => {
-        setGeolocationError('Could not get your location. Please enable location services.');
+        // Show alert if geolocation fails
+        setGeolocationError('Could not get your location. Please enable location services and try again.');
         setShowGeolocationAlert(true);
       });
     } else {
-      setGeolocationError('Geolocation is not supported by your browser');
+      // Show alert if geolocation is not supported
+      setGeolocationError('Geolocation is not supported by your browser.');
       setShowGeolocationAlert(true);
     }
   };
 
+  // Handle registration button click
   const handleRegistrationClick = () => {
     if (!isLoggedIn) {
-      onRequireLogin();
+      onRequireLogin(); // Prompt login
       return;
     }
 
     if (isRegistered) {
-      return;
+      return; // If already registered, do nothing
     }
 
     if (event.enableRegistrationForm) {
-      setShowRegistrationForm(true);
+      setShowRegistrationForm(true); // Open registration form modal
     } else if (event.registrationLink) {
-      window.open(event.registrationLink, '_blank');
+      window.open(event.registrationLink, '_blank'); // Open registration link
     }
   };
 
+  // Handle "Add to Calendar" button click
   const handleAddToCalendar = () => {
+    if (!isLoggedIn) {
+      onRequireLogin(); // Prompt login if not logged in
+      return;
+    }
     if (event.eventStartDate) {
       const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
       const timeOptions = { hour: '2-digit', minute: '2-digit' };
@@ -1183,10 +1294,11 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
       const formattedTime = new Date(event.eventStartDate).toLocaleTimeString('en-US', timeOptions);
       setCalendarMessage(`Event "${event.title}" on ${formattedDate} at ${formattedTime} has been added to your calendar!`);
       setShowAddedToCalendarAlert(true);
-      onAddToCalendar(event);
+      onAddToCalendar(event); // Call parent function to add to calendar
     }
   };
 
+  // Determine the text for the registration button
   const registrationButtonText = () => {
     if (isRegistered) return "REGISTERED";
     if (isEventPast) return "EVENT ENDED";
@@ -1195,8 +1307,8 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     return "REGISTER NOW";
   };
 
+  // Determine if the registration button should be disabled
   const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
-
 
   return (
     <ErrorBoundary>
@@ -1206,12 +1318,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             <img
               src={event.images[0]}
               alt={event.title}
-              onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
+              onError={(e) => e.target.src = "[https://placehold.co/800x450/cccccc/000000?text=Event+Image](https://placehold.co/800x450/cccccc/000000?text=Event+Image)"}
               loading="lazy"
               decoding="async"
             />
           ) : (
-            <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
+            <img src="[https://placehold.co/800x450/cccccc/000000?text=No+Event+Image](https://placehold.co/800x450/cccccc/000000?text=No+Event+Image)" alt="Placeholder" loading="lazy" decoding="async" />
           )}
           <div className="event-detail-header-overlay">
             <button onClick={onClose} className="event-detail-back-button">
@@ -1300,6 +1412,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
           </div>
         </div>
 
+        {/* Modals for registration, geolocation error, and calendar confirmation */}
         {showRegistrationForm && (
           <RegistrationFormModal
             isOpen={showRegistrationForm}
@@ -1329,13 +1442,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
   );
 };
 
-// Event Detail Sidebar Component
+// Event Detail Sidebar Component - Displays upcoming events related to the current event
 const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
+  // Filter and sort upcoming events (excluding the current one)
   const upcomingEvents = events.filter(e =>
     e.type === 'event' &&
     e._id !== currentEvent?._id &&
     new Date(e.eventStartDate) > new Date()
-  ).slice(0, 3);
+  ).slice(0, 3); // Show top 3 upcoming events
 
   return (
     <div className="sidebar-widget">
@@ -1375,7 +1489,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
   );
 };
 
-// Post Card Component
+// Post Card Component - Displays a single post (confession, event, or news)
 const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount, onReportPost }) => {
   const overlayRef = useRef(null);
   const [showFullContent, setShowFullContent] = useState(false);
@@ -1383,19 +1497,23 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
   const [needsShowMore, setNeedsShowMore] = useState(false);
   const [showShareAlert, setShowShareAlert] = useState(false);
 
+  // Fallback for image loading errors
   const handleImageError = (e) => {
-    e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
-    e.target.onerror = null;
+    e.target.src = "[https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error](https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error)";
+    e.target.onerror = null; // Prevent infinite loop if fallback also fails
   };
 
+  // Determine if "Show More" is needed for post content
   useEffect(() => {
     if (contentRef.current) {
-      const lineHeight = parseInt(getComputedStyle(contentRef.current).lineHeight);
+      // Calculate if content overflows 3 lines
+      const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
       const maxHeight = lineHeight * 3;
       setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
     }
   }, [post.content]);
 
+  // Helper to get display label for post type
   const getPostTypeLabel = (type) => {
     switch (type) {
       case 'confession': return 'Confession';
@@ -1405,9 +1523,11 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }
   };
 
+  // Determine if the post has interactive elements (likes, comments, shares)
   const isInteractive = post.type !== 'news';
   const isUserPost = currentUser && post.userId === currentUser._id;
 
+  // Handle opening/closing comment section
   const handleCommentIconClick = (e) => {
     e.stopPropagation();
     setOpenCommentPostId(isCommentsOpen ? null : post._id);
@@ -1418,6 +1538,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     setOpenCommentPostId(null);
   };
 
+  // Close comments if clicked outside the comment section
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (overlayRef.current && !overlayRef.current.contains(event.target)) {
@@ -1430,14 +1551,19 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
     };
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [isCommentsOpen, setOpenCommentPostId]);
 
+  // Handle "Add to Calendar" for events
   const handleAddToCalendarClick = () => {
     if (post.type === 'event' && post.eventStartDate) {
       onAddToCalendar(post);
     }
   };
 
+  // Handle share functionality (Web Share API or copy to clipboard)
   const handleShare = async (postId, postTitle, postContent) => {
     const shareUrl = `${window.location.origin}/posts/${postId}`;
 
@@ -1450,8 +1576,22 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         });
       } catch (error) {
         console.error('Share failed:', error);
+        // Fallback to copy if Web Share API fails
+        try {
+          const tempInput = document.createElement('textarea');
+          tempInput.value = shareUrl;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tempInput);
+          setShowShareAlert(true);
+        } catch (err) {
+          console.error('Copy to clipboard failed:', err);
+          setShowShareAlert(true); // Still show alert even if copy fails, user might manually copy
+        }
       }
     } else {
+      // Fallback for browsers without Web Share API
       try {
         const tempInput = document.createElement('textarea');
         tempInput.value = shareUrl;
@@ -1459,19 +1599,20 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        setShowShareAlert(true);
+        setShowShareAlert(true); // Indicate success
       } catch (err) {
-        setShowShareAlert(true);
+        setShowShareAlert(true); // Indicate copy failed
       }
     }
   };
 
+  // Render content common to both normal and comments-open state
   const renderPostCardContent = () => (
     <>
       <div className="post-header">
         <div className="post-avatar-container">
           <img
-            src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+            src={post.authorAvatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'}
             alt={`${post.author}'s avatar`}
             className="post-avatar"
             loading="lazy"
@@ -1494,6 +1635,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             onEdit={onEditPost}
             isProfilePage={isProfilePage}
             currentUser={currentUser}
+            onReport={onReportPost}
           />
         </div>
       </div>
@@ -1537,7 +1679,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
           </div>
         )}
 
-        {post.images.length > 0 && (
+        {post.images && post.images.length > 0 && (
           <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
             {post.images.map((image, index) => (
               <img
@@ -1625,8 +1767,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
   );
 };
 
-// Home Component
+// Home Component - Displays a feed of posts
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+  // Filter and sort news highlights
   const newsHighlights = [...posts]
     .filter(post => post.type === 'news')
     .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -1660,6 +1803,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
         </>
       )}
 
+      {/* Other posts (confessions, events) */}
       <div className="posts-container">
         {posts.filter(p => p.type !== 'news').map(post => (
           <PostCard
@@ -1684,7 +1828,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
   );
 };
 
-// Events Component
+// Events Component - Displays only event posts
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
   const eventPosts = posts.filter(post => post.type === 'event');
 
@@ -1714,7 +1858,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
   );
 };
 
-// Confessions Component
+// Confessions Component - Displays only confession posts
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
   const confessionPosts = posts.filter(post => post.type === 'confession');
 
@@ -1744,7 +1888,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
   );
 };
 
-// Notifications Component
+// Notifications Component - Displays user notifications or admin reported posts
 const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
   const isAdmin = currentUser?.isAdmin;
   const displayNotifications = isAdmin ? adminNotifications : notifications;
@@ -1770,7 +1914,7 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
                   <span className="notification-timestamp">
                     {new Date(notification.timestamp).toLocaleDateString()}
                   </span>
-                  {isAdmin && notification.postId && (
+                  {isAdmin && notification.postId && ( // Admin actions for reported posts
                     <div className="admin-actions">
                       <button
                         className="btn-danger"
@@ -1796,14 +1940,14 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
   );
 };
 
-// Profile Settings Modal Component
+// Profile Settings Modal Component - Allows user to change their avatar
 const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
   const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
   const [customAvatar, setCustomAvatar] = useState('');
   const [avatarError, setAvatarError] = useState('');
-
   const fileInputRef = useRef(null);
 
+  // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedAvatar(currentUser?.avatar || '');
@@ -1812,11 +1956,13 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     }
   }, [isOpen, currentUser]);
 
+  // Predefined avatars for choice
   const predefinedAvatars = [
     { src: avatar1, alt: 'Anime style avatar' },
     { src: avatar2, alt: 'ChatGPT avatar' }
   ];
 
+  // Handle custom image upload and compression
   const handleCustomImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1826,19 +1972,20 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
       }
       compressImage(file, (compressedDataUrl) => {
         setCustomAvatar(compressedDataUrl);
-        setSelectedAvatar(null);
+        setSelectedAvatar(null); // Deselect predefined avatar
         setAvatarError('');
       });
     }
   };
 
+  // Handle saving the new avatar
   const handleSave = () => {
     if (!selectedAvatar && !customAvatar) {
       setAvatarError('Please select or upload an avatar.');
       return;
     }
     const newAvatar = customAvatar || selectedAvatar;
-    onSave(newAvatar);
+    onSave(newAvatar); // Call parent save function
     onClose();
   };
 
@@ -1857,7 +2004,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
           <div className="current-avatar-container">
             <h4 className="modal-subtitle">Current Profile Image</h4>
             <div className="current-avatar-preview">
-              <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt="Current Avatar" loading="lazy" decoding="async" />
+              <img src={currentUser.avatar || '[https://placehold.co/80x80/cccccc/000000?text=A](https://placehold.co/80x80/cccccc/000000?text=A)'} alt="Current Avatar" loading="lazy" decoding="async" />
             </div>
           </div>
           <div className="avatar-options-container">
@@ -1869,7 +2016,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                   className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
                   onClick={() => {
                     setSelectedAvatar(av.src);
-                    setCustomAvatar('');
+                    setCustomAvatar(''); // Clear custom avatar selection
                     setAvatarError('');
                   }}
                 >
@@ -1922,8 +2069,9 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 };
 
 
-// Users Component
+// Users Component - Displays user's profile and their posts
 const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
+  // Show a message if user is not logged in
   if (!currentUser) {
     return (
       <div>
@@ -1935,10 +2083,12 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
     );
   }
 
+  // Filter posts by the current user's ID
   const userPosts = posts.filter(post =>
     post.userId === currentUser._id
   );
 
+  // Calculate user statistics
   const userStats = {
     posts: userPosts.length,
     likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
@@ -1954,7 +2104,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
       <div className="profile-header">
         <div className="profile-avatar-container">
-          <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+          <img src={currentUser.avatar || '[https://placehold.co/80x80/cccccc/000000?text=A](https://placehold.co/80x80/cccccc/000000?text=A)'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
           <button className="edit-avatar-button" onClick={onEditProfile}>
             <Edit3 size={16} />
           </button>
@@ -2002,7 +2152,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               currentUser={currentUser}
               onDeletePost={onDeletePost}
               onEditPost={onEditPost}
-              isProfilePage={true}
+              isProfilePage={true} // Indicate this is a profile page view
               registrationCount={registrations[post._id]}
               onReportPost={onReportPost}
             />
@@ -2020,7 +2170,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
   );
 };
 
-// Home Right Sidebar Component
+// Home Right Sidebar Component - Displays popular posts
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
   const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
   return (
@@ -2039,7 +2189,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
               <p className="widget-item-title">{post.title}</p>
               <div className="popular-post-stats">
                 <span className="popular-stat">{post.likes} likes</span>
-                <span className="popular-stat">{post.comments} comments</span>
+                <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span> {/* Use commentData.length */}
               </div>
             </div>
           ))}
@@ -2049,16 +2199,17 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
   );
 };
 
-// Events Right Sidebar Component
+// Events Right Sidebar Component - Displays calendar and user's upcoming events
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
   const [value, onChange] = useState(new Date());
 
-  const allEvents = [...posts, ...myCalendarEvents];
+  // Combine all relevant events for calendar marking
+  const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
 
+  // Function to add a dot to calendar tiles that have events
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
       const hasEvent = allEvents.some(post =>
-        post.type === 'event' &&
         post.eventStartDate &&
         new Date(post.eventStartDate).getDate() === date.getDate() &&
         new Date(post.eventStartDate).getMonth() === date.getMonth() &&
@@ -2069,10 +2220,11 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     return null;
   };
 
+  // Filter and sort upcoming events from the user's calendar
   const upcomingCalendarEvents = myCalendarEvents
     .filter(e => new Date(e.eventStartDate) > new Date())
-    .sort((a,b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    .slice(0, 3);
+    .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    .slice(0, 3); // Show top 3 upcoming calendar events
 
   return (
     <>
@@ -2083,8 +2235,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
             value={value}
             tileContent={tileContent}
             className="react-calendar"
-            prev2Label={null}
-            next2Label={null}
+            prev2Label={null} // Hide prev year navigation
+            next2Label={null} // Hide next year navigation
             locale="en-US"
           />
         </div>
@@ -2123,7 +2275,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
   );
 };
 
-// Confessions Right Sidebar Component
+// Confessions Right Sidebar Component - Displays recent confessions
 const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
   const recentConfessions = [...posts]
     .filter(post => post.type === 'confession')
@@ -2137,8 +2289,8 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
       <div className="widget-content">
         <div className="widget-list">
           {recentConfessions.map(post => (
-            <div 
-              key={post._id} 
+            <div
+              key={post._id}
               className="recent-confession-item clickable"
               onClick={() => onOpenPostDetail(post)}
             >
@@ -2154,7 +2306,7 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
   );
 };
 
-// Users Right Sidebar Component
+// Users Right Sidebar Component - Displays current user's statistics
 const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
   if (!currentUser) return null;
 
@@ -2186,7 +2338,7 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
   );
 };
 
-// Notifications Right Sidebar Component
+// Notifications Right Sidebar Component - Provides link to help & support
 const NotificationsRightSidebar = ({ onShowHelpModal }) => {
   return (
     <div className="sidebar-widget">
@@ -2204,58 +2356,18 @@ const NotificationsRightSidebar = ({ onShowHelpModal }) => {
   );
 };
 
-// Google Account Picker Simulation Modal
-const GoogleAccountPickerModal = ({ isOpen, onClose, onSelectAccount }) => {
-  if (!isOpen) return null;
-
-  const simulatedAccounts = [
-    { name: 'John Doe', email: 'john.doe@example.com', avatar: 'https://placehold.co/40x40/FF5733/FFFFFF?text=JD' },
-    { name: 'Jane Smith', email: 'jane.smith@example.com', avatar: 'https://placehold.co/40x40/33FF57/FFFFFF?text=JS' },
-    { name: 'Simulated Admin', email: 'confique01@gmail.com', avatar: 'https://placehold.co/40x40/3366FF/FFFFFF?text=SA' },
-  ];
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content small-modal">
-        <div className="modal-header">
-          <h2 className="modal-title">Choose a Google Account</h2>
-          <button className="modal-close" onClick={onClose}>
-            <X size={24} />
-          </button>
-        </div>
-        <div className="modal-body google-account-picker">
-          {simulatedAccounts.map((account, index) => (
-            <div key={index} className="google-account-item" onClick={() => onSelectAccount(account)}>
-              <img src={account.avatar} alt={account.name} className="google-account-avatar" />
-              <div className="google-account-info">
-                <div className="google-account-name">{account.name}</div>
-                <div className="google-account-email">{account.email}</div>
-              </div>
-            </div>
-          ))}
-          <p className="simulation-note">
-            (This is a simulation for demonstration purposes. It does not connect to actual Google services.)
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-
-// Login Modal Component
+// Login Modal Component - Handles user login and registration
 const LoginModal = ({ isOpen, onClose, onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [error, setError] = useState('');
-  const [showGooglePicker, setShowGooglePicker] = useState(false); // New state for Google picker
 
+  // Reset form and error state when modal opens
   useEffect(() => {
     if (isOpen) {
       setIsRegistering(false);
       setError('');
       setFormData({ name: '', email: '', password: '' });
-      setShowGooglePicker(false); // Reset picker state
     }
   }, [isOpen]);
 
@@ -2264,9 +2376,10 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submission (login or register)
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError(''); // Clear previous errors
 
     const url = isRegistering ? `${API_URL}/auth/register` : `${API_URL}/auth/login`;
 
@@ -2277,11 +2390,11 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
+      const data = await res.json(); // Parse response data
 
       if (res.ok) {
-        onLogin(data);
-        onClose();
+        onLogin(data); // Call parent onLogin with user data
+        onClose(); // Close modal
       } else {
         setError(data.message || 'An error occurred. Please try again.');
       }
@@ -2291,20 +2404,10 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     }
   };
 
+  // Handle Google OAuth login (redirects to backend)
   const handleGoogleLoginClick = () => {
-    // Redirect to backend's Google OAuth initiation route
     window.location.href = `${API_URL}/auth/google`;
   };
-
-  // This function is no longer called directly from the button,
-  // but it's kept for clarity on what the backend redirect would eventually do.
-  const handleSelectGoogleAccount = (account) => {
-    // This part is now handled by the backend /api/auth/google/callback
-    // The frontend will receive the token and user data via URL parameters after redirect
-    console.log("Simulated Google account selected:", account);
-    // This function might be removed or adapted if a real Google login manages the frontend state directly
-  };
-
 
   if (!isOpen) return null;
 
@@ -2320,7 +2423,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
           </div>
           <div className="modal-body">
             <button className="btn-google" onClick={handleGoogleLoginClick}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
                 <g clipPath="url(#clip0_353_57)">
                   <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4"/>
                   <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853"/>
@@ -2393,23 +2496,22 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
           </div>
         </div>
       </div>
-      {/* GoogleAccountPickerModal is removed as it's replaced by direct redirect */}
     </ErrorBoundary>
   );
 };
 
-// Profile Dropdown Component
+// Profile Dropdown Component - Displays user avatar and profile/logout options
 const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -2423,7 +2525,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="avatar-wrapper">
-          <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+          <img src={user.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
         </div>
       </button>
 
@@ -2431,7 +2533,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         <div className="profile-dropdown-menu">
           <div className="profile-info">
             <div className="profile-avatar">
-              <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+              <img src={user.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
             </div>
             <div className="profile-details">
               <div className="profile-name-display">{user.name}</div>
@@ -2466,27 +2568,36 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
 const App = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [posts, setPosts] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [likedPosts, setLikedPosts] = useState(new Set());
-  const [openCommentPostId, setOpenCommentPostId] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [myCalendarEvents, setMyCalendarEvents] = useState([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-  const [postToEdit, setPostToEdit] = useState(null);
-  const [registrations, setRegistrations] = useState({});
-  const [notifications, setNotifications] = useState([]);
-  const [adminNotifications, setAdminNotifications] = useState([]);
-  const [showHelpModal, setShowHelpModal] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportPostData, setReportPostData] = useState(null);
-  const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false); // For Add/Edit Post Modal
 
-  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal;
+  // Current user state, initialized from localStorage
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+    return savedUser || null;
+  });
+  const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser); // Check if currentUser exists
+
+  // Liked posts state, initialized as an empty Set and populated from backend
+  const [likedPosts, setLikedPosts] = useState(new Set());
+
+  const [openCommentPostId, setOpenCommentPostId] = useState(null); // Which post's comments are open
+  const [selectedEvent, setSelectedEvent] = useState(null); // For detailed event view
+  const [selectedPost, setSelectedPost] = useState(null); // For detailed post view (news/confession)
+  const [searchTerm, setSearchTerm] = useState(''); // Search input
+  const [myCalendarEvents, setMyCalendarEvents] = useState([]); // Events added to user's calendar
+  const [showLoginModal, setShowLoginModal] = useState(false); // Login/Register modal
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light'); // Dark/Light mode theme
+  const [postToEdit, setPostToEdit] = useState(null); // Post currently being edited
+  const [registrations, setRegistrations] = useState({}); // Map of eventId to registration count
+  const [notifications, setNotifications] = useState([]); // User notifications
+  const [adminNotifications, setAdminNotifications] = useState([]); // Admin-specific notifications (reported posts)
+  const [showHelpModal, setShowHelpModal] = useState(false); // Help & Support modal
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false); // Report Post modal
+  const [reportPostData, setReportPostData] = useState(null); // Data for post being reported
+  const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false); // Profile settings modal
+
+  // Flag to check if any modal is currently open (for body scrolling control)
+  const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
 
   // Helper to format dates from backend strings to Date objects
   const formatPostDates = (post) => {
@@ -2502,6 +2613,7 @@ const App = () => {
     };
   };
 
+  // Fetches all posts from the backend
   const fetchPosts = async () => {
     try {
       const res = await fetch(`${API_URL}/posts`);
@@ -2512,16 +2624,18 @@ const App = () => {
     }
   };
 
+  // Fetches event registration counts for events created by the current user
   const fetchRegistrations = async (userId) => {
-    if (!currentUser || !currentUser.token) return; // Ensure user and token exist
+    if (!currentUser || !currentUser.token) return;
     try {
-      const res = await fetch(`${API_URL}/users/profile`, { // Fetch current user's profile to get registrations
+      // Assuming this endpoint returns a map of eventId to count or an array of registrations
+      const res = await fetch(`${API_URL}/users/registrations`, {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
       const data = await res.json();
       if (res.ok && data.registrations) {
         const registrationsMap = data.registrations.reduce((acc, reg) => {
-          acc[reg.eventId] = (acc[reg.eventId] || 0) + 1;
+          acc[reg.eventId] = (acc[reg.eventId] || 0) + 1; // Count registrations per event
           return acc;
         }, {});
         setRegistrations(registrationsMap);
@@ -2531,6 +2645,7 @@ const App = () => {
     }
   };
 
+  // Fetches notifications for the current user
   const fetchNotifications = async () => {
     if (!currentUser || !currentUser.token) return;
     try {
@@ -2538,12 +2653,14 @@ const App = () => {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
       const data = await res.json();
-      setNotifications(data.map(formatPostDates)); // Assuming notifications might have timestamps
+      // Ensure notification timestamps are Date objects
+      setNotifications(data.map(n => ({...n, timestamp: new Date(n.timestamp)})));
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
     }
   };
 
+  // Fetches reported posts for admin users
   const fetchAdminNotifications = async () => {
     if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
     try {
@@ -2551,14 +2668,39 @@ const App = () => {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
       const data = await res.json();
-      setAdminNotifications(data.map(formatPostDates)); // Assuming reports might have timestamps
+      // Ensure reported post timestamps are Date objects
+      setAdminNotifications(data.map(n => ({...n, timestamp: new Date(n.timestamp)})));
     } catch (error) {
-      console.error('Failed to fetch admin notifications:', error);
+      console.error('Failed to fetch admin notifications (reported posts):', error);
     }
   };
 
+  // Fetches the current user's liked posts from the backend
+  const fetchLikedPosts = async (user) => {
+    if (!user || !user.token) {
+      console.log("Not logged in, skipping fetchLikedPosts.");
+      return;
+    }
+    try {
+      const res = await fetch(`${API_URL}/users/liked-posts`, { // Assuming this endpoint returns an array of post IDs liked by the user
+        headers: {
+          'Authorization': `Bearer ${user.token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLikedPosts(new Set(data.likedPostIds || [])); // Assuming the response is { likedPostIds: [...] }
+      } else {
+        console.error('Failed to fetch liked posts for user:', await res.json());
+      }
+    } catch (error) {
+      console.error('Error fetching liked posts:', error);
+    }
+  };
+
+
+  // Effect to handle initial login state from URL params (Google OAuth) or localStorage
   useEffect(() => {
-    // Check URL for Google OAuth callback parameters
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
     const name = urlParams.get('name');
@@ -2569,7 +2711,7 @@ const App = () => {
 
     if (token && name && email && _id) {
       const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
-      handleLogin(user);
+      handleLogin(user); // Log in the user
       // Clear URL parameters after processing
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
@@ -2579,32 +2721,42 @@ const App = () => {
         setCurrentUser(savedUser);
       }
     }
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]); // Re-run if theme changes, but primarily on mount
+    document.documentElement.setAttribute('data-theme', theme); // Apply theme
+  }, [theme]); // Re-run if theme changes, but primarily on component mount
 
+  // Effect to fetch initial data when login state or currentUser changes
   useEffect(() => {
     fetchPosts(); // Always fetch posts on initial load
-
     if (isLoggedIn && currentUser) {
+      fetchLikedPosts(currentUser); // Fetch liked posts when user is logged in
       fetchRegistrations(currentUser._id);
       fetchNotifications();
       if (currentUser.isAdmin) {
         fetchAdminNotifications();
       }
+    } else {
+      // If user logs out, clear likedPosts to prevent stale data
+      setLikedPosts(new Set());
     }
-  }, [isLoggedIn, currentUser]);
+  }, [isLoggedIn, currentUser]); // Dependencies include isLoggedIn and currentUser
 
-
+  // Effect to control body scrolling when modals are open
   useEffect(() => {
     if (hasOpenModal) {
       document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = '15px';
+      document.body.style.paddingRight = '15px'; // Adjust for scrollbar to prevent layout shift
     } else {
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    };
+    // Cleanup function
+    return () => {
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
     };
   }, [hasOpenModal]);
 
+  // Toggles between light and dark themes
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -2612,18 +2764,21 @@ const App = () => {
     localStorage.setItem('theme', newTheme);
   };
 
+  // Filters posts based on search term
   const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Handles adding an event to the user's personal calendar (frontend state only)
   const handleAddToCalendar = (event) => {
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
     setMyCalendarEvents(prev => {
+      // Prevent adding duplicate events to calendar
       if (prev.some(e => e._id === event._id)) {
         return prev;
       }
@@ -2631,8 +2786,12 @@ const App = () => {
     });
   };
 
+  // Handles event registration
   const handleRegisterEvent = async (eventId, eventTitle) => {
-    if (!currentUser || !currentUser.token) return;
+    if (!currentUser || !currentUser.token) {
+      console.error('User not authenticated for registration.');
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/users/register-event/${eventId}`, {
@@ -2643,8 +2802,9 @@ const App = () => {
         },
       });
       if (res.ok) {
-        // Re-fetch registrations to update count
+        // Re-fetch registrations to update count for the event creator's view
         fetchRegistrations(currentUser._id);
+        // Add a success notification for the user
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -2657,22 +2817,40 @@ const App = () => {
       } else {
         const errorData = await res.json();
         console.error('Registration failed:', errorData.message);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Registration for "${eventTitle}" failed: ${errorData.message}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
     } catch (err) {
       console.error('Registration failed:', err);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Registration for "${eventTitle}" failed due to network error.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles adding a new post or updating an existing one
   const handleAddPost = async (newPost) => {
-    if (!isLoggedIn || !currentUser || !currentUser.token) return;
+    if (!isLoggedIn || !currentUser || !currentUser.token) {
+      console.error('User not authenticated for posting.');
+      return;
+    }
 
     try {
       const endpoint = postToEdit ? `${API_URL}/posts/${postToEdit._id}` : `${API_URL}/posts`;
       const method = postToEdit ? 'PUT' : 'POST';
-
-      console.log(`[handleAddPost] Sending ${method} request to ${endpoint} with data:`, newPost);
-      console.log(`[handleAddPost] Token being sent: Bearer ${currentUser.token}`);
-
 
       const res = await fetch(endpoint, {
         method,
@@ -2685,47 +2863,68 @@ const App = () => {
 
       if (res.ok) {
         const responseData = await res.json();
-        console.log("[handleAddPost] Backend raw response for post:", responseData);
+        const formattedResponsePost = formatPostDates(responseData); // Ensure dates are formatted
 
-        // Ensure _id exists before processing
-        if (!responseData._id) {
-            console.error("[handleAddPost] Backend response is missing _id for the post:", responseData);
-            // Fallback: Re-fetch all posts if _id is missing in response
-            fetchPosts();
-            return;
-        }
+        setPostToEdit(null); // Clear postToEdit state
 
-        const formattedResponsePost = formatPostDates(responseData); // Format dates of the new/updated post
-        console.log("[handleAddPost] Formatted post for state update:", formattedResponsePost);
-
-        setPostToEdit(null);
         if (method === 'POST') {
           setPosts(prev => [formattedResponsePost, ...prev]); // Add new post to top
-          console.log("[handleAddPost] New post successfully added to local state.");
-        } else { // PUT request
+          // Add a notification for new post creation
+          setNotifications(prev => [
+            {
+              _id: Date.now().toString(),
+              message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+              timestamp: new Date(),
+              type: 'success'
+            },
+            ...prev
+          ]);
+        } else { // PUT request (edit)
           setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p)); // Update existing post
-          console.log("[handleAddPost] Existing post successfully updated in local state.");
+          // Add a notification for post update
+          setNotifications(prev => [
+            {
+              _id: Date.now().toString(),
+              message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
+              timestamp: new Date(),
+              type: 'success'
+            },
+            ...prev
+          ]);
         }
-        
+      } else {
+        const errorData = await res.json();
+        console.error('Failed to save post:', errorData);
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
-            message: `A new ${newPost.type} "${newPost.title}" has been posted.`,
+            message: `Failed to save ${newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
             timestamp: new Date(),
+            type: 'error'
           },
           ...prev
         ]);
-      } else {
-        const errorData = await res.json();
-        console.error('[handleAddPost] Failed to save post:', errorData);
       }
     } catch (error) {
-      console.error('[handleAddPost] Error saving post:', error);
+      console.error('Error saving post:', error);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not save ${newPost.type} "${newPost.title}".`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles deleting a post
   const handleDeletePost = async (postId) => {
-    if (!isLoggedIn || !currentUser || !currentUser.token) return;
+    if (!isLoggedIn || !currentUser || !currentUser.token) {
+      console.error('User not authenticated for deleting posts.');
+      return;
+    }
     try {
       const res = await fetch(`${API_URL}/posts/${postId}`, {
         method: 'DELETE',
@@ -2734,41 +2933,91 @@ const App = () => {
         },
       });
       if (res.ok) {
-        setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
-        setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
-        setLikedPosts(prev => {
+        setPosts(prevPosts => prevPosts.filter(post => post._id !== postId)); // Remove from main posts list
+        setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId)); // Remove from calendar if it was an event
+        setLikedPosts(prev => { // Remove from liked posts set
           const newLiked = new Set(prev);
           newLiked.delete(postId);
           return newLiked;
         });
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Post has been deleted successfully.`,
+            timestamp: new Date(),
+            type: 'success'
+          },
+          ...prev
+        ]);
       } else {
-        console.error('Failed to delete post:', await res.json());
+        const errorData = await res.json();
+        console.error('Failed to delete post:', errorData);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to delete post: ${errorData.message || 'Unknown error.'}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
     } catch (error) {
       console.error('Error deleting post:', error);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not delete post.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Sets the post to be edited and opens the modal
   const handleEditPost = (post) => {
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
+    // Ensure only author or admin can edit
     if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
       setPostToEdit(post);
       setIsModalOpen(true);
-      setActiveSection('profile');
+      setActiveSection('profile'); // Switch to profile section to reflect changes
     }
   };
 
+  // Handles liking/unliking a post with optimistic UI updates
   const handleLikePost = async (postId) => {
     if (!isLoggedIn || !currentUser || !currentUser.token) {
-      setShowLoginModal(true);
+      setShowLoginModal(true); // Prompt login if not authenticated
       return;
     }
 
     const isCurrentlyLiked = likedPosts.has(postId);
     const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
+
+    // Optimistic UI update: immediately change the UI
+    setLikedPosts(prev => {
+      const newLiked = new Set(prev);
+      if (isCurrentlyLiked) {
+        newLiked.delete(postId);
+      } else {
+        newLiked.add(postId);
+      }
+      return newLiked;
+    });
+
+    setPosts(prevPosts =>
+      prevPosts.map(post =>
+        post._id === postId
+          ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
+          : post
+      )
+    );
 
     try {
       const res = await fetch(endpoint, {
@@ -2777,30 +3026,72 @@ const App = () => {
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setPosts(prevPosts =>
-          prevPosts.map(post =>
-            post._id === postId ? { ...post, likes: data.likes } : post
-          )
-        );
+
+      if (!res.ok) {
+        console.error('Failed to like/unlike post:', await res.json());
+
+        // Revert UI if API call fails
         setLikedPosts(prev => {
           const newLiked = new Set(prev);
           if (isCurrentlyLiked) {
-            newLiked.delete(postId);
+            newLiked.add(postId); // Add back if it was originally liked
           } else {
-            newLiked.add(postId);
+            newLiked.delete(postId); // Remove if it was originally unliked
           }
           return newLiked;
         });
-      } else {
-        console.error('Failed to like/unlike post:', await res.json());
+        setPosts(prevPosts =>
+          prevPosts.map(post =>
+            post._id === postId
+              ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+              : post
+          )
+        );
+        // Add error notification
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
+      // If res.ok, the optimistic update holds, no further action needed
     } catch (error) {
       console.error('Error liking/unliking post:', error);
+      // Revert UI on network error
+      setLikedPosts(prev => {
+        const newLiked = new Set(prev);
+        if (isCurrentlyLiked) {
+          newLiked.add(postId);
+        } else {
+          newLiked.delete(postId);
+        }
+        return newLiked;
+      });
+      setPosts(prevPosts =>
+        prevPosts.map(post =>
+          post._id === postId
+            ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+            : post
+        )
+      );
+      // Add error notification
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not ${isCurrentlyLiked ? 'unlike' : 'like'} post.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles adding a comment to a post
   const handleAddComment = async (postId, commentText) => {
     if (!isLoggedIn || !currentUser || !currentUser.token) {
       setShowLoginModal(true);
@@ -2820,17 +3111,41 @@ const App = () => {
         const commentData = await res.json();
         setPosts(prevPosts =>
           prevPosts.map(post =>
-            post._id === postId ? { ...post, commentData: commentData.map(c => ({...c, timestamp: new Date(c.timestamp)})), comments: commentData.length } : post
+            post._id === postId ? {
+              ...post,
+              commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })), // Ensure comment timestamps are Date objects
+              comments: commentData.length // Update comment count
+            } : post
           )
         );
       } else {
-        console.error('Failed to add comment:', await res.json());
+        const errorData = await res.json();
+        console.error('Failed to add comment:', errorData);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to add comment: ${errorData.message || 'Unknown error.'}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
     } catch (error) {
       console.error('Error adding comment:', error);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not add comment.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles sharing a post (Web Share API or copy to clipboard)
   const handleShareClick = async (postId, postTitle, postContent) => {
     const shareUrl = `${window.location.origin}/posts/${postId}`;
 
@@ -2843,8 +3158,29 @@ const App = () => {
         });
       } catch (error) {
         console.error('Share failed:', error);
+        // Fallback to copy if Web Share API fails
+        try {
+          const tempInput = document.createElement('textarea');
+          tempInput.value = shareUrl;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tempInput);
+
+          // Show a custom alert instead of native alert()
+          const customAlert = document.createElement('div');
+          customAlert.className = 'custom-alert';
+          customAlert.innerHTML = 'Link copied to clipboard!';
+          document.body.appendChild(customAlert);
+          setTimeout(() => {
+            document.body.removeChild(customAlert);
+          }, 2000);
+        } catch (err) {
+          console.error('Copy to clipboard failed:', err);
+        }
       }
     } else {
+      // Fallback for browsers without Web Share API
       try {
         const tempInput = document.createElement('textarea');
         tempInput.value = shareUrl;
@@ -2866,52 +3202,64 @@ const App = () => {
     }
   };
 
+  // Sets the selected event for detailed view
   const handleOpenEventDetail = (event) => {
     setSelectedEvent(event);
-    setOpenCommentPostId(null);
-    setSelectedPost(null);
+    setOpenCommentPostId(null); // Close any open comments
+    setSelectedPost(null); // Clear selected post
   };
 
+  // Sets the selected post (news/confession) for detailed view
   const handleOpenPostDetail = (post) => {
     setSelectedPost(post);
-    setOpenCommentPostId(null);
-    setSelectedEvent(null);
+    setOpenCommentPostId(null); // Close any open comments
+    setSelectedEvent(null); // Clear selected event
   };
 
+  // Closes the detailed event view
   const handleCloseEventDetail = () => {
     setSelectedEvent(null);
   };
 
+  // Handles user login, setting current user and saving to localStorage
   const handleLogin = (user) => {
     setIsLoggedIn(true);
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
   };
 
+  // Handles user logout, clearing user data and localStorage
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
+    setLikedPosts(new Set()); // Clear liked posts on logout
     localStorage.removeItem('currentUser');
   };
 
+  // Opens the report post modal
   const handleOpenReportModal = (post) => {
     if (!currentUser) {
-      setShowLoginModal(true);
+      setShowLoginModal(true); // Prompt login if not logged in
       return;
     }
     setReportPostData(post);
     setIsReportModalOpen(true);
   };
 
+  // Closes the report post modal
   const handleCloseReportModal = () => {
     setIsReportModalOpen(false);
     setReportPostData(null);
   };
 
+  // Handles reporting a post to the backend
   const handleReportPost = async (postId, reason) => {
-    if (!currentUser || !currentUser.token) return;
+    if (!currentUser || !currentUser.token) {
+      console.error('User not authenticated for reporting posts.');
+      return;
+    }
     try {
-      await fetch(`${API_URL}/posts/${postId}/report`, {
+      const res = await fetch(`${API_URL}/posts/${postId}/report`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2919,39 +3267,105 @@ const App = () => {
         },
         body: JSON.stringify({ reason }),
       });
-      // Re-fetch admin notifications to show the new report
-      if (currentUser.isAdmin) {
-        fetchAdminNotifications();
+      if (res.ok) {
+        // Re-fetch admin notifications if the current user is an admin, to show the new report
+        if (currentUser.isAdmin) {
+          fetchAdminNotifications();
+        }
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Report for post ID ${postId} has been submitted. Thank you for your feedback!`,
+            timestamp: new Date(),
+            type: 'info'
+          },
+          ...prev
+        ]);
+      } else {
+        const errorData = await res.json();
+        console.error('Failed to report post:', errorData);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to report post: ${errorData.message || 'Unknown error.'}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
     } catch (err) {
-      console.error('Failed to report post:', err);
+      console.error('Error reporting post:', err);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not report post.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles deleting a reported post (admin function)
   const handleDeleteReportedPost = async (postId) => {
-    if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+    if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+      console.error('User not authorized to delete reported posts.');
+      return;
+    }
     try {
-      await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
+      const res = await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
-      await fetchPosts();
-      await fetchAdminNotifications();
-      alert('Post and associated reports have been deleted.');
+      if (res.ok) {
+        await fetchPosts(); // Re-fetch all posts to remove the deleted one
+        await fetchAdminNotifications(); // Re-fetch admin notifications to clear the report
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Reported post (ID: ${postId}) has been deleted successfully.`,
+            timestamp: new Date(),
+            type: 'success'
+          },
+          ...prev
+        ]);
+      } else {
+        const errorData = await res.json();
+        console.error('Failed to delete reported post:', errorData);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to delete reported post: ${errorData.message || 'Unknown error.'}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
+      }
     } catch (err) {
-      console.error('Failed to delete reported post:', err);
+      console.error('Error deleting reported post:', err);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not delete reported post.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
   };
 
+  // Handles updating the user's avatar
   const handleUpdateAvatar = async (newAvatar) => {
-    if (!currentUser || !currentUser.token) return;
-
-    console.log("[handleUpdateAvatar] Attempting to update avatar...");
-    console.log("[handleUpdateAvatar] Current User:", currentUser);
-    console.log("[handleUpdateAvatar] New Avatar URL:", newAvatar);
-    console.log(`[handleUpdateAvatar] Token being sent: Bearer ${currentUser.token}`);
+    if (!currentUser || !currentUser.token) {
+      console.error('User not authenticated for updating avatar.');
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/auth/profile/avatar`, { // Specific endpoint for avatar update
@@ -2965,22 +3379,47 @@ const App = () => {
 
       if (res.ok) {
         const updatedUser = await res.json();
-        console.log("[handleUpdateAvatar] Backend raw response for avatar update:", updatedUser);
-        setCurrentUser(updatedUser);
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-        console.log("[handleUpdateAvatar] Current user updated in state and localStorage.");
-        await fetchPosts(); // Update posts to reflect new avatar
-        console.log("[handleUpdateAvatar] Posts re-fetched to reflect new avatar.");
+        setCurrentUser(updatedUser); // Update currentUser state
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser)); // Update localStorage
+        await fetchPosts(); // Re-fetch posts to update author avatars if any were changed
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Your profile image has been updated successfully!`,
+            timestamp: new Date(),
+            type: 'success'
+          },
+          ...prev
+        ]);
       } else {
         const errorData = await res.json();
-        console.error('[handleUpdateAvatar] Failed to update avatar:', errorData);
+        console.error('Failed to update avatar:', errorData);
+        setNotifications(prev => [
+          {
+            _id: Date.now().toString(),
+            message: `Failed to update profile image: ${errorData.message || 'Unknown error.'}`,
+            timestamp: new Date(),
+            type: 'error'
+          },
+          ...prev
+        ]);
       }
     } catch (err) {
-      console.error('[handleUpdateAvatar] Error updating avatar:', err);
+      console.error('Error updating avatar:', err);
+      setNotifications(prev => [
+        {
+          _id: Date.now().toString(),
+          message: `Network error: Could not update profile image.`,
+          timestamp: new Date(),
+          type: 'error'
+        },
+        ...prev
+      ]);
     }
-    setShowProfileSettingsModal(false);
+    setShowProfileSettingsModal(false); // Close modal after attempt
   };
 
+  // Defines the main navigation menu items
   const menuItems = [
     {
       id: 'home',
@@ -3062,9 +3501,9 @@ const App = () => {
       id: 'theme-toggle',
       label: theme === 'light' ? 'Dark Mode' : 'Light Mode',
       icon: theme === 'light' ? <Moon className="nav-icon" /> : <Sun className="nav-icon" />,
-      component: null,
-      rightSidebar: null,
-      action: toggleTheme
+      component: null, // No main component for theme toggle
+      rightSidebar: null, // No sidebar for theme toggle
+      action: toggleTheme // Action to toggle theme
     },
     {
       id: 'add',
@@ -3074,15 +3513,16 @@ const App = () => {
       rightSidebar: null,
       action: () => {
         if (!isLoggedIn) {
-          setShowLoginModal(true);
+          setShowLoginModal(true); // Prompt login if not logged in
         } else {
-          setPostToEdit(null);
-          setIsModalOpen(true);
+          setPostToEdit(null); // Clear post to edit, indicating new post
+          setIsModalOpen(true); // Open add post modal
         }
       }
     },
   ];
 
+  // Map of section IDs to their corresponding main components
   const sectionComponents = {
     home: () => <HomeComponent
       posts={filteredPosts}
@@ -3143,7 +3583,7 @@ const App = () => {
       setOpenCommentPostId={setOpenCommentPostId}
       onOpenEventDetail={handleOpenEventDetail}
       onAddToCalendar={handleAddToCalendar}
-      setIsModalOpen={setIsModalOpen}
+      setIsModalOpen={setIsModalOpen} // Allow creating new posts from profile
       onDeletePost={handleDeletePost}
       onEditPost={handleEditPost}
       registrations={registrations}
@@ -3152,6 +3592,7 @@ const App = () => {
     />,
   };
 
+  // Map of section IDs to their corresponding right sidebar components
   const sectionSidebars = {
     home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
     events: () => <EventsRightSidebar
@@ -3164,17 +3605,20 @@ const App = () => {
     profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
   };
 
+  // Dynamically get the current main component and right sidebar component based on active section
   const CurrentComponent = sectionComponents[activeSection] || (() => null);
   const CurrentRightSidebar = sectionSidebars[activeSection] || (() => null);
 
   return (
     <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
+      {/* Login Modal */}
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
         onLogin={handleLogin}
       />
 
+      {/* Report Post Modal */}
       <ReportPostModal
         isOpen={isReportModalOpen}
         onClose={handleCloseReportModal}
@@ -3182,6 +3626,7 @@ const App = () => {
         post={reportPostData}
       />
 
+      {/* Profile Settings Modal (only shown if user is logged in) */}
       {currentUser && (
         <ProfileSettingsModal
           isOpen={showProfileSettingsModal}
@@ -3191,12 +3636,13 @@ const App = () => {
         />
       )}
 
+      {/* Main Header */}
       <header className="header">
         <div className="header-container">
           <div className="header-content">
             <div className="header-left">
               <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z"/><path d="m10 8-2 2 2 2"/><path d="m14 8 2 2-2 2"/></svg>
+                <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z"/><path d="m10 8-2 2 2 2"/><path d="m14 8 2 2-2 2"/></svg>
                 <span className="app-title">Confique</span>
               </a>
             </div>
@@ -3237,6 +3683,7 @@ const App = () => {
         </div>
       </header>
 
+      {/* Main Layout Container (Left Sidebar, Main Content, Right Sidebar) */}
       <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
         <aside className="left-sidebar">
           <nav className="sidebar-nav">
@@ -3245,13 +3692,14 @@ const App = () => {
                 key={item.id}
                 className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
                 onClick={() => {
+                  // Execute custom action if defined, otherwise change active section
                   if (item.action) {
                     item.action();
                   } else {
                     setActiveSection(item.id);
-                    setOpenCommentPostId(null);
-                    setSelectedEvent(null);
-                    setSelectedPost(null);
+                    setOpenCommentPostId(null); // Close any open comments
+                    setSelectedEvent(null); // Clear selected event
+                    setSelectedPost(null); // Clear selected post
                   }
                 }}
               >
@@ -3264,7 +3712,7 @@ const App = () => {
 
         <main className="main-content">
           <div className="content-padding">
-            {/* Conditional rendering to show a single post at the top of the feed */}
+            {/* Conditional rendering for Event Detail Page, Post Detail Page, or regular section components */}
             {selectedPost ? (
               <div className="single-post-and-feed">
                 <PostCard
@@ -3288,7 +3736,7 @@ const App = () => {
                 <h3 className="section-subtitle">More Posts</h3>
                 <div className="posts-container">
                   {posts
-                    .filter(p => p._id !== selectedPost._id)
+                    .filter(p => p._id !== selectedPost._id) // Don't show the currently detailed post again
                     .map(post => (
                       <PostCard
                         key={post._id}
@@ -3343,6 +3791,7 @@ const App = () => {
         </main>
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
+            {/* Conditional rendering for right sidebar based on active section or detailed view */}
             {!hasOpenModal && (
               selectedEvent ? (
                 <EventDetailSidebar
@@ -3352,7 +3801,7 @@ const App = () => {
                 />
               ) : (
                 <CurrentRightSidebar
-                  posts={posts}
+                  posts={posts} // Pass all posts to sidebars for filtering
                   onOpenPostDetail={handleOpenPostDetail}
                 />
               )
@@ -3361,20 +3810,22 @@ const App = () => {
         </aside>
       </div>
 
+      {/* Add/Edit Post Modal */}
       <AddPostModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setPostToEdit(null);
+          setPostToEdit(null); // Clear post to edit when closing
         }}
         onSubmit={handleAddPost}
         postToEdit={postToEdit}
         currentUser={currentUser}
       />
 
+      {/* Help and Support Modal */}
       <HelpAndSupportModal
         isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(true)}
+        onClose={() => setShowHelpModal(false)}
       />
     </div>
   );
