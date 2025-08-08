@@ -27,7 +27,7 @@ mongoose.connect(process.env.MONGO_URI)
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5173', // Your frontend URL (Vite default)
+  origin: 'https://confique.vercel.app', // Your frontend URL (Vite default)
   credentials: true // Allow cookies/sessions to be sent
 }));
 
