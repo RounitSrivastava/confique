@@ -24,6 +24,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, isLikedByUser, isCommen
 
   const isInteractive = post.type !== 'news';
 
+
   const handleCommentIconClick = (e) => {
     e.stopPropagation();
     setOpenCommentPostId(isCommentsOpen ? null : post.id); // Toggle the open state
