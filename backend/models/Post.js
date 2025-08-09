@@ -5,6 +5,7 @@ const commentSchema = new mongoose.Schema({
   authorAvatar: { type: String },
   text: { type: String, required: true },
   timestamp: { type: Date, default: Date.now },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Add userId to comments for consistency
 });
 
 const postSchema = new mongoose.Schema({
@@ -17,6 +18,10 @@ const postSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   timestamp: { type: Date, default: Date.now },
   likes: { type: Number, default: 0 },
+  likedBy: [{ // <-- THIS IS THE MISSING FIELD
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   comments: { type: Number, default: 0 },
   commentData: [commentSchema],
   // Event-specific fields

@@ -8,7 +8,6 @@ const { protect, admin } = require('../middleware/auth');
 const router = express.Router();
 
 // Get user profile
-// This route is used to fetch the current user's profile details
 router.get('/profile', protect, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
   if (user) {
@@ -16,10 +15,9 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
-      phone: user.phone,
       avatar: user.avatar,
       isAdmin: user.isAdmin,
-      registrations: user.registrations, // Include registrations
+      registrations: user.registrations,
     });
   } else {
     res.status(404).json({ message: 'User not found' });
@@ -27,60 +25,57 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
 }));
 
 // Update user profile (specifically for the avatar)
-// This route is used to update the user's profile image
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
-
   if (user) {
     user.avatar = req.body.avatar || user.avatar;
-
     const updatedUser = await user.save();
-
     res.json({
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
-      phone: updatedUser.phone,
       avatar: updatedUser.avatar,
-      token: req.headers.authorization.split(' ')[1], // Return the same token
+      token: req.headers.authorization.split(' ')[1],
     });
   } else {
     res.status(404).json({ message: 'User not found' });
   }
 }));
 
+// NEW ROUTE: Get a list of all posts the user has liked
+// This is what the frontend needs to check if a post is already liked
+router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
+  // Find all posts where the current user's ID is in the likedBy array
+  const likedPosts = await Post.find({ likedBy: req.user._id }).select('_id');
+
+  // Extract just the IDs to send back to the frontend
+  const likedPostIds = likedPosts.map(post => post._id);
+
+  res.json({ likedPostIds });
+}));
 
 // Register for an event
-// This route records a user's registration for a specific event
 router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
   const event = await Post.findById(req.params.id);
   const user = await User.findById(req.user._id);
-
   if (!event || !user) {
     return res.status(404).json({ message: 'Event or user not found' });
   }
-
-  // Check if user is already registered
   const isRegistered = user.registrations.some(reg => reg.eventId.toString() === event._id.toString());
   if (isRegistered) {
     return res.status(400).json({ message: 'User is already registered for this event' });
   }
-
   const registrationData = {
     eventId: event._id,
     eventName: event.title,
     registeredAt: new Date(),
   };
-
   user.registrations.push(registrationData);
   await user.save();
-
   res.status(201).json({ message: 'Registration successful', registration: registrationData });
 }));
 
-
 // Admin endpoint to get all reported posts
-// This is for the admin panel to view reported posts.
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
   const reportedPosts = await Notification.find({ reportReason: { $exists: true } })
     .populate('reporter', 'name email phone')
@@ -89,10 +84,8 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
 }));
 
 // Admin endpoint to delete a post and its reports
-// This is for the admin to take action on reported posts.
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
   const post = await Post.findById(req.params.id);
-
   if (post) {
     await post.deleteOne();
     await Notification.deleteMany({ postId: req.params.id });
