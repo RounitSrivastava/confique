@@ -1054,7 +1054,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                       Enable Registration Form
                     </label>
                   </div>
-                  {/* FIX: New field for registration customization */}
                   {formData.enableRegistrationForm && (
                       <div className="form-group">
                           <label className="form-label">Custom Registration Fields (comma-separated)</label>
@@ -2877,7 +2876,7 @@ const App = () => {
         setPostToEdit(null);
 
         if (method === 'POST') {
-          // FIX: Add the new post to the beginning of the array to make it visible
+          // Add the new post to the beginning of the array to make it visible
           setPosts(prev => [formattedResponsePost, ...prev]);
           setNotifications(prev => [
             {
@@ -3028,7 +3027,8 @@ const App = () => {
       const res = await fetch(endpoint, {
         method,
         headers: {
-          'Authorization': `Bearer ${currentUser.token'`,
+          // FIX: Removed the extra single quote from this line
+          'Authorization': `Bearer ${currentUser.token}`,
         },
       });
 
