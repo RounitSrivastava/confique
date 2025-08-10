@@ -2877,6 +2877,7 @@ const App = () => {
         setPostToEdit(null);
 
         if (method === 'POST') {
+          // FIX: Add the new post to the beginning of the array to make it visible
           setPosts(prev => [formattedResponsePost, ...prev]);
           setNotifications(prev => [
             {
@@ -3027,7 +3028,7 @@ const App = () => {
       const res = await fetch(endpoint, {
         method,
         headers: {
-          'Authorization': `Bearer ${currentUser.token}`,
+          'Authorization': `Bearer ${currentUser.token'`,
         },
       });
 
