@@ -728,7 +728,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         paymentQRCode: postToEdit.paymentQRCode || ''
       });
       setImagePreviews(postToEdit.images || []);
-      setPaymentQRPreview(postToEdit.paymentQRCode || '');
+      setPaymentQRPreview(postTo-Edit.paymentQRCode || '');
     } else {
       // Reset to initial state for new post
       setFormData(prev => ({
@@ -2876,7 +2876,7 @@ const App = () => {
         setPostToEdit(null);
 
         if (method === 'POST') {
-          // Add the new post to the beginning of the array to make it visible
+          // FIX: Add the new post to the beginning of the array to make it visible
           setPosts(prev => [formattedResponsePost, ...prev]);
           setNotifications(prev => [
             {
@@ -3027,7 +3027,6 @@ const App = () => {
       const res = await fetch(endpoint, {
         method,
         headers: {
-          // FIX: Removed the extra single quote from this line
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
