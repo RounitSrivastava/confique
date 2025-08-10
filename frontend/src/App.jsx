@@ -40,6 +40,7 @@ import './App.css'; // Assuming you have an App.css for styling
 // For demonstration, these are treated as direct imports.
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
+const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -361,7 +362,7 @@ const CommentItem = ({ comment }) => (
   <div className="comment-item">
     <div className="comment-avatar">
       <img
-        src={comment.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+        src={comment.authorAvatar || placeholderAvatar}
         alt={`${comment.author}'s avatar`}
         className="comment-avatar-img"
         loading="lazy"
@@ -1053,6 +1054,20 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                       Enable Registration Form
                     </label>
                   </div>
+                  {/* FIX: New field for registration customization */}
+                  {formData.enableRegistrationForm && (
+                      <div className="form-group">
+                          <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                          <input
+                            type="text"
+                            name="registrationFields"
+                            className="form-input"
+                            value={formData.registrationFields}
+                            onChange={handleFormChange}
+                            placeholder="e.g., Roll Number, Branch, Semester"
+                          />
+                      </div>
+                  )}
 
                   {formData.price > 0 && formData.enableRegistrationForm && (
                     <div className="form-group">
@@ -1488,7 +1503,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfilePage, registrationCount, onReportPost }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
   const overlayRef = useRef(null);
   const [showFullContent, setShowFullContent] = useState(false);
   const contentRef = useRef(null);
@@ -1579,7 +1594,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
           const tempInput = document.createElement('textarea');
           tempInput.value = shareUrl;
           document.body.appendChild(tempInput);
-          tempInput.select();
           document.execCommand('copy');
           document.body.removeChild(tempInput);
           setShowShareAlert(true);
@@ -1594,7 +1608,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         const tempInput = document.createElement('textarea');
         tempInput.value = shareUrl;
         document.body.appendChild(tempInput);
-        tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
         setShowShareAlert(true); // Indicate success
@@ -1610,7 +1623,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
       <div className="post-header">
         <div className="post-avatar-container">
           <img
-            src={post.authorAvatar || 'https://placehold.co/40x40/cccccc/000000?text=A'}
+            src={post.authorAvatar || placeholderAvatar}
             alt={`${post.author}'s avatar`}
             className="post-avatar"
             loading="lazy"
@@ -1631,7 +1644,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             post={post}
             onDelete={onDeletePost}
             onEdit={onEditPost}
-            isProfilePage={isProfilePage}
+            isProfilePage={isProfileView} // Use the isProfileView prop here
             currentUser={currentUser}
             onReport={onReportPost}
           />
@@ -1718,7 +1731,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
               <MessageIcon size={20} />
               <span>{post.commentData ? post.commentData.length : 0}</span>
             </button>
-            {post.type === 'event' && isUserPost && (
+            {/* FIX: Only show registration count on the user's profile page */}
+            {post.type === 'event' && isUserPost && isProfileView && (
               <div className="post-stat">
                 <Ticket size={20} />
                 <span>{registrationCount || 0}</span>
@@ -1785,13 +1799,13 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                 onLike={onLike}
                 onShare={onShare}
                 onAddComment={onAddComment}
-                isLikedByUser={likedPosts.has(post._id)}
+                likedPosts={likedPosts}
                 isCommentsOpen={openCommentPostId === post._id}
                 setOpenCommentPostId={setOpenCommentPostId}
                 onOpenEventDetail={onOpenEventDetail}
                 onAddToCalendar={onAddToCalendar}
                 currentUser={currentUser}
-                isProfilePage={false}
+                isProfileView={false} // FIX: Setting isProfileView to false here
                 registrationCount={registrations[post._id]}
                 onReportPost={onReportPost}
               />
@@ -1816,7 +1830,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfilePage={false}
+            isProfileView={false} // FIX: Setting isProfileView to false here
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -1846,7 +1860,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfilePage={false}
+            isProfileView={false} // FIX: Setting isProfileView to false here
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -1876,7 +1890,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfilePage={false}
+            isProfileView={false} // FIX: Setting isProfileView to false here
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -2002,7 +2016,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
           <div className="current-avatar-container">
             <h4 className="modal-subtitle">Current Profile Image</h4>
             <div className="current-avatar-preview">
-              <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt="Current Avatar" loading="lazy" decoding="async" />
+              <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
             </div>
           </div>
           <div className="avatar-options-container">
@@ -2102,7 +2116,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
       <div className="profile-header">
         <div className="profile-avatar-container">
-          <img src={currentUser.avatar || 'https://placehold.co/80x80/cccccc/000000?text=A'} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+          <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
           <button className="edit-avatar-button" onClick={onEditProfile}>
             <Edit3 size={16} />
           </button>
@@ -2141,16 +2155,16 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               post={post}
               onLike={onLike}
               onShare={onShare}
-              onAddComment={onAddComment}
+              onAddComment={handleAddComment}
               likedPosts={likedPosts}
               isCommentsOpen={openCommentPostId === post._id}
               setOpenCommentPostId={setOpenCommentPostId}
               onOpenEventDetail={onOpenEventDetail}
-              onAddToCalendar={onAddToCalendar}
+              onAddToCalendar={handleAddToCalendar}
               currentUser={currentUser}
+              isProfileView={true} // FIX: Setting isProfileView to true here
               onDeletePost={onDeletePost}
               onEditPost={onEditPost}
-              isProfilePage={true} // Indicate this is a profile page view
               registrationCount={registrations[post._id]}
               onReportPost={onReportPost}
             />
@@ -2523,7 +2537,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="avatar-wrapper">
-          <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+          <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
         </div>
       </button>
 
@@ -2531,7 +2545,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         <div className="profile-dropdown-menu">
           <div className="profile-info">
             <div className="profile-avatar">
-              <img src={user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+              <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
             </div>
             <div className="profile-details">
               <div className="profile-name-display">{user.name}</div>
@@ -2623,10 +2637,9 @@ const App = () => {
   };
 
   // Fetches event registration counts for events created by the current user
-  const fetchRegistrations = async (userId) => {
+  const fetchRegistrations = async () => {
     if (!currentUser || !currentUser.token) return;
     try {
-      // Assuming this endpoint returns a map of eventId to count or an array of registrations
       const res = await fetch(`${API_URL}/users/registrations`, {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
@@ -2651,7 +2664,6 @@ const App = () => {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
       const data = await res.json();
-      // Ensure notification timestamps are Date objects
       setNotifications(data.map(n => ({...n, timestamp: new Date(n.timestamp)})));
     } catch (error) {
       console.error('Failed to fetch notifications:', error);
@@ -2666,7 +2678,6 @@ const App = () => {
         headers: { 'Authorization': `Bearer ${currentUser.token}` }
       });
       const data = await res.json();
-      // Ensure reported post timestamps are Date objects
       setAdminNotifications(data.map(n => ({...n, timestamp: new Date(n.timestamp)})));
     } catch (error) {
       console.error('Failed to fetch admin notifications (reported posts):', error);
@@ -2688,8 +2699,6 @@ const App = () => {
       if (res.ok) {
         const data = await res.json();
         setLikedPosts(new Set(data.likedPostIds || []));
-        // Add a console log here to verify the data is received
-        console.log("FETCHED LIKED POSTS:", data.likedPostIds);
       } else {
         console.error('Failed to fetch liked posts for user:', await res.json());
       }
@@ -2712,7 +2721,6 @@ const App = () => {
     if (token && name && email && _id) {
       const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
       handleLogin(user); // Log in the user
-      // Clear URL parameters after processing
       window.history.replaceState({}, document.title, window.location.pathname);
     } else {
       const savedUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -2721,46 +2729,39 @@ const App = () => {
         setCurrentUser(savedUser);
       }
     }
-    document.documentElement.setAttribute('data-theme', theme); // Apply theme
-  }, [theme]); // Re-run if theme changes, but primarily on component mount
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   // Effect to fetch initial data when login state or currentUser changes
   useEffect(() => {
-    // Wrap async logic in a function to use await
     const fetchData = async () => {
-      // First, fetch the posts that the user has liked
       if (isLoggedIn && currentUser) {
         await fetchLikedPosts(currentUser);
-        fetchRegistrations(currentUser._id);
+        fetchRegistrations();
         fetchNotifications();
         if (currentUser.isAdmin) {
           fetchAdminNotifications();
         }
       } else {
-        // If logged out, clear likedPosts state
         setLikedPosts(new Set());
       }
-      // Then, fetch all the posts for the feed
+      
       fetchPosts();
     };
 
     fetchData();
-
-    // The console.log below is for debugging purposes, to see the state after the effect runs
-    console.log("APP COMPONENT RENDERED. CURRENT LIKED POSTS STATE:", likedPosts);
     
-  }, [isLoggedIn, currentUser]); // Dependencies ensure this effect runs on login/logout
+  }, [isLoggedIn, currentUser]);
 
   // Effect to control body scrolling when modals are open
   useEffect(() => {
     if (hasOpenModal) {
       document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = '15px'; // Adjust for scrollbar to prevent layout shift
+      document.body.style.paddingRight = '15px';
     } else {
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
     };
-    // Cleanup function
     return () => {
       document.body.style.overflow = '';
       document.body.style.paddingRight = '';
@@ -2789,7 +2790,6 @@ const App = () => {
       return;
     }
     setMyCalendarEvents(prev => {
-      // Prevent adding duplicate events to calendar
       if (prev.some(e => e._id === event._id)) {
         return prev;
       }
@@ -2813,9 +2813,7 @@ const App = () => {
         },
       });
       if (res.ok) {
-        // Re-fetch registrations to update count for the event creator's view
-        fetchRegistrations(currentUser._id);
-        // Add a success notification for the user
+        fetchRegistrations();
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -2874,13 +2872,12 @@ const App = () => {
 
       if (res.ok) {
         const responseData = await res.json();
-        const formattedResponsePost = formatPostDates(responseData); // Ensure dates are formatted
+        const formattedResponsePost = formatPostDates(responseData);
 
-        setPostToEdit(null); // Clear postToEdit state
+        setPostToEdit(null);
 
         if (method === 'POST') {
-          setPosts(prev => [formattedResponsePost, ...prev]); // Add new post to top
-          // Add a notification for new post creation
+          setPosts(prev => [formattedResponsePost, ...prev]);
           setNotifications(prev => [
             {
               _id: Date.now().toString(),
@@ -2890,9 +2887,8 @@ const App = () => {
             },
             ...prev
           ]);
-        } else { // PUT request (edit)
-          setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p)); // Update existing post
-          // Add a notification for post update
+        } else {
+          setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
           setNotifications(prev => [
             {
               _id: Date.now().toString(),
@@ -2930,7 +2926,6 @@ const App = () => {
     }
   };
 
-  // Handles deleting a post
   const handleDeletePost = async (postId) => {
     if (!isLoggedIn || !currentUser || !currentUser.token) {
       console.error('User not authenticated for deleting posts.');
@@ -2944,9 +2939,9 @@ const App = () => {
         },
       });
       if (res.ok) {
-        setPosts(prevPosts => prevPosts.filter(post => post._id !== postId)); // Remove from main posts list
-        setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId)); // Remove from calendar if it was an event
-        setLikedPosts(prev => { // Remove from liked posts set
+        setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
+        setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
+        setLikedPosts(prev => {
           const newLiked = new Set(prev);
           newLiked.delete(postId);
           return newLiked;
@@ -2987,34 +2982,29 @@ const App = () => {
     }
   };
 
-  // Sets the post to be edited and opens the modal
   const handleEditPost = (post) => {
     if (!isLoggedIn) {
       setShowLoginModal(true);
       return;
     }
-    // Ensure only author or admin can edit
     if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
       setPostToEdit(post);
       setIsModalOpen(true);
-      setActiveSection('profile'); // Switch to profile section to reflect changes
+      setActiveSection('profile');
     }
   };
 
 
-  // Handles liking/unliking a post with optimistic UI updates
   const handleLikePost = async (postId) => {
-    // Check for authentication and token
     if (!isLoggedIn || !currentUser || !currentUser.token) {
-      setShowLoginModal(true); // Prompt login if not authenticated
+      setShowLoginModal(true);
       return;
     }
 
     const isCurrentlyLiked = likedPosts.has(postId);
     const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
-    const method = 'PUT'; // Both like and unlike are PUT operations on the resource
+    const method = 'PUT';
 
-    // Optimistic UI update: immediately change the UI to feel responsive
     setLikedPosts(prev => {
       const newLiked = new Set(prev);
       if (isCurrentlyLiked) {
@@ -3044,13 +3034,12 @@ const App = () => {
       if (!res.ok) {
         console.error('Failed to like/unlike post:', await res.json());
 
-        // Revert the UI if the API call fails
         setLikedPosts(prev => {
           const newLiked = new Set(prev);
           if (isCurrentlyLiked) {
-            newLiked.add(postId); // Add back if it was originally liked
+            newLiked.add(postId);
           } else {
-            newLiked.delete(postId); // Remove if it was originally unliked
+            newLiked.delete(postId);
           }
           return newLiked;
         });
@@ -3061,7 +3050,6 @@ const App = () => {
               : post
           )
         );
-        // Add error notification
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -3072,10 +3060,9 @@ const App = () => {
           ...prev
         ]);
       }
-      // If res.ok, the optimistic update holds, no further action is needed
     } catch (error) {
       console.error('Error liking/unliking post:', error);
-      // Revert UI on network error
+
       setLikedPosts(prev => {
         const newLiked = new Set(prev);
         if (isCurrentlyLiked) {
@@ -3092,7 +3079,6 @@ const App = () => {
             : post
         )
       );
-      // Add error notification
       setNotifications(prev => [
         {
           _id: Date.now().toString(),
@@ -3105,7 +3091,6 @@ const App = () => {
     }
   };
 
-  // Handles adding a comment to a post
   const handleAddComment = async (postId, commentText) => {
     if (!isLoggedIn || !currentUser || !currentUser.token) {
       setShowLoginModal(true);
@@ -3127,8 +3112,8 @@ const App = () => {
           prevPosts.map(post =>
             post._id === postId ? {
               ...post,
-              commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })), // Ensure comment timestamps are Date objects
-              comments: commentData.length // Update comment count
+              commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
+              comments: commentData.length
             } : post
           )
         );
@@ -3159,7 +3144,6 @@ const App = () => {
     }
   };
 
-  // Handles sharing a post (Web Share API or copy to clipboard)
   const handleShareClick = async (postId, postTitle, postContent) => {
     const shareUrl = `${window.location.origin}/posts/${postId}`;
 
@@ -3172,101 +3156,75 @@ const App = () => {
         });
       } catch (error) {
         console.error('Share failed:', error);
-        // Fallback to copy if Web Share API fails
         try {
           const tempInput = document.createElement('textarea');
           tempInput.value = shareUrl;
           document.body.appendChild(tempInput);
-          tempInput.select();
           document.execCommand('copy');
           document.body.removeChild(tempInput);
-
-          // Show a custom alert instead of native alert()
-          const customAlert = document.createElement('div');
-          customAlert.className = 'custom-alert';
-          customAlert.innerHTML = 'Link copied to clipboard!';
-          document.body.appendChild(customAlert);
-          setTimeout(() => {
-            document.body.removeChild(customAlert);
-          }, 2000);
+          setShowShareAlert(true);
         } catch (err) {
           console.error('Copy to clipboard failed:', err);
+          setShowShareAlert(true);
         }
       }
     } else {
-      // Fallback for browsers without Web Share API
       try {
         const tempInput = document.createElement('textarea');
         tempInput.value = shareUrl;
         document.body.appendChild(tempInput);
-        tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-
-        const customAlert = document.createElement('div');
-        customAlert.className = 'custom-alert';
-        customAlert.innerHTML = 'Link copied to clipboard!';
-        document.body.appendChild(customAlert);
-        setTimeout(() => {
-          document.body.removeChild(customAlert);
-        }, 2000);
+        setShowShareAlert(true);
       } catch (err) {
-        console.error('Copy to clipboard failed:', err);
+        setShowShareAlert(true);
       }
     }
   };
 
-  // Sets the selected event for detailed view
   const handleOpenEventDetail = (event) => {
     setSelectedEvent(event);
-    setOpenCommentPostId(null); // Close any open comments
-    setSelectedPost(null); // Clear selected post
+    setOpenCommentPostId(null);
+    setSelectedPost(null);
   };
 
-  // Sets the selected post (news/confession) for detailed view
   const handleOpenPostDetail = (post) => {
     setSelectedPost(post);
-    setOpenCommentPostId(null); // Close any open comments
-    setSelectedEvent(null); // Clear selected event
+    setOpenCommentPostId(null);
+    setSelectedEvent(null);
   };
 
-  // Closes the detailed event view
   const handleCloseEventDetail = () => {
     setSelectedEvent(null);
   };
 
-  // Handles user login, setting current user and saving to localStorage
   const handleLogin = (user) => {
     setIsLoggedIn(true);
     setCurrentUser(user);
     localStorage.setItem('currentUser', JSON.stringify(user));
   };
 
-  // Handles user logout, clearing user data and localStorage
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
-    setLikedPosts(new Set()); // Clear liked posts on logout
+    setLikedPosts(new Set());
     localStorage.removeItem('currentUser');
   };
 
-  // Opens the report post modal
   const handleOpenReportModal = (post) => {
     if (!currentUser) {
-      setShowLoginModal(true); // Prompt login if not logged in
+      setShowLoginModal(true);
       return;
     }
     setReportPostData(post);
     setIsReportModalOpen(true);
   };
 
-  // Closes the report post modal
   const handleCloseReportModal = () => {
     setIsReportModalOpen(false);
     setReportPostData(null);
   };
 
-  // Handles reporting a post to the backend
   const handleReportPost = async (postId, reason) => {
     if (!currentUser || !currentUser.token) {
       console.error('User not authenticated for reporting posts.');
@@ -3282,7 +3240,6 @@ const App = () => {
         body: JSON.stringify({ reason }),
       });
       if (res.ok) {
-        // Re-fetch admin notifications if the current user is an admin, to show the new report
         if (currentUser.isAdmin) {
           fetchAdminNotifications();
         }
@@ -3322,7 +3279,6 @@ const App = () => {
     }
   };
 
-  // Handles deleting a reported post (admin function)
   const handleDeleteReportedPost = async (postId) => {
     if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
       console.error('User not authorized to delete reported posts.');
@@ -3336,8 +3292,8 @@ const App = () => {
         },
       });
       if (res.ok) {
-        await fetchPosts(); // Re-fetch all posts to remove the deleted one
-        await fetchAdminNotifications(); // Re-fetch admin notifications to clear the report
+        await fetchPosts();
+        await fetchAdminNotifications();
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -3360,8 +3316,8 @@ const App = () => {
           ...prev
         ]);
       }
-    } catch (err) {
-      console.error('Error deleting reported post:', err);
+    } catch (error) {
+      console.error('Error deleting reported post:', error);
       setNotifications(prev => [
         {
           _id: Date.now().toString(),
@@ -3374,7 +3330,6 @@ const App = () => {
     }
   };
 
-  // Handles updating the user's avatar
   const handleUpdateAvatar = async (newAvatar) => {
     if (!currentUser || !currentUser.token) {
       console.error('User not authenticated for updating avatar.');
@@ -3382,7 +3337,7 @@ const App = () => {
     }
 
     try {
-      const res = await fetch(`${API_URL}/auth/profile/avatar`, { // Specific endpoint for avatar update
+      const res = await fetch(`${API_URL}/auth/profile/avatar`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -3393,9 +3348,9 @@ const App = () => {
 
       if (res.ok) {
         const updatedUser = await res.json();
-        setCurrentUser(updatedUser); // Update currentUser state
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser)); // Update localStorage
-        await fetchPosts(); // Re-fetch posts to update author avatars if any were changed
+        setCurrentUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        await fetchPosts();
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -3430,10 +3385,9 @@ const App = () => {
         ...prev
       ]);
     }
-    setShowProfileSettingsModal(false); // Close modal after attempt
+    setShowProfileSettingsModal(false);
   };
 
-  // Defines the main navigation menu items
   const menuItems = [
     {
       id: 'home',
@@ -3515,9 +3469,9 @@ const App = () => {
       id: 'theme-toggle',
       label: theme === 'light' ? 'Dark Mode' : 'Light Mode',
       icon: theme === 'light' ? <Moon className="nav-icon" /> : <Sun className="nav-icon" />,
-      component: null, // No main component for theme toggle
-      rightSidebar: null, // No sidebar for theme toggle
-      action: toggleTheme // Action to toggle theme
+      component: null,
+      rightSidebar: null,
+      action: toggleTheme
     },
     {
       id: 'add',
@@ -3527,10 +3481,10 @@ const App = () => {
       rightSidebar: null,
       action: () => {
         if (!isLoggedIn) {
-          setShowLoginModal(true); // Prompt login if not logged in
+          setShowLoginModal(true);
         } else {
-          setPostToEdit(null); // Clear post to edit, indicating new post
-          setIsModalOpen(true); // Open add post modal
+          setPostToEdit(null);
+          setIsModalOpen(true);
         }
       }
     },
@@ -3587,7 +3541,7 @@ const App = () => {
       onDeleteReportedPost={handleDeleteReportedPost}
     />,
     profile: () => <UsersComponent
-      posts={posts} // Pass all posts to profile to filter user's own posts
+      posts={posts}
       currentUser={currentUser}
       onLike={handleLikePost}
       onShare={handleShareClick}
@@ -3597,7 +3551,7 @@ const App = () => {
       setOpenCommentPostId={setOpenCommentPostId}
       onOpenEventDetail={handleOpenEventDetail}
       onAddToCalendar={handleAddToCalendar}
-      setIsModalOpen={setIsModalOpen} // Allow creating new posts from profile
+      setIsModalOpen={setIsModalOpen}
       onDeletePost={handleDeletePost}
       onEditPost={handleEditPost}
       registrations={registrations}
@@ -3706,14 +3660,13 @@ const App = () => {
                 key={item.id}
                 className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
                 onClick={() => {
-                  // Execute custom action if defined, otherwise change active section
                   if (item.action) {
                     item.action();
                   } else {
                     setActiveSection(item.id);
-                    setOpenCommentPostId(null); // Close any open comments
-                    setSelectedEvent(null); // Clear selected event
-                    setSelectedPost(null); // Clear selected post
+                    setOpenCommentPostId(null);
+                    setSelectedEvent(null);
+                    setSelectedPost(null);
                   }
                 }}
               >
@@ -3726,7 +3679,6 @@ const App = () => {
 
         <main className="main-content">
           <div className="content-padding">
-            {/* Conditional rendering for Event Detail Page, Post Detail Page, or regular section components */}
             {selectedPost ? (
               <div className="single-post-and-feed">
                 <PostCard
@@ -3742,7 +3694,7 @@ const App = () => {
                   currentUser={currentUser}
                   onDeletePost={handleDeletePost}
                   onEditPost={handleEditPost}
-                  isProfilePage={selectedPost.userId === currentUser?._id}
+                  isProfileView={selectedPost.userId === currentUser?._id}
                   registrationCount={registrations[selectedPost._id]}
                   onReportPost={handleOpenReportModal}
                 />
@@ -3750,12 +3702,12 @@ const App = () => {
                 <h3 className="section-subtitle">More Posts</h3>
                 <div className="posts-container">
                   {posts
-                    .filter(p => p._id !== selectedPost._id) // Don't show the currently detailed post again
+                    .filter(p => p._id !== selectedPost._id)
                     .map(post => (
                       <PostCard
                         key={post._id}
                         post={post}
-                        onLike={handleLikePost}
+                        onLike={onLike}
                         onShare={handleShareClick}
                         onAddComment={handleAddComment}
                         likedPosts={likedPosts}
@@ -3764,9 +3716,7 @@ const App = () => {
                         onOpenEventDetail={handleOpenEventDetail}
                         onAddToCalendar={handleAddToCalendar}
                         currentUser={currentUser}
-                        onDeletePost={handleDeletePost}
-                        onEditPost={handleEditPost}
-                        isProfilePage={post.userId === currentUser?._id}
+                        isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={handleOpenReportModal}
                       />
@@ -3781,7 +3731,7 @@ const App = () => {
                 onRequireLogin={() => setShowLoginModal(true)}
                 onAddToCalendar={handleAddToCalendar}
                 onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                isRegistered={registrations[selectedEvent._id] > 0} // Check if user is registered for this event
+                isRegistered={registrations[selectedEvent._id] > 0}
               />
             ) : (
               <CurrentComponent
@@ -3805,7 +3755,6 @@ const App = () => {
         </main>
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
-            {/* Conditional rendering for right sidebar based on active section or detailed view */}
             {!hasOpenModal && (
               selectedEvent ? (
                 <EventDetailSidebar
@@ -3815,7 +3764,7 @@ const App = () => {
                 />
               ) : (
                 <CurrentRightSidebar
-                  posts={posts} // Pass all posts to sidebars for filtering
+                  posts={posts}
                   onOpenPostDetail={handleOpenPostDetail}
                 />
               )
@@ -3829,7 +3778,7 @@ const App = () => {
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setPostToEdit(null); // Clear post to edit when closing
+          setPostToEdit(null);
         }}
         onSubmit={handleAddPost}
         postToEdit={postToEdit}
