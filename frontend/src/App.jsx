@@ -728,7 +728,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         paymentQRCode: postToEdit.paymentQRCode || ''
       });
       setImagePreviews(postToEdit.images || []);
-      setPaymentQRPreview(postTo-Edit.paymentQRCode || '');
+      setPaymentQRPreview(postToEdit.paymentQRCode || '');
     } else {
       // Reset to initial state for new post
       setFormData(prev => ({
@@ -1730,7 +1730,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
               <MessageIcon size={20} />
               <span>{post.commentData ? post.commentData.length : 0}</span>
             </button>
-            {/* FIX: Only show registration count on the user's profile page */}
+            {/* Only show registration count on the user's profile page */}
             {post.type === 'event' && isUserPost && isProfileView && (
               <div className="post-stat">
                 <Ticket size={20} />
@@ -1804,7 +1804,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                 onOpenEventDetail={onOpenEventDetail}
                 onAddToCalendar={onAddToCalendar}
                 currentUser={currentUser}
-                isProfileView={false} // FIX: Setting isProfileView to false here
+                isProfileView={false}
                 registrationCount={registrations[post._id]}
                 onReportPost={onReportPost}
               />
@@ -1829,7 +1829,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfileView={false} // FIX: Setting isProfileView to false here
+            isProfileView={false}
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -1859,7 +1859,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfileView={false} // FIX: Setting isProfileView to false here
+            isProfileView={false}
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -1889,7 +1889,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             onOpenEventDetail={onOpenEventDetail}
             onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
-            isProfileView={false} // FIX: Setting isProfileView to false here
+            isProfileView={false}
             registrationCount={registrations[post._id]}
             onReportPost={onReportPost}
           />
@@ -2154,12 +2154,12 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               post={post}
               onLike={onLike}
               onShare={onShare}
-              onAddComment={handleAddComment}
+              onAddComment={onAddComment}
               likedPosts={likedPosts}
               isCommentsOpen={openCommentPostId === post._id}
               setOpenCommentPostId={setOpenCommentPostId}
               onOpenEventDetail={onOpenEventDetail}
-              onAddToCalendar={handleAddToCalendar}
+              onAddToCalendar={onAddToCalendar}
               currentUser={currentUser}
               isProfileView={true} // FIX: Setting isProfileView to true here
               onDeletePost={onDeletePost}
@@ -3545,7 +3545,7 @@ const App = () => {
       currentUser={currentUser}
       onLike={handleLikePost}
       onShare={handleShareClick}
-      onAddComment={handleAddComment}
+      onAddComment={handleAddComment} // Fix: Passing onAddComment handler
       likedPosts={likedPosts}
       openCommentPostId={openCommentPostId}
       setOpenCommentPostId={setOpenCommentPostId}
@@ -3753,6 +3753,7 @@ const App = () => {
             )}
           </div>
         </main>
+        {/* FIX: Conditionally render the right sidebar based on selectedEvent */}
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
             {!hasOpenModal && (
