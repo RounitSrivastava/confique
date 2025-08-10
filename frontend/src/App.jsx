@@ -2680,7 +2680,6 @@ const App = () => {
       return;
     }
     try {
-      // Assuming this endpoint returns a list of post IDs liked by the user
       const res = await fetch(`${API_URL}/users/liked-posts`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
@@ -2688,7 +2687,9 @@ const App = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setLikedPosts(new Set(data.likedPostIds || [])); // Assuming the response is { likedPostIds: [...] }
+        setLikedPosts(new Set(data.likedPostIds || []));
+        // Add a console log here to verify the data is received
+        console.log("FETCHED LIKED POSTS:", data.likedPostIds);
       } else {
         console.error('Failed to fetch liked posts for user:', await res.json());
       }
@@ -2725,19 +2726,30 @@ const App = () => {
 
   // Effect to fetch initial data when login state or currentUser changes
   useEffect(() => {
-    fetchPosts(); // Always fetch posts on initial load
-    if (isLoggedIn && currentUser) {
-      fetchLikedPosts(currentUser); // Fetch liked posts when user is logged in
-      fetchRegistrations(currentUser._id);
-      fetchNotifications();
-      if (currentUser.isAdmin) {
-        fetchAdminNotifications();
+    // Wrap async logic in a function to use await
+    const fetchData = async () => {
+      // First, fetch the posts that the user has liked
+      if (isLoggedIn && currentUser) {
+        await fetchLikedPosts(currentUser);
+        fetchRegistrations(currentUser._id);
+        fetchNotifications();
+        if (currentUser.isAdmin) {
+          fetchAdminNotifications();
+        }
+      } else {
+        // If logged out, clear likedPosts state
+        setLikedPosts(new Set());
       }
-    } else {
-      // If user logs out, clear likedPosts to prevent stale data
-      setLikedPosts(new Set());
-    }
-  }, [isLoggedIn, currentUser]); // Dependencies include isLoggedIn and currentUser
+      // Then, fetch all the posts for the feed
+      fetchPosts();
+    };
+
+    fetchData();
+
+    // The console.log below is for debugging purposes, to see the state after the effect runs
+    console.log("APP COMPONENT RENDERED. CURRENT LIKED POSTS STATE:", likedPosts);
+    
+  }, [isLoggedIn, currentUser]); // Dependencies ensure this effect runs on login/logout
 
   // Effect to control body scrolling when modals are open
   useEffect(() => {
