@@ -2154,7 +2154,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
               post={post}
               onLike={onLike}
               onShare={onShare}
-              onAddComment={onAddComment}
+              onAddComment={onAddComment} // FIX: Correctly passing onAddComment
               likedPosts={likedPosts}
               isCommentsOpen={openCommentPostId === post._id}
               setOpenCommentPostId={setOpenCommentPostId}
@@ -2876,7 +2876,7 @@ const App = () => {
         setPostToEdit(null);
 
         if (method === 'POST') {
-          // FIX: Add the new post to the beginning of the array to make it visible
+          // Add the new post to the beginning of the array to make it visible
           setPosts(prev => [formattedResponsePost, ...prev]);
           setNotifications(prev => [
             {
@@ -3545,7 +3545,7 @@ const App = () => {
       currentUser={currentUser}
       onLike={handleLikePost}
       onShare={handleShareClick}
-      onAddComment={handleAddComment} // Fix: Passing onAddComment handler
+      onAddComment={handleAddComment}
       likedPosts={likedPosts}
       openCommentPostId={openCommentPostId}
       setOpenCommentPostId={setOpenCommentPostId}
@@ -3756,19 +3756,17 @@ const App = () => {
         {/* FIX: Conditionally render the right sidebar based on selectedEvent */}
         <aside className="right-sidebar">
           <div className="right-sidebar-content">
-            {!hasOpenModal && (
-              selectedEvent ? (
-                <EventDetailSidebar
-                  events={posts}
-                  currentEvent={selectedEvent}
-                  onOpenEventDetail={handleOpenEventDetail}
-                />
-              ) : (
-                <CurrentRightSidebar
-                  posts={posts}
-                  onOpenPostDetail={handleOpenPostDetail}
-                />
-              )
+            {selectedEvent ? (
+              <EventDetailSidebar
+                events={posts}
+                currentEvent={selectedEvent}
+                onOpenEventDetail={handleOpenEventDetail}
+              />
+            ) : (
+              <CurrentRightSidebar
+                posts={posts}
+                onOpenPostDetail={handleOpenPostDetail}
+              />
             )}
           </div>
         </aside>
