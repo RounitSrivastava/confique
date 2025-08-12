@@ -518,6 +518,7 @@ body {
   margin-right: 0;
   overflow-y: auto;
   height: 100%;
+  min-width: 0; /* ADDED: Ensure main content can shrink on mobile */
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -560,6 +561,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  min-width: 0; /* ADDED: Ensure posts container can shrink on mobile */
 }
 
 .placeholder-card {
@@ -588,6 +590,7 @@ body {
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   position: relative;
   max-width: 100%;
+  min-width: 0; /* ADDED: Ensure post card can shrink */
 }
 
 .post-card:hover {
@@ -1226,6 +1229,7 @@ body {
   box-shadow: inset 0 1px 3px var(--shadow-color);
   display: flex;
   flex-direction: column;
+  min-width: 0; /* ADDED: Ensure comment section can shrink */
 }
 
 .comment-section-header {
@@ -1324,6 +1328,7 @@ body {
   max-height: 300px;
   overflow-y: auto;
   padding-right: 5px;
+  min-width: 0; /* ADDED: Ensure comments list can shrink */
 }
 
 .comment-item {
@@ -1335,6 +1340,7 @@ body {
   border-radius: 0.5rem;
   border: 1px solid var(--border-color);
   box-shadow: 0 0px 2px var(--shadow-color);
+  min-width: 0; /* ADDED: Ensure comment items can shrink */
 }
 
 .comment-avatar {
@@ -1382,6 +1388,7 @@ body {
   margin: 0;
   line-height: 1.5;
   word-break: break-word;
+  overflow-wrap: break-word; /* ADDED: Ensure long words wrap */
 }
 
 .no-comments-message {
@@ -2574,6 +2581,8 @@ body.modal-open {
     margin-left: 0;
     margin-right: 0;
     width: 100%;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
+    overflow-x: hidden;
   }
 
   .right-sidebar {
@@ -2739,11 +2748,13 @@ body.modal-open {
   .posts-container {
     padding: 0 1rem;
     width: 100%;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
+    overflow-x: hidden;
   }
-  
+
   .post-card {
     width: 100%;
-    min-width: 0;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
     flex-shrink: 0;
   }
 
@@ -2751,7 +2762,7 @@ body.modal-open {
     padding: 1rem;
     display: flex;
     flex-direction: column;
-    min-width: 0;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
   }
 
   .comment-input-form {
@@ -2789,6 +2800,7 @@ body.modal-open {
     min-height: 100px;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
   }
 
   .comments-list::-webkit-scrollbar {
@@ -2797,7 +2809,7 @@ body.modal-open {
 
   .comment-item {
     padding: 0.75rem;
-    min-width: 0;
+    min-width: 0; /* ADDED: This is the fix to prevent overflow */
   }
 
   .comment-avatar {
@@ -2821,7 +2833,7 @@ body.modal-open {
     word-break: break-word;
     overflow-wrap: break-word;
   }
-  
+
 }
 
 @media (min-width: 768px) {
