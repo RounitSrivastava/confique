@@ -3354,18 +3354,17 @@ const App = () => {
         setCurrentUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
-        // Step 3: Update all posts on the client side with the new avatar
+        // Step 3: Update the author's avatar for all of the user's posts
         setPosts(prevPosts =>
-          prevPosts.map(post => {
-            if (post.userId === updatedUser._id) {
-              return { ...post, authorAvatar: updatedUser.avatar };
-            }
-            // For comments and other nested data, you would need to update them as well if necessary
-            return post;
-          })
+          prevPosts.map(post =>
+            post.userId === updatedUser._id
+                ? { ...post, authorAvatar: updatedUser.avatar }
+                : post
+          )
         );
         
         // Step 4: Refetch posts from the server to ensure full consistency
+        // This is a robust fallback, although the local state update should be immediate.
         await fetchPosts();
 
         setNotifications(prev => [
