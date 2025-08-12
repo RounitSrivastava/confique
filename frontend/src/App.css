@@ -2751,6 +2751,7 @@ body.modal-open {
     /* Further increased size */
   }
 
+  /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
   .comment-section {
     padding: 1rem;
     /* Reduced padding on smaller screens */
@@ -2791,11 +2792,14 @@ body.modal-open {
     /* Reduced icon size to fit the smaller button */
   }
 
+  /* Key Fix: Use a dynamic max-height for comments list on mobile */
   .comments-list {
     padding-right: 0;
     /* Remove right padding that might be causing layout shifts */
-    max-height: 250px;
-    /* You may adjust this value based on your needs, but it's good to keep a limit */
+    /* Dynamic max-height relative to viewport height */
+    max-height: 30vh;
+    min-height: 100px; /* Prevents it from collapsing completely */
+    overflow-y: auto;
     -ms-overflow-style: none;
     /* IE and Edge */
     scrollbar-width: none;
@@ -2805,6 +2809,11 @@ body.modal-open {
   .comments-list::-webkit-scrollbar {
     display: none;
     /* Chrome, Safari, Opera */
+  }
+  
+  /* Additional fix to prevent post card from overflowing its parent */
+  .post-card {
+    overflow: hidden;
   }
 
   .comment-item {
