@@ -1278,7 +1278,8 @@ body {
   background-color: var(--input-bg);
   color: var(--text-primary);
   transition: all 0.2s ease-in-out;
-  height: 44px; /* Set a fixed height */
+  height: 44px;
+  /* Set a fixed height */
 }
 
 .comment-input:focus {
@@ -1314,8 +1315,10 @@ body {
 }
 
 .comment-submit-btn svg {
-  width: 44px; /* Further increased for better visibility */
-  height: 44px; /* Further increased for better visibility */
+  width: 44px;
+  /* Further increased for better visibility */
+  height: 44px;
+  /* Further increased for better visibility */
   color: var(--text-on-primary);
 }
 
@@ -2745,6 +2748,83 @@ body.modal-open {
     height: 55px;
     /* Further increased size */
   }
+
+  .comment-section {
+    padding: 1rem;
+    /* Reduced padding on smaller screens */
+  }
+
+  .comment-input-form {
+    gap: 0.75rem;
+    /* Adjusted gap for better spacing */
+    flex-wrap: nowrap;
+    /* Prevent wrapping of input and button */
+    align-items: center;
+    /* Vertically align all items */
+  }
+
+  .comment-input {
+    flex-grow: 1;
+    /* Ensures the input takes up available space */
+    padding: 0.6rem 1rem;
+    /* Slightly reduced vertical padding for a compact look */
+    height: auto;
+    min-height: 40px;
+    /* Ensures a reasonable height without being too large */
+  }
+
+  .comment-submit-btn {
+    width: 40px;
+    /* Adjusted width for a smaller, more touch-friendly button */
+    height: 40px;
+    /* Adjusted height to match the new width */
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .comment-submit-btn svg {
+    width: 20px;
+    /* Reduced icon size to fit the smaller button */
+    height: 20px;
+    /* Reduced icon size to fit the smaller button */
+  }
+
+  .comments-list {
+    padding-right: 0;
+    /* Remove right padding that might be causing layout shifts */
+    max-height: 250px;
+    /* You may adjust this value based on your needs, but it's good to keep a limit */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .comments-list::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
+  }
+
+  .comment-item {
+    padding: 0.75rem;
+  }
+
+  .comment-avatar {
+    width: 32px;
+    /* Reduced avatar size */
+    height: 32px;
+    /* Reduced avatar size */
+  }
+
+  .comment-author {
+    font-size: 0.875rem;
+    /* Slightly smaller font size */
+  }
+
+  .comment-text {
+    font-size: 0.875rem;
+    /* Consistent font size with the author */
+  }
 }
 
 @media (min-width: 768px) {
@@ -2815,7 +2895,9 @@ body.modal-open {
   .profile-avatar-container {
     position: relative;
     width: 160px;
+    /* Increased size */
     height: 160px;
+    /* Increased size */
     flex-shrink: 0;
     border-radius: 50%;
     overflow: visible;
