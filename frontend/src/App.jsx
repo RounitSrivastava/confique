@@ -488,8 +488,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
       setShowPaymentStep(true);
     } else {
       setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
-      setShowSuccessModal(true);
       onRegister(event._id, event.title); // Register immediately if no payment or payment link
+      setShowSuccessModal(true);
     }
   };
 
@@ -503,8 +503,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
       return;
     }
     setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-    setShowSuccessModal(true);
     onRegister(event._id, event.title); // Complete registration after payment confirmation
+    setShowSuccessModal(true);
   };
 
   // Close handler for the main registration modal
@@ -3337,6 +3337,7 @@ const App = () => {
     }
 
     try {
+      // Step 1: Update the user's avatar in the backend
       const res = await fetch(`${API_URL}/auth/profile/avatar`, {
         method: 'PUT',
         headers: {
@@ -3348,9 +3349,25 @@ const App = () => {
 
       if (res.ok) {
         const updatedUser = await res.json();
+        
+        // Step 2: Update the currentUser state with the new avatar
         setCurrentUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+        // Step 3: Update all posts on the client side with the new avatar
+        setPosts(prevPosts =>
+          prevPosts.map(post => {
+            if (post.userId === updatedUser._id) {
+              return { ...post, authorAvatar: updatedUser.avatar };
+            }
+            // For comments and other nested data, you would need to update them as well if necessary
+            return post;
+          })
+        );
+        
+        // Step 4: Refetch posts from the server to ensure full consistency
         await fetchPosts();
+
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
