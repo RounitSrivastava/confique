@@ -1827,7 +1827,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={onAddToCalendar}
+            onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -1852,12 +1852,12 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             post={post}
             onLike={onLike}
             onShare={onShare}
-            onAddComment={onAddComment}
+            onAddComment={handleAddComment}
             likedPosts={likedPosts}
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={onAddToCalendar}
+            onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -1882,12 +1882,12 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             post={post}
             onLike={onLike}
             onShare={onShare}
-            onAddComment={onAddComment}
+            onAddComment={handleAddComment}
             likedPosts={likedPosts}
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={onAddToCalendar}
+            onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -3330,30 +3330,6 @@ const App = () => {
     }
   };
 
-  // New function to update the avatar on all of the user's posts
-  const updateUserPostsAvatar = async (newAvatar) => {
-    try {
-      // This is a placeholder for a real API call to update all posts.
-      // In a real backend, you'd have an endpoint like this.
-      const res = await fetch(`${API_URL}/posts/user/avatar`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentUser.token}`,
-        },
-        body: JSON.stringify({ userId: currentUser._id, newAvatar }),
-      });
-
-      if (res.ok) {
-        console.log("Successfully updated avatar on user's posts in the backend.");
-      } else {
-        console.error("Failed to update avatar on user's posts in the backend.");
-      }
-    } catch (error) {
-      console.error("Error updating user's posts avatar:", error);
-    }
-  };
-
   const handleUpdateAvatar = async (newAvatar) => {
     if (!currentUser || !currentUser.token) {
       console.error('User not authenticated for updating avatar.');
@@ -3378,7 +3354,7 @@ const App = () => {
         setCurrentUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
-        // Step 3: Update all posts on the client side with the new avatar
+        // Step 3: Update the author's avatar for all of the user's posts
         setPosts(prevPosts =>
           prevPosts.map(post => {
             if (post.userId === updatedUser._id) {
