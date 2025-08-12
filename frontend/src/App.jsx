@@ -691,7 +691,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const qrFileInputRef = useRef(null);
 
     useEffect(() => {
-        if (postToEdit) {
+        if (isOpen && postToEdit) {
             setFormData({
                 type: postToEdit.type,
                 title: postToEdit.title,
@@ -715,7 +715,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
-        } else {
+        } else if (isOpen) {
+            // Reset to initial state when no post is being edited
             setFormData(prev => ({
                 ...initialFormData,
                 author: currentUser?.name || '',
