@@ -587,6 +587,8 @@ body {
   border: 1px solid var(--border-color);
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   position: relative;
+  /* Ensure position is relative for inner elements */
+  max-width: 100%;
 }
 
 .post-card:hover {
