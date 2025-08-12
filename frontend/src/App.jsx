@@ -1461,7 +1461,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     e.type === 'event' &&
     e._id !== currentEvent?._id &&
     new Date(e.eventStartDate) > new Date()
-  ).slice(0, 3); // Show top 3 upcoming events
+  ).sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate)).slice(0, 3); // Show top 3 upcoming events
 
   return (
     <div className="sidebar-widget">
@@ -3335,7 +3335,7 @@ const App = () => {
       console.error('User not authenticated for updating avatar.');
       return;
     }
-
+  
     try {
       // Step 1: Update the user's avatar in the backend
       const res = await fetch(`${API_URL}/auth/profile/avatar`, {
@@ -3346,25 +3346,29 @@ const App = () => {
         },
         body: JSON.stringify({ avatar: newAvatar }),
       });
-
+  
       if (res.ok) {
         const updatedUser = await res.json();
         
         // Step 2: Update the currentUser state with the new avatar
-        setCurrentUser(updatedUser);
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-
-        // Step 3: Update the author's avatar for all of the user's posts
+        // Use the returned avatar if it exists, otherwise use the newAvatar we sent
+        const finalAvatarUrl = updatedUser.avatar || newAvatar;
+        
+        const newCurrentUser = { ...updatedUser, avatar: finalAvatarUrl };
+        setCurrentUser(newCurrentUser);
+        localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
+  
+        // Step 3: Update all posts on the client side with the new avatar for an instant visual update
         setPosts(prevPosts =>
           prevPosts.map(post => {
             if (post.userId === updatedUser._id) {
-              return { ...post, authorAvatar: updatedUser.avatar };
+              return { ...post, authorAvatar: finalAvatarUrl };
             }
-            // You may also want to update the avatar in comments if that's a feature
+            // Also update the avatar in comments if the commenter is the current user
             if (post.commentData) {
               const updatedComments = post.commentData.map(comment => {
                 if (comment.authorId === updatedUser._id) {
-                  return { ...comment, authorAvatar: updatedUser.avatar };
+                  return { ...comment, authorAvatar: finalAvatarUrl };
                 }
                 return comment;
               });
@@ -3374,13 +3378,10 @@ const App = () => {
           })
         );
         
-        // Step 4: Call the function to update posts on the server as well.
-        // This is a crucial step to ensure persistence.
-        await updateUserPostsAvatar(updatedUser.avatar);
-
-        // Step 5: Refetch all posts to ensure total consistency from the source of truth
+        // Step 4: Refetch all posts to ensure total consistency from the source of truth
+        // This is a robust final step that ensures the UI remains correct even after a refresh.
         await fetchPosts();
-
+  
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -3417,7 +3418,7 @@ const App = () => {
     }
     setShowProfileSettingsModal(false);
   };
-
+  
   const menuItems = [
     {
       id: 'home',
