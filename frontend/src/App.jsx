@@ -3330,6 +3330,30 @@ const App = () => {
     }
   };
 
+  // New function to update the avatar on all of the user's posts
+  const updateUserPostsAvatar = async (newAvatar) => {
+    try {
+      // This is a placeholder for a real API call to update all posts.
+      // In a real backend, you'd have an endpoint like this.
+      const res = await fetch(`${API_URL}/posts/user/avatar`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify({ userId: currentUser._id, newAvatar }),
+      });
+
+      if (res.ok) {
+        console.log("Successfully updated avatar on user's posts in the backend.");
+      } else {
+        console.error("Failed to update avatar on user's posts in the backend.");
+      }
+    } catch (error) {
+      console.error("Error updating user's posts avatar:", error);
+    }
+  };
+
   const handleUpdateAvatar = async (newAvatar) => {
     if (!currentUser || !currentUser.token) {
       console.error('User not authenticated for updating avatar.');
@@ -3354,17 +3378,31 @@ const App = () => {
         setCurrentUser(updatedUser);
         localStorage.setItem('currentUser', JSON.stringify(updatedUser));
 
-        // Step 3: Update the author's avatar for all of the user's posts
+        // Step 3: Update all posts on the client side with the new avatar
         setPosts(prevPosts =>
-          prevPosts.map(post =>
-            post.userId === updatedUser._id
-                ? { ...post, authorAvatar: updatedUser.avatar }
-                : post
-          )
+          prevPosts.map(post => {
+            if (post.userId === updatedUser._id) {
+              return { ...post, authorAvatar: updatedUser.avatar };
+            }
+            // You may also want to update the avatar in comments if that's a feature
+            if (post.commentData) {
+              const updatedComments = post.commentData.map(comment => {
+                if (comment.authorId === updatedUser._id) {
+                  return { ...comment, authorAvatar: updatedUser.avatar };
+                }
+                return comment;
+              });
+              return { ...post, commentData: updatedComments };
+            }
+            return post;
+          })
         );
         
-        // Step 4: Refetch posts from the server to ensure full consistency
-        // This is a robust fallback, although the local state update should be immediate.
+        // Step 4: Call the function to update posts on the server as well.
+        // This is a crucial step to ensure persistence.
+        await updateUserPostsAvatar(updatedUser.avatar);
+
+        // Step 5: Refetch all posts to ensure total consistency from the source of truth
         await fetchPosts();
 
         setNotifications(prev => [
