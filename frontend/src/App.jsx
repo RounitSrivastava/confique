@@ -733,7 +733,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
       // Reset to initial state for new post
       setFormData(prev => ({
         ...initialFormData,
-        author: currentUser?.name || '' // Set author to current user's name for new posts
+        author: newPost => newPost.type === 'event' ? (currentUser?.name || '') : (newPost.author || '')
       }));
       setImagePreviews([]);
       setPaymentQRPreview('');
