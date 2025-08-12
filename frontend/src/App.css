@@ -587,7 +587,6 @@ body {
   border: 1px solid var(--border-color);
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
   position: relative;
-  /* Ensure position is relative for inner elements */
   max-width: 100%;
 }
 
@@ -823,17 +822,13 @@ body {
 
 .action-btn svg {
   color: var(--text-primary);
-  /* Changed from var(--primary-color) */
   transition: color 0.2s ease, fill 0.2s ease;
   min-width: 20px;
-  /* Decreased from 24px */
   min-height: 20px;
-  /* Decreased from 24px */
 }
 
 .action-btn:hover svg {
   color: var(--text-secondary);
-  /* Changed from #2563eb */
 }
 
 /* Event specific action buttons above the main post actions */
@@ -1281,7 +1276,6 @@ body {
   color: var(--text-primary);
   transition: all 0.2s ease-in-out;
   height: 44px;
-  /* Set a fixed height */
 }
 
 .comment-input:focus {
@@ -1318,9 +1312,7 @@ body {
 
 .comment-submit-btn svg {
   width: 44px;
-  /* Further increased for better visibility */
   height: 44px;
-  /* Further increased for better visibility */
   color: var(--text-on-primary);
 }
 
@@ -2112,9 +2104,7 @@ body {
 .profile-avatar-container {
   position: relative;
   width: 160px;
-  /* Increased size */
   height: 160px;
-  /* Increased size */
   flex-shrink: 0;
   border-radius: 50%;
   overflow: visible;
@@ -2138,9 +2128,7 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 50%;
   width: 70px;
-  /* Further increased size */
   height: 70px;
-  /* Further increased size */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2153,9 +2141,7 @@ body {
 .edit-avatar-button svg {
   stroke: var(--icon-color);
   width: 50px;
-  /* Further increased size */
   height: 50px;
-  /* Further increased size */
   transition: stroke 0.2s ease;
 }
 
@@ -2503,7 +2489,6 @@ body {
 body.modal-open {
   overflow: hidden;
   padding-right: 15px;
-  /* Adjust for scrollbar width */
 }
 
 /* Responsive adjustments */
@@ -2737,83 +2722,64 @@ body.modal-open {
   /* Increased size of the edit circle and icon for mobile */
   .edit-avatar-button {
     width: 65px;
-    /* Further increased size */
     height: 65px;
-    /* Further increased size */
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
     width: 55px;
-    /* Further increased size */
     height: 55px;
-    /* Further increased size */
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
   .comment-section {
     padding: 1rem;
-    /* Reduced padding on smaller screens */
+    display: flex;
+    flex-direction: column;
+    /* Ensure child elements are stacked vertically */
   }
 
   .comment-input-form {
     gap: 0.75rem;
-    /* Adjusted gap for better spacing */
     flex-wrap: nowrap;
-    /* Prevent wrapping of input and button */
     align-items: center;
-    /* Vertically align all items */
   }
 
   .comment-input {
     flex-grow: 1;
-    /* Ensures the input takes up available space */
     padding: 0.6rem 1rem;
-    /* Slightly reduced vertical padding for a compact look */
     height: auto;
     min-height: 40px;
-    /* Ensures a reasonable height without being too large */
   }
 
   .comment-submit-btn {
     width: 40px;
-    /* Adjusted width for a smaller, more touch-friendly button */
     height: 40px;
-    /* Adjusted height to match the new width */
     min-width: 40px;
     min-height: 40px;
   }
 
   .comment-submit-btn svg {
     width: 20px;
-    /* Reduced icon size to fit the smaller button */
     height: 20px;
-    /* Reduced icon size to fit the smaller button */
   }
 
-  /* Key Fix: Use a dynamic max-height for comments list on mobile */
   .comments-list {
     padding-right: 0;
-    /* Remove right padding that might be causing layout shifts */
-    /* Dynamic max-height relative to viewport height */
-    max-height: 30vh;
-    min-height: 100px; /* Prevents it from collapsing completely */
+    /* Removed problematic padding */
+    flex-grow: 1;
+    /* Allow list to grow and fill space */
     overflow-y: auto;
+    /* Make the list itself scrollable */
+    max-height: 30vh; /* Set a dynamic max height relative to viewport */
+    min-height: 100px;
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
   }
 
   .comments-list::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari, Opera */
-  }
-  
-  /* Additional fix to prevent post card from overflowing its parent */
-  .post-card {
-    overflow: hidden;
   }
 
   .comment-item {
@@ -2822,20 +2788,17 @@ body.modal-open {
 
   .comment-avatar {
     width: 32px;
-    /* Reduced avatar size */
     height: 32px;
-    /* Reduced avatar size */
   }
 
   .comment-author {
     font-size: 0.875rem;
-    /* Slightly smaller font size */
   }
 
   .comment-text {
     font-size: 0.875rem;
-    /* Consistent font size with the author */
   }
+  
 }
 
 @media (min-width: 768px) {
@@ -2873,7 +2836,6 @@ body.modal-open {
     width: calc(100% - 14rem - 17rem);
   }
 
-  /* FIX: Removed right sidebar border for the profile page */
   .profile-page-main-content {
     border-right: none !important;
   }
@@ -2892,7 +2854,6 @@ body.modal-open {
     height: 4rem;
   }
 
-  /* Profile Header Desktop */
   .profile-header {
     flex-direction: column;
     align-items: center;
@@ -2906,9 +2867,7 @@ body.modal-open {
   .profile-avatar-container {
     position: relative;
     width: 160px;
-    /* Increased size */
     height: 160px;
-    /* Increased size */
     flex-shrink: 0;
     border-radius: 50%;
     overflow: visible;
@@ -2923,12 +2882,9 @@ body.modal-open {
     object-fit: cover;
   }
 
-  /* Increased size of the edit circle and icon for desktop */
   .edit-avatar-button {
     width: 70px;
-    /* Further increased size */
     height: 70px;
-    /* Further increased size */
     bottom: 0;
     right: 0;
   }
@@ -2936,9 +2892,7 @@ body.modal-open {
   .edit-avatar-button svg {
     stroke: var(--icon-color);
     width: 50px;
-    /* Further increased size */
     height: 50px;
-    /* Further increased size */
     transition: stroke 0.2s ease;
   }
 
@@ -2983,7 +2937,6 @@ body.modal-open {
     width: 100%;
   }
 
-  /* Updated Profile Stats Styling */
   .profile-stats {
     display: flex;
     justify-content: space-around;
@@ -3062,9 +3015,7 @@ body.modal-open {
 .left-sidebar,
 .right-sidebar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
 .main-content::-webkit-scrollbar,
@@ -3075,7 +3026,6 @@ body.modal-open {
 .left-sidebar::-webkit-scrollbar,
 .right-sidebar::-webkit-scrollbar {
   display: none;
-  /* Chrome, Safari, Opera */
 }
 
 
