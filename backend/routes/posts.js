@@ -44,11 +44,12 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // Create a new post (protected - only logged-in users can create)
 router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
     // FIX: Get author and authorAvatar directly from req.user (authenticated user)
-    // This removes the possibility of anonymous posts.
-    const { _id: userId, name: author, avatar: authorAvatar } = req.user;
+    // Add a fallback for authorAvatar to ensure it's never null
+    const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
+    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const {
-        type, title, content, images, // Remove 'author' from destructuring here
+        type, title, content, images, // 'author' field is intentionally not destructured from req.body
         location, eventStartDate, eventEndDate,
         price, language, duration, ticketsNeeded, venueAddress, registrationLink,
         registrationOpen, enableRegistrationForm, registrationFields,
@@ -71,10 +72,10 @@ router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
         title,
         content,
         images: imageUrls.filter(url => url !== null),
-        // FIX: Always use the authenticated user's name and avatar
-        author: author,           // Now directly from req.user.name
-        authorAvatar: authorAvatar, // Now directly from req.user.avatar
-        userId: userId,           // Now directly from req.user._id
+        // FIX: Always use the authenticated user's name and the guaranteed avatar URL
+        author: authorNameFromUser,
+        authorAvatar: authorAvatarFinal,
+        userId: userId,
         
         // Event-specific fields (only set if type is 'event')
         location: type === 'event' ? location : undefined,
@@ -96,7 +97,7 @@ router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
         likes: 0,
         likedBy: [],
         commentData: [],
-        timestamp: new Date(), // Ensure timestamp is set on creation
+        timestamp: new Date(),
     });
 
     const createdPost = await post.save();
@@ -115,16 +116,22 @@ router.put('/:id', protect, upload.none(), asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
 
-    // Destructure relevant fields from req.body
-    const { type, title, content, images, paymentQRCode, ...rest } = req.body;
+    // Destructure relevant fields from req.body.
+    // FIX: Ensure 'author' is not taken from req.body, as it should be fixed to req.user.name
+    const { type, title, content, images, paymentQRCode, author, ...rest } = req.body; 
     
     post.type = type !== undefined ? type : post.type;
     post.title = title !== undefined ? title : post.title;
     post.content = content !== undefined ? content : post.content;
     
-    // FIX: Remove direct update of author from req.body for confessions.
-    // Author should be tied to the userId and updated via profile settings.
-    // post.author = author; // This line is removed or ignored.
+    // FIX: Ensure author and authorAvatar are NOT updated from req.body.
+    // They should only change if the user's profile changes (handled by users.js)
+    // or if the post is explicitly being re-attributed (which is not the current goal).
+    // The following lines ensure the author/avatar remain tied to the original user (or updated via profile change).
+    // If you explicitly wanted to allow changing the author's *display name* for a post,
+    // you would need different logic and a separate field, but for now, it's fixed.
+    // post.author = req.user.name; // This would force update on every edit
+    // post.authorAvatar = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'; // This too
 
     // Handle image updates
     if (images !== undefined) {

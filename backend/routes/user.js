@@ -66,7 +66,8 @@ router.put('/profile/avatar', protect, upload.none(), asyncHandler(async (req, r
             }
         }
 
-        user.avatar = updatedAvatarUrl;
+        // FIX: Always ensure the avatar is not null by providing a fallback URL
+        user.avatar = updatedAvatarUrl || 'https://placehold.co/40x40/cccccc/000000?text=A';
         const updatedUser = await user.save();
         
         await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
