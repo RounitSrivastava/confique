@@ -3,7 +3,7 @@ const asyncHandler = require('express-async-handler');
 const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
-const upload = require('../middleware/upload');
+const upload = require('../middleware/upload'); // Still needed if other routes use it for file uploads
 const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
@@ -42,14 +42,13 @@ router.get('/:id', asyncHandler(async (req, res) => {
 }));
 
 // Create a new post (protected - only logged-in users can create)
-router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
-    // FIX: Get author and authorAvatar directly from req.user (authenticated user)
-    // Add a fallback for authorAvatar to ensure it's never null
+// FIX: Removed 'upload.none()' middleware
+router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const {
-        type, title, content, images, // 'author' field is intentionally not destructured from req.body
+        type, title, content, images,
         location, eventStartDate, eventEndDate,
         price, language, duration, ticketsNeeded, venueAddress, registrationLink,
         registrationOpen, enableRegistrationForm, registrationFields,
@@ -57,9 +56,11 @@ router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
     } = req.body;
 
     let imageUrls = [];
-    if (images) {
-        const imageArray = Array.isArray(images) ? images : [images];
-        imageUrls = await Promise.all(imageArray.map(uploadImage));
+    // If images are sent as base64 strings within the JSON body
+    if (images && Array.isArray(images) && images.length > 0) {
+        imageUrls = await Promise.all(images.map(uploadImage));
+    } else if (images && typeof images === 'string') { // Handle single image as string
+        imageUrls = [await uploadImage(images)];
     }
     
     let qrCodeUrl = null;
@@ -72,12 +73,10 @@ router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
         title,
         content,
         images: imageUrls.filter(url => url !== null),
-        // FIX: Always use the authenticated user's name and the guaranteed avatar URL
         author: authorNameFromUser,
         authorAvatar: authorAvatarFinal,
         userId: userId,
         
-        // Event-specific fields (only set if type is 'event')
         location: type === 'event' ? location : undefined,
         eventStartDate: type === 'event' ? eventStartDate : undefined,
         eventEndDate: type === 'event' ? eventEndDate : undefined,
@@ -105,42 +104,30 @@ router.post('/', protect, upload.none(), asyncHandler(async (req, res) => {
 }));
 
 // Update a post
-router.put('/:id', protect, upload.none(), asyncHandler(async (req, res) => {
+// FIX: Removed 'upload.none()' middleware
+router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
     }
     
-    // Authorization check: Only the post owner or an admin can update
     if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
 
-    // Destructure relevant fields from req.body.
-    // FIX: Ensure 'author' is not taken from req.body, as it should be fixed to req.user.name
-    const { type, title, content, images, paymentQRCode, author, ...rest } = req.body; 
+    const { type, title, content, images, paymentQRCode, ...rest } = req.body; 
     
     post.type = type !== undefined ? type : post.type;
     post.title = title !== undefined ? title : post.title;
     post.content = content !== undefined ? content : post.content;
     
-    // FIX: Ensure author and authorAvatar are NOT updated from req.body.
-    // They should only change if the user's profile changes (handled by users.js)
-    // or if the post is explicitly being re-attributed (which is not the current goal).
-    // The following lines ensure the author/avatar remain tied to the original user (or updated via profile change).
-    // If you explicitly wanted to allow changing the author's *display name* for a post,
-    // you would need different logic and a separate field, but for now, it's fixed.
-    // post.author = req.user.name; // This would force update on every edit
-    // post.authorAvatar = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'; // This too
-
     // Handle image updates
     if (images !== undefined) {
-        // Delete old images from Cloudinary
         const oldImagePublicIds = post.images.map(url => {
             const parts = url.split('/');
             const filename = parts[parts.length - 1];
             return `confique_posts/${filename.split('.')[0]}`;
-        }).filter(id => id.startsWith('confique_posts/')); // Ensure it's a Cloudinary public ID
+        }).filter(id => id.startsWith('confique_posts/'));
         
         if (oldImagePublicIds.length > 0) {
             try {
@@ -150,15 +137,12 @@ router.put('/:id', protect, upload.none(), asyncHandler(async (req, res) => {
             }
         }
         
-        // Upload new images
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const newImageUrls = await Promise.all(newImageArray.map(uploadImage));
         post.images = newImageUrls.filter(url => url !== null);
     }
     
-    // Handle payment QR code updates
     if (paymentQRCode !== undefined) {
-        // Delete old QR code from Cloudinary if it exists
         if (post.paymentQRCode && post.paymentQRCode.includes('cloudinary')) {
             const parts = post.paymentQRCode.split('/');
             const filename = parts[parts.length - 1];
@@ -171,8 +155,7 @@ router.put('/:id', protect, upload.none(), asyncHandler(async (req, res) => {
         post.paymentQRCode = paymentQRCode ? await uploadImage(paymentQRCode) : null;
     }
 
-    // Update event-specific fields based on type
-    if (post.type === 'event') { // Use post.type here to ensure consistency
+    if (post.type === 'event') {
         post.location = rest.location !== undefined ? rest.location : post.location;
         post.eventStartDate = rest.eventStartDate !== undefined ? rest.eventStartDate : post.eventStartDate;
         post.eventEndDate = rest.eventEndDate !== undefined ? rest.eventEndDate : post.eventEndDate;
@@ -182,14 +165,12 @@ router.put('/:id', protect, upload.none(), asyncHandler(async (req, res) => {
         post.ticketsNeeded = rest.ticketsNeeded !== undefined ? rest.ticketsNeeded : post.ticketsNeeded;
         post.venueAddress = rest.venueAddress !== undefined ? rest.venueAddress : post.venueAddress;
         post.registrationLink = rest.registrationLink !== undefined ? rest.registrationLink : post.registrationLink;
-        // Ensure boolean conversion for these fields
         post.registrationOpen = rest.registrationOpen !== undefined ? (rest.registrationOpen === 'true' || rest.registrationOpen === true) : post.registrationOpen;
         post.enableRegistrationForm = rest.enableRegistrationForm !== undefined ? (rest.enableRegistrationForm === 'true' || rest.enableRegistrationForm === true) : post.enableRegistrationForm;
         post.registrationFields = rest.registrationFields !== undefined ? rest.registrationFields : post.registrationFields;
         post.paymentMethod = rest.paymentMethod !== undefined ? rest.paymentMethod : post.paymentMethod;
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
     } else {
-        // If changing type from event to non-event, clear event-specific fields
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;

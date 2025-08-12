@@ -71,10 +71,11 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         
         await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
 
+        // FIX: Changed 'authorId' to 'userId' to match the schema
         await Post.updateMany(
-            { 'commentData.authorId': user._id },
+            { 'commentData.userId': user._id },
             { $set: { 'commentData.$[elem].authorAvatar': updatedUser.avatar } },
-            { arrayFilters: [{ 'elem.authorId': user._id }] }
+            { arrayFilters: [{ 'elem.userId': user._id }] }
         );
         
         res.json({
