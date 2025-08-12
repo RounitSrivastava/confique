@@ -45,7 +45,7 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
 // @desc   Update user avatar
 // @route   PUT /api/users/profile/avatar
 // @access  Private
-router.put('/profile/avatar', protect, upload.none(), asyncHandler(async (req, res) => {
+router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
@@ -66,7 +66,6 @@ router.put('/profile/avatar', protect, upload.none(), asyncHandler(async (req, r
             }
         }
 
-        // FIX: Always ensure the avatar is not null by providing a fallback URL
         user.avatar = updatedAvatarUrl || 'https://placehold.co/40x40/cccccc/000000?text=A';
         const updatedUser = await user.save();
         
