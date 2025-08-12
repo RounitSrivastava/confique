@@ -1621,8 +1621,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         <>
             <div className="post-header">
                 <div className="post-avatar-container">
+                    {/* Updated to use the correct avatar based on the currentUser prop */}
                     <img
-                        src={post.authorAvatar || placeholderAvatar}
+                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
                         alt={`${post.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
@@ -3347,31 +3348,31 @@ const App = () => {
             });
 
             if (res.ok) {
-                const updatedUser = await res.json();
-                // Create an updated user object by merging the new avatar with the old user data
-                const newCurrentUser = { ...currentUser, avatar: updatedUser.avatar };
-
-                // Update the currentUser state and local storage with the new object
+                const { avatar: updatedAvatar } = await res.json();
+                
+                // Create a new currentUser object with the updated avatar
+                const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
+                
+                // Update the state and local storage with the new user object
                 setCurrentUser(newCurrentUser);
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
-                // Optimistically update the local posts state to reflect the new avatar
+                // Optimistically update the posts array to reflect the new avatar immediately
                 setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        // Check if the post's author is the current user
-                        post.userId === newCurrentUser._id
-                            ? { ...post, authorAvatar: newCurrentUser.avatar }
-                            : post
-                    )
+                    prevPosts.map(post => {
+                        if (post.userId === newCurrentUser._id) {
+                            return { ...post, authorAvatar: newCurrentUser.avatar };
+                        }
+                        // Also update comments in real-time
+                        const updatedComments = post.commentData.map(comment => {
+                            if (comment.authorId === newCurrentUser._id) {
+                                return { ...comment, authorAvatar: newCurrentUser.avatar };
+                            }
+                            return comment;
+                        });
+                        return { ...post, commentData: updatedComments };
+                    })
                 );
-
-                // Refetch all posts from the server as a final step to ensure complete consistency
-                await fetchPosts();
-
-                // Refetch admin notifications if the user is an admin
-                if (newCurrentUser.isAdmin) {
-                    await fetchAdminNotifications();
-                }
 
                 setNotifications(prev => [
                     {
