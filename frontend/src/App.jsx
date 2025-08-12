@@ -1461,7 +1461,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     e.type === 'event' &&
     e._id !== currentEvent?._id &&
     new Date(e.eventStartDate) > new Date()
-  ).sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate)).slice(0, 3); // Show top 3 upcoming events
+  ).slice(0, 3); // Show top 3 upcoming events
 
   return (
     <div className="sidebar-widget">
@@ -1827,7 +1827,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
+            onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -1852,12 +1852,12 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
             post={post}
             onLike={onLike}
             onShare={onShare}
-            onAddComment={handleAddComment}
+            onAddComment={onAddComment}
             likedPosts={likedPosts}
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
+            onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -1882,12 +1882,12 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
             post={post}
             onLike={onLike}
             onShare={onShare}
-            onAddComment={handleAddComment}
+            onAddComment={onAddComment}
             likedPosts={likedPosts}
             isCommentsOpen={openCommentPostId === post._id}
             setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={onOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
+            onAddToCalendar={onAddToCalendar}
             currentUser={currentUser}
             isProfileView={false}
             registrationCount={registrations[post._id]}
@@ -3335,7 +3335,7 @@ const App = () => {
       console.error('User not authenticated for updating avatar.');
       return;
     }
-  
+
     try {
       // Step 1: Update the user's avatar in the backend
       const res = await fetch(`${API_URL}/auth/profile/avatar`, {
@@ -3346,42 +3346,27 @@ const App = () => {
         },
         body: JSON.stringify({ avatar: newAvatar }),
       });
-  
+
       if (res.ok) {
         const updatedUser = await res.json();
         
         // Step 2: Update the currentUser state with the new avatar
-        // Use the returned avatar if it exists, otherwise use the newAvatar we sent
-        const finalAvatarUrl = updatedUser.avatar || newAvatar;
-        
-        const newCurrentUser = { ...updatedUser, avatar: finalAvatarUrl };
-        setCurrentUser(newCurrentUser);
-        localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
-  
-        // Step 3: Update all posts on the client side with the new avatar for an instant visual update
+        setCurrentUser(updatedUser);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+
+        // Step 3: Update the author's avatar for all of the user's posts
         setPosts(prevPosts =>
-          prevPosts.map(post => {
-            if (post.userId === updatedUser._id) {
-              return { ...post, authorAvatar: finalAvatarUrl };
-            }
-            // Also update the avatar in comments if the commenter is the current user
-            if (post.commentData) {
-              const updatedComments = post.commentData.map(comment => {
-                if (comment.authorId === updatedUser._id) {
-                  return { ...comment, authorAvatar: finalAvatarUrl };
-                }
-                return comment;
-              });
-              return { ...post, commentData: updatedComments };
-            }
-            return post;
-          })
+          prevPosts.map(post =>
+            post.userId === updatedUser._id
+                ? { ...post, authorAvatar: updatedUser.avatar }
+                : post
+          )
         );
         
-        // Step 4: Refetch all posts to ensure total consistency from the source of truth
-        // This is a robust final step that ensures the UI remains correct even after a refresh.
+        // Step 4: Refetch posts from the server to ensure full consistency
+        // This is a robust fallback, although the local state update should be immediate.
         await fetchPosts();
-  
+
         setNotifications(prev => [
           {
             _id: Date.now().toString(),
@@ -3418,7 +3403,7 @@ const App = () => {
     }
     setShowProfileSettingsModal(false);
   };
-  
+
   const menuItems = [
     {
       id: 'home',
