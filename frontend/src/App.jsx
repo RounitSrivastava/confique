@@ -2514,9 +2514,10 @@ const App = () => {
     const [selectedPost, setSelectedPost] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [myCalendarEvents, setMyCalendarEvents] = useState([]);
-    const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set()); // New state to track user's registrations
+    const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    
+    // NOTE: Removed `theme` state, `setTheme` and `toggleTheme`.
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
@@ -2666,8 +2667,12 @@ const App = () => {
                 setCurrentUser(savedUser);
             }
         }
-        document.documentElement.setAttribute('data-theme', theme);
-    }, [theme]);
+    }, []);
+
+    // Set theme to dark on first render and keep it that way
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -2705,13 +2710,6 @@ const App = () => {
             document.body.style.paddingRight = '';
         };
     }, [hasOpenModal]);
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-    };
 
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -3441,14 +3439,7 @@ const App = () => {
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
-        {
-            id: 'theme-toggle',
-            label: theme === 'light' ? 'Dark Mode' : 'Light Mode',
-            icon: theme === 'light' ? <Moon className="nav-icon" /> : <Sun className="nav-icon" />,
-            component: null,
-            rightSidebar: null,
-            action: toggleTheme
-        },
+        // REMOVED: The theme toggle button is no longer needed.
         {
             id: 'add',
             label: 'Add',
