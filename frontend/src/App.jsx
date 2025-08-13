@@ -38,7 +38,7 @@ import './App.css';
 // Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
-const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
+const placeholderAvatar = '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)';
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -524,7 +524,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                                 className="payment-qr"
                                 loading="lazy"
                                 decoding="async"
-                                onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                                onError={(e) => e.target.src = "[https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error](https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error)"}
                             />
                             <div className="form-group">
                                 <label className="form-label">Last 4 Digits of Transaction ID</label>
@@ -778,7 +778,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+            authorAvatar: currentUser?.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'
         };
 
         onSubmit(submissionData);
@@ -1010,7 +1010,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             value={formData.registrationLink}
                                             onChange={handleFormChange}
                                             name="registrationLink"
-                                            placeholder="https://example.com/register"
+                                            placeholder="[https://example.com/register](https://example.com/register)"
                                         />
                                     </div>
 
@@ -1061,7 +1061,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                         value={formData.paymentLink}
                                                         onChange={handleFormChange}
                                                         name="paymentLink"
-                                                        placeholder="https://example.com/payment"
+                                                        placeholder="[https://example.com/payment](https://example.com/payment)"
                                                         required
                                                     />
                                                 </div>
@@ -1290,12 +1290,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         <img
                             src={event.images[0]}
                             alt={event.title}
-                            onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
+                            onError={(e) => e.target.src = "[https://placehold.co/800x450/cccccc/000000?text=Event+Image](https://placehold.co/800x450/cccccc/000000?text=Event+Image)"}
                             loading="lazy"
                             decoding="async"
                         />
                     ) : (
-                        <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
+                        <img src="[https://placehold.co/800x450/cccccc/000000?text=No+Event+Image](https://placehold.co/800x450/cccccc/000000?text=No+Event+Image)" alt="Placeholder" loading="lazy" decoding="async" />
                     )}
                     <div className="event-detail-header-overlay">
                         <button onClick={onClose} className="event-detail-back-button">
@@ -1445,100 +1445,112 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 </div>
                                 <div className="sidebar-event-time">
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="no-events-message">
-                        <CalendarPlus size={24} />
-                        <p>No upcoming events found</p>
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="no-events-message">
+                            <CalendarPlus size={24} />
+                            <p>No upcoming events found</p>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
-};
-
-// Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
-    const overlayRef = useRef(null);
-    const [showFullContent, setShowFullContent] = useState(false);
-    const contentRef = useRef(null);
-    const [needsShowMore, setNeedsShowMore] = useState(false);
-    const [showShareAlert, setShowShareAlert] = useState(false);
-
-    const handleImageError = (e) => {
-        e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
-        e.target.onerror = null;
+        );
     };
 
-    useEffect(() => {
-        if (contentRef.current) {
-            const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
-            const maxHeight = lineHeight * 3;
-            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
-        }
-    }, [post.content]);
+    // Post Card Component - Displays a single post (confession, event, or news)
+    const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
+        const overlayRef = useRef(null);
+        const [showFullContent, setShowFullContent] = useState(false);
+        const contentRef = useRef(null);
+        const [needsShowMore, setNeedsShowMore] = useState(false);
+        const [showShareAlert, setShowShareAlert] = useState(false);
 
-    const getPostTypeLabel = (type) => {
-        switch (type) {
-            case 'confession': return 'Confession';
-            case 'event': return 'Event';
-            case 'news': return 'News';
-            default: return 'Post';
-        }
-    };
+        const handleImageError = (e) => {
+            e.target.src = "[https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error](https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error)";
+            e.target.onerror = null;
+        };
 
-    const isInteractive = post.type !== 'news';
-    const isUserPost = currentUser && post.userId === currentUser._id;
-    const isRegistered = registrationCount && registrationCount > 0;
+        useEffect(() => {
+            if (contentRef.current) {
+                const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
+                const maxHeight = lineHeight * 3;
+                setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+            }
+        }, [post.content]);
 
-    const handleCommentIconClick = (e) => {
-        e.stopPropagation();
-        setOpenCommentPostId(isCommentsOpen ? null : post._id);
-    };
-
-    const handleBackArrowClick = (e) => {
-        e.stopPropagation();
-        setOpenCommentPostId(null);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (overlayRef.current && !overlayRef.current.contains(event.target)) {
-                setOpenCommentPostId(null);
+        const getPostTypeLabel = (type) => {
+            switch (type) {
+                case 'confession': return 'Confession';
+                case 'event': return 'Event';
+                case 'news': return 'News';
+                default: return 'Post';
             }
         };
 
-        if (isCommentsOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
+        const isInteractive = post.type !== 'news';
+        const isUserPost = currentUser && post.userId === currentUser._id;
+
+        const handleCommentIconClick = (e) => {
+            e.stopPropagation();
+            setOpenCommentPostId(isCommentsOpen ? null : post._id);
         };
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+
+        const handleBackArrowClick = (e) => {
+            e.stopPropagation();
+            setOpenCommentPostId(null);
         };
-    }, [isCommentsOpen, setOpenCommentPostId]);
 
-    const handleAddToCalendarClick = () => {
-        if (post.type === 'event' && post.eventStartDate) {
-            onAddToCalendar(post);
-        }
-    };
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (overlayRef.current && !overlayRef.current.contains(event.target)) {
+                    setOpenCommentPostId(null);
+                }
+            };
 
-    const handleShare = async (postId, postTitle, postContent) => {
-        const shareUrl = `${window.location.origin}/posts/${postId}`;
+            if (isCommentsOpen) {
+                document.addEventListener('mousedown', handleClickOutside);
+            } else {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, [isCommentsOpen, setOpenCommentPostId]);
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
-                    url: shareUrl,
-                });
-            } catch (error) {
-                console.error('Share failed:', error);
+        const handleAddToCalendarClick = () => {
+            if (post.type === 'event' && post.eventStartDate) {
+                onAddToCalendar(post);
+            }
+        };
+
+        const handleShare = async (postId, postTitle, postContent) => {
+            const shareUrl = `${window.location.origin}/posts/${postId}`;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: postTitle,
+                        text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                        url: shareUrl,
+                    });
+                } catch (error) {
+                    console.error('Share failed:', error);
+                    try {
+                        const tempInput = document.createElement('textarea');
+                        tempInput.value = shareUrl;
+                        document.body.appendChild(tempInput);
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        setShowShareAlert(true);
+                    } catch (err) {
+                        console.error('Copy to clipboard failed:', err);
+                        setShowShareAlert(true);
+                    }
+                }
+            } else {
                 try {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
@@ -1547,547 +1559,208 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     document.body.removeChild(tempInput);
                     setShowShareAlert(true);
                 } catch (err) {
-                    console.error('Copy to clipboard failed:', err);
                     setShowShareAlert(true);
                 }
             }
-        } else {
-            try {
-                const tempInput = document.createElement('textarea');
-                tempInput.value = shareUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                setShowShareAlert(true);
-            } catch (err) {
-                setShowShareAlert(true);
-            }
-        }
-    };
+        };
 
-    const renderPostCardContent = () => (
-        <>
-            <div className="post-header">
-                <div className="post-avatar-container">
-                    <img
-                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
-                        alt={`${post.author}'s avatar`}
-                        className="post-avatar"
-                        loading="lazy"
-                        decoding="async"
-                    />
-                </div>
-                <div className="post-info">
-                    <h3 className="post-author">{post.author}</h3>
-                    <p className="post-timestamp">
-                        {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                </div>
-                <div className="post-header-actions">
-                    <span className={`post-type-badge ${post.type}`}>
-                        {getPostTypeLabel(post.type)}
-                    </span>
-                    <PostOptions
-                        post={post}
-                        onDelete={onDeletePost}
-                        onEdit={onEditPost}
-                        isProfilePage={isProfileView}
-                        currentUser={currentUser}
-                        onReport={onReportPost}
-                    />
-                </div>
-            </div>
-
-            <div className="post-content">
-                <h2 className="post-title">{post.title}</h2>
-                <div className="post-text-container">
-                    <p
-                        ref={contentRef}
-                        className={`post-text ${showFullContent ? 'expanded' : ''}`}
-                    >
-                        {post.content}
-                    </p>
-                    {needsShowMore && (
-                        <button
-                            className="show-more-button"
-                            onClick={() => setShowFullContent(!showFullContent)}
-                        >
-                            {showFullContent ? 'Show Less' : 'Show More'}
-                        </button>
-                    )}
-                </div>
-
-                {post.type === 'event' && (
-                    <div className="event-details">
-                        {post.location && (
-                            <div className="event-detail">
-                                <MapPin size={16} />
-                                <span>{post.location}</span>
-                            </div>
-                        )}
-                        {post.eventStartDate && (
-                            <div className="event-detail">
-                                <Clock size={16} />
-                                <span>
-                                    {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
-                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {post.images && post.images.length > 0 && (
-                    <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
-                        {post.images.map((image, index) => (
-                            <img
-                                key={index}
-                                src={image}
-                                alt={`Post image ${index + 1}`}
-                                className="post-image"
-                                onError={handleImageError}
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {isInteractive && (
-                <>
-                    {post.type === 'event' && (
-                        <div className="event-action-buttons-top">
-                            <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
-                                <Info size={20} />
-                                <span>Details</span>
-                            </button>
-                            <button className="action-btn" onClick={handleAddToCalendarClick}>
-                                <CalendarPlus size={20} />
-                                <span>Add to Calendar</span>
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="post-actions">
-                        <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
-                            <span>{post.likes}</span>
-                        </button>
-                        <button className="action-btn" onClick={handleCommentIconClick}>
-                            <MessageIcon size={20} />
-                            <span>{post.commentData ? post.commentData.length : 0}</span>
-                        </button>
-                        {isUserPost && isProfileView && (
-                            <div className="post-stat">
-                                <Ticket size={20} />
-                                <span>{registrationCount || 0}</span>
-                            </div>
-                        )}
-                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
-                            <Share2 size={20} />
-                            <span>Share</span>
-                        </button>
-                    </div>
-
-                    {isCommentsOpen && (
-                        <CommentSection
-                            comments={post.commentData || []}
-                            onAddComment={(commentText) => onAddComment(post._id, commentText)}
-                            onCloseComments={handleBackArrowClick}
-                            currentUser={currentUser}
+        const renderPostCardContent = () => (
+            <>
+                <div className="post-header">
+                    <div className="post-avatar-container">
+                        <img
+                            src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
+                            alt={`${post.author}'s avatar`}
+                            className="post-avatar"
+                            loading="lazy"
+                            decoding="async"
                         />
-                    )}
-                </>
-            )}
-            <CustomMessageModal
-                isOpen={showShareAlert}
-                onClose={() => setShowShareAlert(false)}
-                title="Link Copied!"
-                message="The link has been copied to your clipboard."
-                showConfirm={false}
-            />
-        </>
-    );
-
-    return (
-        isCommentsOpen ? (
-            <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
-                <div className="post-card comments-open-fixed">
-                    {renderPostCardContent()}
-                </div>
-            </div>
-        ) : (
-            <div className="post-card">
-                {renderPostCardContent()}
-            </div>
-        )
-    );
-};
-
-// Home Component - Displays a feed of posts
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-    const newsHighlights = [...posts]
-        .filter(post => post.type === 'news')
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 2);
-
-    return (
-        <div>
-            {newsHighlights.length > 0 && (
-                <>
-                    <div className="posts-container news-highlights-section">
-                        {newsHighlights.map(post => (
-                            <PostCard
-                                key={post._id}
-                                post={post}
-                                onLike={onLike}
-                                onShare={onShare}
-                                onAddComment={onAddComment}
-                                likedPosts={likedPosts}
-                                isCommentsOpen={openCommentPostId === post._id}
-                                setOpenCommentPostId={setOpenCommentPostId}
-                                onOpenEventDetail={onOpenEventDetail}
-                                onAddToCalendar={onAddToCalendar}
-                                currentUser={currentUser}
-                                isProfileView={false}
-                                registrationCount={registrations[post._id]}
-                                onReportPost={onReportPost}
-                            />
-                        ))}
                     </div>
-                    <hr className="section-divider" />
-                </>
-            )}
-
-            <div className="posts-container">
-                {posts.filter(p => p.type !== 'news').map(post => (
-                    <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-// Events Component - Displays only event posts
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-    const eventPosts = posts.filter(post => post.type === 'event');
-
-    return (
-        <div id="events-section-content">
-            <div className="posts-container">
-                {eventPosts.map(post => (
-                    <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-// Confessions Component - Displays only confession posts
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-    const confessionPosts = posts.filter(post => post.type === 'confession');
-
-    return (
-        <div>
-            <div className="posts-container">
-                {confessionPosts.map(post => (
-                    <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                    />
-                ))}
-            </div>
-        </div>
-    );
-};
-
-// Notifications Component - Displays user notifications or admin reported posts
-const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
-    const isAdmin = currentUser?.isAdmin;
-    const displayNotifications = isAdmin ? adminNotifications : notifications;
-
-    return (
-        <div>
-            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
-            <div className="notifications-container">
-                {displayNotifications.length > 0 ? (
-                    <div className="notifications-list">
-                        {displayNotifications.map((notification) => (
-                            <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
-                                <Bell size={20} className="notification-icon" />
-                                <div className="notification-content">
-                                    <p className="notification-text">
-                                        {notification.message}
-                                        {isAdmin && notification.reportReason && (
-                                            <span className="report-reason">
-                                                Report Reason: {notification.reportReason}
-                                            </span>
-                                        )}
-                                    </p>
-                                    <span className="notification-timestamp">
-                                        {new Date(notification.timestamp).toLocaleDateString()}
-                                    </span>
-                                    {isAdmin && notification.postId && (
-                                        <div className="admin-actions">
-                                            <button
-                                                className="btn-danger"
-                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
-                                            >
-                                                <Trash2 size={16} /> Delete Post
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="placeholder-card">
-                        <p className="placeholder-text">
-                            {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+                    <div className="post-info">
+                        <h3 className="post-author">{post.author}</h3>
+                        <p className="post-timestamp">
+                            {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </p>
                     </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-// Profile Settings Modal Component - Allows user to change their avatar
-const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
-    const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
-    const [customAvatar, setCustomAvatar] = useState('');
-    const [avatarError, setAvatarError] = useState('');
-    const fileInputRef = useRef(null);
-
-    useEffect(() => {
-        if (isOpen) {
-            setSelectedAvatar(currentUser?.avatar || '');
-            setCustomAvatar('');
-            setAvatarError('');
-        }
-    }, [isOpen, currentUser]);
-
-    const predefinedAvatars = [
-        { src: avatar1, alt: 'Anime style avatar' },
-        { src: avatar2, alt: 'ChatGPT avatar' }
-    ];
-
-    const handleCustomImageUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                setAvatarError('Image size cannot exceed 2MB.');
-                return;
-            }
-            compressImage(file, (compressedDataUrl) => {
-                setCustomAvatar(compressedDataUrl);
-                setSelectedAvatar(null);
-                setAvatarError('');
-            });
-        }
-    };
-
-    const handleSave = () => {
-        if (!selectedAvatar && !customAvatar) {
-            setAvatarError('Please select or upload an avatar.');
-            return;
-        }
-        const newAvatar = customAvatar || selectedAvatar;
-        onSave(newAvatar);
-        onClose();
-    };
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content profile-settings-modal">
-                <div className="modal-header">
-                    <h2 className="modal-title">Edit Profile Image</h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="modal-body profile-settings-body">
-                    <div className="current-avatar-container">
-                        <h4 className="modal-subtitle">Current Profile Image</h4>
-                        <div className="current-avatar-preview">
-                            <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
-                        </div>
+                    <div className="post-header-actions">
+                        <span className={`post-type-badge ${post.type}`}>
+                            {getPostTypeLabel(post.type)}
+                        </span>
+                        <PostOptions
+                            post={post}
+                            onDelete={onDeletePost}
+                            onEdit={onEditPost}
+                            isProfilePage={isProfileView}
+                            currentUser={currentUser}
+                            onReport={onReportPost}
+                        />
                     </div>
-                    <div className="avatar-options-container">
-                        <h4 className="modal-subtitle">Choose a new avatar</h4>
-                        <div className="predefined-avatars-grid">
-                            {predefinedAvatars.map((av, index) => (
-                                <div
-                                    key={index}
-                                    className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
-                                    onClick={() => {
-                                        setSelectedAvatar(av.src);
-                                        setCustomAvatar('');
-                                        setAvatarError('');
-                                    }}
-                                >
-                                    <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
+                </div>
+
+                <div className="post-content">
+                    <h2 className="post-title">{post.title}</h2>
+                    <div className="post-text-container">
+                        <p
+                            ref={contentRef}
+                            className={`post-text ${showFullContent ? 'expanded' : ''}`}
+                        >
+                            {post.content}
+                        </p>
+                        {needsShowMore && (
+                            <button
+                                className="show-more-button"
+                                onClick={() => setShowFullContent(!showFullContent)}
+                            >
+                                {showFullContent ? 'Show Less' : 'Show More'}
+                            </button>
+                        )}
+                    </div>
+
+                    {post.type === 'event' && (
+                        <div className="event-details">
+                            {post.location && (
+                                <div className="event-detail">
+                                    <MapPin size={16} />
+                                    <span>{post.location}</span>
                                 </div>
+                            )}
+                            {post.eventStartDate && (
+                                <div className="event-detail">
+                                    <Clock size={16} />
+                                    <span>
+                                        {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
+                                        {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {post.images && post.images.length > 0 && (
+                        <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
+                            {post.images.map((image, index) => (
+                                <img
+                                    key={index}
+                                    src={image}
+                                    alt={`Post image ${index + 1}`}
+                                    className="post-image"
+                                    onError={handleImageError}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
                             ))}
                         </div>
-                        <div className="or-divider">
-                            <span className="or-text">OR</span>
-                        </div>
-                        <div className="custom-avatar-upload-section">
-                            <h4 className="modal-subtitle">Upload your own</h4>
-                            <div className="custom-upload-container">
-                                {customAvatar ? (
-                                    <div className="custom-avatar-preview">
-                                        <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
-                                        <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button className="upload-button" onClick={() => fileInputRef.current.click()}>
-                                        <ImageIcon size={20} />
-                                        <span>Upload Image</span>
-                                    </button>
-                                )}
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    accept="image/*"
-                                    onChange={handleCustomImageUpload}
-                                    style={{ display: 'none' }}
-                                />
+                    )}
+                </div>
+
+                {isInteractive && (
+                    <>
+                        {post.type === 'event' && (
+                            <div className="event-action-buttons-top">
+                                <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
+                                    <Info size={20} />
+                                    <span>Details</span>
+                                </button>
+                                <button className="action-btn" onClick={handleAddToCalendarClick}>
+                                    <CalendarPlus size={20} />
+                                    <span>Add to Calendar</span>
+                                </button>
                             </div>
+                        )}
+
+                        <div className="post-actions">
+                            <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                                <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
+                                <span>{post.likes}</span>
+                            </button>
+                            <button className="action-btn" onClick={handleCommentIconClick}>
+                                <MessageIcon size={20} />
+                                <span>{post.commentData ? post.commentData.length : 0}</span>
+                            </button>
+                            {isUserPost && isProfileView && (
+                                <div className="post-stat">
+                                    <Ticket size={20} />
+                                    <span>{registrationCount || 0}</span>
+                                </div>
+                            )}
+                            <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                                <Share2 size={20} />
+                                <span>Share</span>
+                            </button>
                         </div>
-                    </div>
-                    {avatarError && <p className="error-message">{avatarError}</p>}
-                </div>
-                <div className="modal-actions">
-                    <button className="btn-secondary" onClick={onClose}>
-                        Cancel
-                    </button>
-                    <button className="btn-primary" onClick={handleSave}>
-                        Save Changes
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
-
-// Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
-    if (!currentUser) {
-        return (
-            <div>
-                <h2 className="page-title">Profile</h2>
-                <div className="placeholder-card">
-                    <p className="placeholder-text">Please log in to view your profile.</p>
-                </div>
-            </div>
+                        {isCommentsOpen && (
+                            <CommentSection
+                                comments={post.commentData || []}
+                                onAddComment={(commentText) => onAddComment(post._id, commentText)}
+                                onCloseComments={handleBackArrowClick}
+                                currentUser={currentUser}
+                            />
+                        )}
+                    </>
+                )}
+                <CustomMessageModal
+                    isOpen={showShareAlert}
+                    onClose={() => setShowShareAlert(false)}
+                    title="Link Copied!"
+                    message="The link has been copied to your clipboard."
+                    showConfirm={false}
+                />
+            </>
         );
-    }
 
-    const userPosts = posts.filter(post =>
-        post.userId === currentUser._id
-    );
-
-    const userStats = {
-        posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
-        registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
-        }, 0)
+        return (
+            isCommentsOpen ? (
+                <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
+                    <div className="post-card comments-open-fixed">
+                        {renderPostCardContent()}
+                    </div>
+                </div>
+            ) : (
+                <div className="post-card">
+                    {renderPostCardContent()}
+                </div>
+            )
+        );
     };
 
-    return (
-        <div>
-            <h2 className="page-title">Your Profile</h2>
+    // Home Component - Displays a feed of posts
+    const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+        const newsHighlights = [...posts]
+            .filter(post => post.type === 'news')
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 2);
 
-            <div className="profile-header">
-                <div className="profile-avatar-container">
-                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
-                    <button className="edit-avatar-button" onClick={onEditProfile}>
-                        <Edit3 size={16} />
-                    </button>
-                </div>
-                <div className="profile-info">
-                    <h3 className="profile-name">{currentUser.name}</h3>
-                    <p className="profile-email">{currentUser.email}</p>
-                    <div className="profile-stats">
-                        <div className="stat-item">
-                            <span className="stat-number">{userStats.posts}</span>
-                            <span className="stat-label">Posts</span>
+        return (
+            <div>
+                {newsHighlights.length > 0 && (
+                    <>
+                        <div className="posts-container news-highlights-section">
+                            {newsHighlights.map(post => (
+                                <PostCard
+                                    key={post._id}
+                                    post={post}
+                                    onLike={onLike}
+                                    onShare={onShare}
+                                    onAddComment={onAddComment}
+                                    likedPosts={likedPosts}
+                                    isCommentsOpen={openCommentPostId === post._id}
+                                    setOpenCommentPostId={setOpenCommentPostId}
+                                    onOpenEventDetail={onOpenEventDetail}
+                                    onAddToCalendar={onAddToCalendar}
+                                    currentUser={currentUser}
+                                    isProfileView={false}
+                                    registrationCount={registrations[post._id]}
+                                    onReportPost={onReportPost}
+                                />
+                            ))}
                         </div>
-                        <div className="stat-item">
-                            <span className="stat-number">{userStats.likesReceived}</span>
-                            <span className="stat-label">Likes</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-number">{userStats.commentsReceived}</span>
-                            <span className="stat-label">Comments</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-number">{userStats.registrationsReceived}</span>
-                            <span className="stat-label">Registrations</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        <hr className="section-divider" />
+                    </>
+                )}
 
-            <h3 className="section-subtitle">Your Posts</h3>
-
-            {userPosts.length > 0 ? (
                 <div className="posts-container">
-                    {userPosts.map(post => (
+                    {posts.filter(p => p.type !== 'news').map(post => (
                         <PostCard
                             key={post._id}
                             post={post}
@@ -2100,855 +1773,1212 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onOpenEventDetail={onOpenEventDetail}
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
-                            isProfileView={true}
-                            onDeletePost={handleDeletePost}
-                            onEditPost={handleEditPost}
+                            isProfileView={false}
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                         />
                     ))}
                 </div>
-            ) : (
-                <div className="placeholder-card">
-                    <p className="placeholder-text">You haven't created any posts yet.</p>
-                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-                        <Plus size={16} /> Create Your First Post
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// Home Right Sidebar Component - Displays popular posts
-const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
-    return (
-        <div className="sidebar-widget">
-            <div className="widget-header">
-                <h3 className="widget-title">Popular Posts</h3>
             </div>
-            <div className="widget-content">
-                <div className="widget-list">
-                    {popularPosts.map(post => (
-                        <div
+        );
+    };
+
+    // Events Component - Displays only event posts
+    const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+        const eventPosts = posts.filter(post => post.type === 'event');
+
+        return (
+            <div id="events-section-content">
+                <div className="posts-container">
+                    {eventPosts.map(post => (
+                        <PostCard
                             key={post._id}
-                            className="popular-post-item clickable"
-                            onClick={() => onOpenPostDetail(post)}
-                        >
-                            <p className="widget-item-title">{post.title}</p>
-                            <div className="popular-post-stats">
-                                <span className="popular-stat">{post.likes} likes</span>
-                                <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
-                            </div>
-                        </div>
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            isProfileView={false}
+                            registrationCount={registrations[post._id]}
+                            onReportPost={onReportPost}
+                        />
                     ))}
                 </div>
             </div>
-        </div>
-    );
-};
-
-// Events Right Sidebar Component - Displays calendar and user's upcoming events
-const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
-    const [value, onChange] = useState(new Date());
-
-    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
-
-    const tileContent = ({ date, view }) => {
-        if (view === 'month') {
-            const hasEvent = allEvents.some(post =>
-                post.eventStartDate &&
-                new Date(post.eventStartDate).getDate() === date.getDate() &&
-                new Date(post.eventStartDate).getMonth() === date.getMonth() &&
-                new Date(post.eventStartDate).getFullYear() === date.getFullYear()
-            );
-            return hasEvent ? <div className="event-dot"></div> : null;
-        }
-        return null;
+        );
     };
 
-    const upcomingCalendarEvents = myCalendarEvents
-        .filter(e => new Date(e.eventStartDate) > new Date())
-        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-        .slice(0, 3);
+    // Confessions Component - Displays only confession posts
+    const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+        const confessionPosts = posts.filter(post => post.type === 'confession');
 
-    return (
-        <>
-            <div className="calendar-widget">
-                <div className="widget-content calendar-container">
-                    <Calendar
-                        onChange={onChange}
-                        value={value}
-                        tileContent={tileContent}
-                        className="react-calendar"
-                        prev2Label={null}
-                        next2Label={null}
-                        locale="en-US"
-                    />
+        return (
+            <div>
+                <div className="posts-container">
+                    {confessionPosts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            isProfileView={false}
+                            registrationCount={registrations[post._id]}
+                            onReportPost={onReportPost}
+                        />
+                    ))}
                 </div>
             </div>
+        );
+    };
 
-            {upcomingCalendarEvents.length > 0 && (
-                <div className="sidebar-widget my-calendar-events">
-                    <div className="widget-header">
-                        <h3 className="widget-title">My Calendar Events</h3>
-                    </div>
-                    <div className="widget-content">
-                        <div className="widget-list">
-                            {upcomingCalendarEvents.map(event => (
-                                <div
-                                    key={event._id}
-                                    className="sidebar-event-item clickable"
-                                    onClick={() => onOpenEventDetail(event)}
-                                >
-                                    <h4 className="sidebar-event-title">{event.title}</h4>
-                                    <div className="sidebar-event-date">
-                                        {new Date(event.eventStartDate).toLocaleDateString('en-US', {
-                                            month: 'short',
-                                            day: 'numeric'
-                                        })}
-                                    </div>
-                                    <div className="sidebar-event-time">
-                                        {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    // Notifications Component - Displays user notifications or admin reported posts
+    const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+        const isAdmin = currentUser?.isAdmin;
+        const displayNotifications = isAdmin ? adminNotifications : notifications;
+
+        return (
+            <div>
+                <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+                <div className="notifications-container">
+                    {displayNotifications.length > 0 ? (
+                        <div className="notifications-list">
+                            {displayNotifications.map((notification) => (
+                                <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
+                                    <Bell size={20} className="notification-icon" />
+                                    <div className="notification-content">
+                                        <p className="notification-text">
+                                            {notification.message}
+                                            {isAdmin && notification.reportReason && (
+                                                <span className="report-reason">
+                                                    Report Reason: {notification.reportReason}
+                                                </span>
+                                            )}
+                                        </p>
+                                        <span className="notification-timestamp">
+                                            {new Date(notification.timestamp).toLocaleDateString()}
+                                        </span>
+                                        {isAdmin && notification.postId && (
+                                            <div className="admin-actions">
+                                                <button
+                                                    className="btn-danger"
+                                                    onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                                >
+                                                    <Trash2 size={16} /> Delete Post
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
-};
-
-// Confessions Right Sidebar Component - Displays recent confessions
-const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const recentConfessions = [...posts]
-        .filter(post => post.type === 'confession')
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 3);
-    return (
-        <div className="sidebar-widget">
-            <div className="widget-header">
-                <h3 className="widget-title">Recent Confessions</h3>
-            </div>
-            <div className="widget-content">
-                <div className="widget-list">
-                    {recentConfessions.map(post => (
-                        <div
-                            key={post._id}
-                            className="recent-confession-item clickable"
-                            onClick={() => onOpenPostDetail(post)}
-                        >
-                            <p className="widget-item-title">{post.title}</p>
-                            <p className="confession-preview">
-                                {post.content.substring(0, 60)}...
+                    ) : (
+                        <div className="placeholder-card">
+                            <p className="placeholder-text">
+                                {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
                             </p>
                         </div>
-                    ))}
+                    )}
                 </div>
             </div>
-        </div>
-    );
-};
-
-// Users Right Sidebar Component - Displays current user's statistics
-const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
-    if (!currentUser) return null;
-
-    const userPosts = posts.filter(post => post.userId === currentUser._id);
-
-    const userStats = {
-        posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
-        registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
-        }, 0)
+        );
     };
 
-    return (
-        <div className="sidebar-widget">
-            <div className="widget-header">
-                <h3 className="widget-title">Profile Stats</h3>
-            </div>
-            <div className="widget-content">
-                <div className="widget-list">
-                    <p className="widget-item">Posts: <span className="widget-stat">{userStats.posts}</span></p>
-                    <p className="widget-item">Likes Received: <span className="widget-stat">{userStats.likesReceived}</span></p>
-                    <p className="widget-item">Comments: <span className="widget-stat">{userStats.commentsReceived}</span></p>
-                    <p className="widget-item">Registrations: <span className="widget-stat">{userStats.registrationsReceived}</span></p>
-                </div>
-            </div>
-        </div>
-    );
-};
+    // Profile Settings Modal Component - Allows user to change their avatar
+    const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
+        const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
+        const [customAvatar, setCustomAvatar] = useState('');
+        const [avatarError, setAvatarError] = useState('');
+        const fileInputRef = useRef(null);
 
-// Notifications Right Sidebar Component - Provides link to help & support
-const NotificationsRightSidebar = ({ onShowHelpModal }) => {
-    return (
-        <div className="sidebar-widget">
-            <div className="widget-header">
-                <h3 className="widget-title">Help</h3>
-            </div>
-            <div className="widget-content">
-                <div className="widget-list">
-                    <button className="widget-item-button" onClick={onShowHelpModal}>
-                        Help & Support
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Login Modal Component - Handles user login and registration
-const LoginModal = ({ isOpen, onClose, onLogin }) => {
-    const [isRegistering, setIsRegistering] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', password: '' });
-    const [error, setError] = useState('');
-
-    useEffect(() => {
-        if (isOpen) {
-            setIsRegistering(false);
-            setError('');
-            setFormData({ name: '', email: '', password: '' });
-        }
-    }, [isOpen]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-
-        const url = isRegistering ? `${API_URL}/auth/register` : `${API_URL}/auth/login`;
-
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                onLogin(data);
-                onClose();
-            } else {
-                setError(data.message || 'An error occurred. Please try again.');
+        useEffect(() => {
+            if (isOpen) {
+                setSelectedAvatar(currentUser?.avatar || '');
+                setCustomAvatar('');
+                setAvatarError('');
             }
-        } catch (err) {
-            setError('An error occurred. Please check your network connection.');
-            console.error(err);
-        }
-    };
+        }, [isOpen, currentUser]);
 
-    const handleGoogleLoginClick = () => {
-        window.location.href = `${API_URL}/auth/google`;
-    };
+        const predefinedAvatars = [
+            { src: avatar1, alt: 'Anime style avatar' },
+            { src: avatar2, alt: 'ChatGPT avatar' }
+        ];
 
-    if (!isOpen) return null;
+        const handleCustomImageUpload = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    setAvatarError('Image size cannot exceed 2MB.');
+                    return;
+                }
+                compressImage(file, (compressedDataUrl) => {
+                    setCustomAvatar(compressedDataUrl);
+                    setSelectedAvatar(null);
+                    setAvatarError('');
+                });
+            }
+        };
 
-    return (
-        <ErrorBoundary>
+        const handleSave = () => {
+            if (!selectedAvatar && !customAvatar) {
+                setAvatarError('Please select or upload an avatar.');
+                return;
+            }
+            const newAvatar = customAvatar || selectedAvatar;
+            onSave(newAvatar);
+            onClose();
+        };
+
+        if (!isOpen) return null;
+
+        return (
             <div className="modal-overlay">
-                <div className="modal-content login-modal">
+                <div className="modal-content profile-settings-modal">
                     <div className="modal-header">
-                        <h2 className="modal-title">{isRegistering ? 'Sign Up' : 'Login'}</h2>
+                        <h2 className="modal-title">Edit Profile Image</h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
                         </button>
                     </div>
-                    <div className="modal-body">
-                        <button className="btn-google" onClick={handleGoogleLoginClick}>
-                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <g clipPath="url(#clip0_353_57)">
-                                    <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4" />
-                                    <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853" />
-                                    <path d="M4.417 12.639C4.161 11.996 4.025 11.314 4.025 10.64C4.025 9.966 4.161 9.284 4.417 8.641L4.407 8.496L1.161 6.096L0.985 6.183C0.354 7.424 0 8.989 0 10.64C0 12.291 0.354 13.856 0.985 15.097L4.417 12.639Z" fill="#FBBC04" />
-                                    <path d="M10.204 4.01C11.642 4.01 12.870 4.545 13.864 5.485L16.762 2.607C15.105 1.011 12.859 0 10.204 0C6.223 0 2.697 1.602 0.985 4.849L4.409 7.317L4.417 7.323C4.975 5.621 6.551 4.421 8.441 4.128C9.387 3.922 10.292 3.926 11.294 4.161C11.332 4.084 11.371 4.01 11.41 3.937L10.204 4.01Z" fill="#EA4335" />
-                                </g>
-                                <defs>
-                                    <clipPath id="clip0_353_57">
-                                        <rect width="20" height="20" fill="white" />
-                                    </clipPath>
-                                </defs>
-                            </svg>
-                            <span>Login with Google</span>
-                        </button>
-                        <div className="or-divider"><span className="or-text">Or</span></div>
-                        <form onSubmit={handleSubmit} className="login-form">
-                            {isRegistering && (
-                                <div className="form-group">
-                                    <label className="form-label">Full Name</label>
+                    <div className="modal-body profile-settings-body">
+                        <div className="current-avatar-container">
+                            <h4 className="modal-subtitle">Current Profile Image</h4>
+                            <div className="current-avatar-preview">
+                                <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                            </div>
+                        </div>
+                        <div className="avatar-options-container">
+                            <h4 className="modal-subtitle">Choose a new avatar</h4>
+                            <div className="predefined-avatars-grid">
+                                {predefinedAvatars.map((av, index) => (
+                                    <div
+                                        key={index}
+                                        className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                                        onClick={() => {
+                                            setSelectedAvatar(av.src);
+                                            setCustomAvatar('');
+                                            setAvatarError('');
+                                        }}
+                                    >
+                                        <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="or-divider">
+                                <span className="or-text">OR</span>
+                            </div>
+                            <div className="custom-avatar-upload-section">
+                                <h4 className="modal-subtitle">Upload your own</h4>
+                                <div className="custom-upload-container">
+                                    {customAvatar ? (
+                                        <div className="custom-avatar-preview">
+                                            <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
+                                            <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <button className="upload-button" onClick={() => fileInputRef.current.click()}>
+                                            <ImageIcon size={20} />
+                                            <span>Upload Image</span>
+                                        </button>
+                                    )}
                                     <input
-                                        type="text"
-                                        name="name"
-                                        className="form-input"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        placeholder="eg: John Doe"
-                                        required
+                                        type="file"
+                                        ref={fileInputRef}
+                                        accept="image/*"
+                                        onChange={handleCustomImageUpload}
+                                        style={{ display: 'none' }}
                                     />
                                 </div>
-                            )}
-                            <div className="form-group">
-                                <label className="form-label">Email</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    className="form-input"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                    placeholder="eg:something@gmail.com"
-                                    required
-                                />
                             </div>
-                            <div className="form-group">
-                                <label className="form-label">Password</label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    className="form-input"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                    placeholder="Enter your password"
-                                    required
-                                />
-                            </div>
-                            {error && <p className="error-message">{error}</p>}
-                            <button type="submit" className="btn-primary">
-                                {isRegistering ? 'Sign Up' : 'Login'}
-                            </button>
-                        </form>
-                        <div className="login-footer">
-                            <p>
-                                {isRegistering ? 'Already have an account?' : 'Don\'t have an account?'}
-                                <button
-                                    className="toggle-login-btn"
-                                    onClick={() => setIsRegistering(!isRegistering)}
-                                >
-                                    {isRegistering ? 'Login' : 'Sign Up'}
-                                </button>
-                            </p>
                         </div>
+                        {avatarError && <p className="error-message">{avatarError}</p>}
+                    </div>
+                    <div className="modal-actions">
+                        <button className="btn-secondary" onClick={onClose}>
+                            Cancel
+                        </button>
+                        <button className="btn-primary" onClick={handleSave}>
+                            Save Changes
+                        </button>
                     </div>
                 </div>
             </div>
-        </ErrorBoundary>
-    );
-};
+        );
+    };
 
-// Profile Dropdown Component - Displays user avatar and profile/logout options
-const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, []);
-
-    return (
-        <div className="profile-dropdown-container" ref={dropdownRef}>
-            <button
-                className="profile-dropdown-toggle"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <div className="avatar-wrapper">
-                    <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+    // Users Component - Displays user's profile and their posts
+    const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
+        if (!currentUser) {
+            return (
+                <div>
+                    <h2 className="page-title">Profile</h2>
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">Please log in to view your profile.</p>
+                    </div>
                 </div>
-            </button>
+            );
+        }
 
-            {isOpen && (
-                <div className="profile-dropdown-menu">
+        const userPosts = posts.filter(post =>
+            post.userId === currentUser._id
+        );
+
+        const userStats = {
+            posts: userPosts.length,
+            likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+            commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+            registrationsReceived: userPosts.reduce((sum, post) => {
+                return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            }, 0)
+        };
+
+        return (
+            <div>
+                <h2 className="page-title">Your Profile</h2>
+
+                <div className="profile-header">
+                    <div className="profile-avatar-container">
+                        <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                        <button className="edit-avatar-button" onClick={onEditProfile}>
+                            <Edit3 size={16} />
+                        </button>
+                    </div>
                     <div className="profile-info">
-                        <div className="profile-avatar">
-                            <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
-                        </div>
-                        <div className="profile-details">
-                            <div className="profile-name-display">{user.name}</div>
-                            <div className="profile-email">{user.email}</div>
+                        <h3 className="profile-name">{currentUser.name}</h3>
+                        <p className="profile-email">{currentUser.email}</p>
+                        <div className="profile-stats">
+                            <div className="stat-item">
+                                <span className="stat-number">{userStats.posts}</span>
+                                <span className="stat-label">Posts</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-number">{userStats.likesReceived}</span>
+                                <span className="stat-label">Likes</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-number">{userStats.commentsReceived}</span>
+                                <span className="stat-label">Comments</span>
+                            </div>
+                            <div className="stat-item">
+                                <span className="stat-number">{userStats.registrationsReceived}</span>
+                                <span className="stat-label">Registrations</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="dropdown-divider"></div>
-                    <button
-                        className="dropdown-item"
-                        onClick={() => {
-                            onProfileClick();
-                            setIsOpen(false);
-                        }}
-                    >
-                        <User size={16} className="dropdown-item-icon" />
-                        <span>Profile</span>
-                    </button>
-                    <button
-                        className="dropdown-item logout-btn"
-                        onClick={onLogout}
-                    >
-                        <LogOut size={16} className="dropdown-item-icon" />
-                        <span>Logout</span>
-                    </button>
                 </div>
-            )}
-        </div>
-    );
-};
 
-// Main App Component
-const App = () => {
-    const [activeSection, setActiveSection] = useState('home');
-    const [posts, setPosts] = useState([]);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+                <h3 className="section-subtitle">Your Posts</h3>
 
-    const [currentUser, setCurrentUser] = useState(() => {
-        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        return savedUser || null;
-    });
-    const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
-
-    const [likedPosts, setLikedPosts] = useState(new Set());
-
-    const [openCommentPostId, setOpenCommentPostId] = useState(null);
-    const [selectedEvent, setSelectedEvent] = useState(null);
-    const [selectedPost, setSelectedPost] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [myCalendarEvents, setMyCalendarEvents] = useState([]);
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
-    const [postToEdit, setPostToEdit] = useState(null);
-    const [registrations, setRegistrations] = useState({});
-    const [notifications, setNotifications] = useState([]);
-    const [adminNotifications, setAdminNotifications] = useState([]);
-    const [showHelpModal, setShowHelpModal] = useState(false);
-    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-    const [reportPostData, setReportPostData] = useState(null);
-    const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
-
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
-
-    const formatPostDates = (post) => {
-        return {
-            ...post,
-            timestamp: new Date(post.timestamp),
-            eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
-            eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
-            commentData: post.commentData ? post.commentData.map(comment => ({
-                ...comment,
-                timestamp: new Date(comment.timestamp),
-            })) : [],
-        };
+                {userPosts.length > 0 ? (
+                    <div className="posts-container">
+                        {userPosts.map(post => (
+                            <PostCard
+                                key={post._id}
+                                post={post}
+                                onLike={onLike}
+                                onShare={onShare}
+                                onAddComment={onAddComment}
+                                likedPosts={likedPosts}
+                                isCommentsOpen={openCommentPostId === post._id}
+                                setOpenCommentPostId={setOpenCommentPostId}
+                                onOpenEventDetail={onOpenEventDetail}
+                                onAddToCalendar={onAddToCalendar}
+                                currentUser={currentUser}
+                                isProfileView={true}
+                                onDeletePost={onDeletePost}
+                                onEditPost={onEditPost}
+                                registrationCount={registrations[post._id]}
+                                onReportPost={onReportPost}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">You haven't created any posts yet.</p>
+                        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+                            <Plus size={16} /> Create Your First Post
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
     };
 
-    const fetchPosts = async () => {
-        try {
-            const res = await fetch(`${API_URL}/posts`);
-            const data = await res.json();
-            setPosts(data.map(formatPostDates));
-        } catch (error) {
-            console.error('Failed to fetch posts:', error);
-        }
+    // Home Right Sidebar Component - Displays popular posts
+    const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
+        const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+        return (
+            <div className="sidebar-widget">
+                <div className="widget-header">
+                    <h3 className="widget-title">Popular Posts</h3>
+                </div>
+                <div className="widget-content">
+                    <div className="widget-list">
+                        {popularPosts.map(post => (
+                            <div
+                                key={post._id}
+                                className="popular-post-item clickable"
+                                onClick={() => onOpenPostDetail(post)}
+                            >
+                                <p className="widget-item-title">{post.title}</p>
+                                <div className="popular-post-stats">
+                                    <span className="popular-stat">{post.likes} likes</span>
+                                    <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     };
 
-    const fetchRegistrations = async () => {
-        if (!currentUser || !currentUser.token) {
-            setRegistrations({});
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/users/my-events-registrations`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            const data = await res.json();
-            if (res.ok && data.registrations) {
-                setRegistrations(data.registrations);
-            } else {
-                console.error('Failed to fetch registrations:', data.message);
+    // Events Right Sidebar Component - Displays calendar and user's upcoming events
+    const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
+        const [value, onChange] = useState(new Date());
+
+        const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+
+        const tileContent = ({ date, view }) => {
+            if (view === 'month') {
+                const hasEvent = allEvents.some(post =>
+                    post.eventStartDate &&
+                    new Date(post.eventStartDate).getDate() === date.getDate() &&
+                    new Date(post.eventStartDate).getMonth() === date.getMonth() &&
+                    new Date(post.eventStartDate).getFullYear() === date.getFullYear()
+                );
+                return hasEvent ? <div className="event-dot"></div> : null;
             }
-        } catch (error) {
-            console.error('Failed to fetch registrations:', error);
-        }
+            return null;
+        };
+
+        const upcomingCalendarEvents = myCalendarEvents
+            .filter(e => new Date(e.eventStartDate) > new Date())
+            .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+            .slice(0, 3);
+
+        return (
+            <>
+                <div className="calendar-widget">
+                    <div className="widget-content calendar-container">
+                        <Calendar
+                            onChange={onChange}
+                            value={value}
+                            tileContent={tileContent}
+                            className="react-calendar"
+                            prev2Label={null}
+                            next2Label={null}
+                            locale="en-US"
+                        />
+                    </div>
+                </div>
+
+                {upcomingCalendarEvents.length > 0 && (
+                    <div className="sidebar-widget my-calendar-events">
+                        <div className="widget-header">
+                            <h3 className="widget-title">My Calendar Events</h3>
+                        </div>
+                        <div className="widget-content">
+                            <div className="widget-list">
+                                {upcomingCalendarEvents.map(event => (
+                                    <div
+                                        key={event._id}
+                                        className="sidebar-event-item clickable"
+                                        onClick={() => onOpenEventDetail(event)}
+                                    >
+                                        <h4 className="sidebar-event-title">{event.title}</h4>
+                                        <div className="sidebar-event-date">
+                                            {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                        <div className="sidebar-event-time">
+                                            {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </>
+        );
     };
 
-    const fetchNotifications = async () => {
-        if (!currentUser || !currentUser.token) return;
-        try {
-            const res = await fetch(`${API_URL}/notifications`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            const data = await res.json();
-            setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
-        } catch (error) {
-            console.error('Failed to fetch notifications:', error);
-        }
+    // Confessions Right Sidebar Component - Displays recent confessions
+    const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
+        const recentConfessions = [...posts]
+            .filter(post => post.type === 'confession')
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 3);
+        return (
+            <div className="sidebar-widget">
+                <div className="widget-header">
+                    <h3 className="widget-title">Recent Confessions</h3>
+                </div>
+                <div className="widget-content">
+                    <div className="widget-list">
+                        {recentConfessions.map(post => (
+                            <div
+                                key={post._id}
+                                className="recent-confession-item clickable"
+                                onClick={() => onOpenPostDetail(post)}
+                            >
+                                <p className="widget-item-title">{post.title}</p>
+                                <p className="confession-preview">
+                                    {post.content.substring(0, 60)}...
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     };
 
-    const fetchAdminNotifications = async () => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
-        try {
-            const res = await fetch(`${API_URL}/users/admin/reported-posts`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            const data = await res.json();
-            setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
-        } catch (error) {
-            console.error('Failed to fetch admin notifications (reported posts):', error);
-        }
+    // Users Right Sidebar Component - Displays current user's statistics
+    const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
+        if (!currentUser) return null;
+
+        const userPosts = posts.filter(post => post.userId === currentUser._id);
+
+        const userStats = {
+            posts: userPosts.length,
+            likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+            commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+            registrationsReceived: userPosts.reduce((sum, post) => {
+                return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            }, 0)
+        };
+
+        return (
+            <div className="sidebar-widget">
+                <div className="widget-header">
+                    <h3 className="widget-title">Profile Stats</h3>
+                </div>
+                <div className="widget-content">
+                    <div className="widget-list">
+                        <p className="widget-item">Posts: <span className="widget-stat">{userStats.posts}</span></p>
+                        <p className="widget-item">Likes Received: <span className="widget-stat">{userStats.likesReceived}</span></p>
+                        <p className="widget-item">Comments: <span className="widget-stat">{userStats.commentsReceived}</span></p>
+                        <p className="widget-item">Registrations: <span className="widget-stat">{userStats.registrationsReceived}</span></p>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
-    const fetchLikedPosts = async (user) => {
-        if (!user || !user.token) {
-            console.log("Not logged in, skipping fetchLikedPosts.");
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/users/liked-posts`, {
-                headers: {
-                    'Authorization': `Bearer ${user.token}`
-                }
-            });
-            if (res.ok) {
+    // Notifications Right Sidebar Component - Provides link to help & support
+    const NotificationsRightSidebar = ({ onShowHelpModal }) => {
+        return (
+            <div className="sidebar-widget">
+                <div className="widget-header">
+                    <h3 className="widget-title">Help</h3>
+                </div>
+                <div className="widget-content">
+                    <div className="widget-list">
+                        <button className="widget-item-button" onClick={onShowHelpModal}>
+                            Help & Support
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // Login Modal Component - Handles user login and registration
+    const LoginModal = ({ isOpen, onClose, onLogin }) => {
+        const [isRegistering, setIsRegistering] = useState(false);
+        const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+        const [error, setError] = useState('');
+
+        useEffect(() => {
+            if (isOpen) {
+                setIsRegistering(false);
+                setError('');
+                setFormData({ name: '', email: '', password: '' });
+            }
+        }, [isOpen]);
+
+        const handleChange = (e) => {
+            const { name, value } = e.target;
+            setFormData(prev => ({ ...prev, [name]: value }));
+        };
+
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+            setError('');
+
+            const url = isRegistering ? `${API_URL}/auth/register` : `${API_URL}/auth/login`;
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData),
+                });
+
                 const data = await res.json();
-                setLikedPosts(new Set(data.likedPostIds || []));
-            } else {
-                console.error('Failed to fetch liked posts for user:', await res.json());
-            }
-        } catch (error) {
-            console.error('Error fetching liked posts:', error);
-        }
-    };
 
-
-    useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        const name = urlParams.get('name');
-        const email = urlParams.get('email');
-        const avatar = urlParams.get('avatar');
-        const isAdmin = urlParams.get('isAdmin') === 'true';
-        const _id = urlParams.get('_id');
-
-        if (token && name && email && _id) {
-            const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
-            handleLogin(user);
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-            if (savedUser && savedUser.token) {
-                setIsLoggedIn(true);
-                setCurrentUser(savedUser);
-            }
-        }
-        document.documentElement.setAttribute('data-theme', theme);
-    }, [theme]);
-
-    useEffect(() => {
-        const fetchData = async () => {
-            if (isLoggedIn && currentUser) {
-                await fetchLikedPosts(currentUser);
-                fetchRegistrations();
-                fetchNotifications();
-                if (currentUser.isAdmin) {
-                    fetchAdminNotifications();
+                if (res.ok) {
+                    onLogin(data);
+                    onClose();
+                } else {
+                    setError(data.message || 'An error occurred. Please try again.');
                 }
-            } else {
-                setLikedPosts(new Set());
+            } catch (err) {
+                setError('An error occurred. Please check your network connection.');
+                console.error(err);
             }
-
-            fetchPosts();
         };
 
-        fetchData();
-
-    }, [isLoggedIn, currentUser]);
-
-    useEffect(() => {
-        if (hasOpenModal) {
-            document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = '15px';
-        } else {
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
+        const handleGoogleLoginClick = () => {
+            window.location.href = `${API_URL}/auth/google`;
         };
-        return () => {
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        };
-    }, [hasOpenModal]);
 
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light';
-        setTheme(newTheme);
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
+        if (!isOpen) return null;
+
+        return (
+            <ErrorBoundary>
+                <div className="modal-overlay">
+                    <div className="modal-content login-modal">
+                        <div className="modal-header">
+                            <h2 className="modal-title">{isRegistering ? 'Sign Up' : 'Login'}</h2>
+                            <button className="modal-close" onClick={onClose}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <button className="btn-google" onClick={handleGoogleLoginClick}>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                                    <g clipPath="url(#clip0_353_57)">
+                                        <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4" />
+                                        <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853" />
+                                        <path d="M4.417 12.639C4.161 11.996 4.025 11.314 4.025 10.64C4.025 9.966 4.161 9.284 4.417 8.641L4.407 8.496L1.161 6.096L0.985 6.183C0.354 7.424 0 8.989 0 10.64C0 12.291 0.354 13.856 0.985 15.097L4.417 12.639Z" fill="#FBBC04" />
+                                        <path d="M10.204 4.01C11.642 4.01 12.870 4.545 13.864 5.485L16.762 2.607C15.105 1.011 12.859 0 10.204 0C6.223 0 2.697 1.602 0.985 4.849L4.409 7.317L4.417 7.323C4.975 5.621 6.551 4.421 8.441 4.128C9.387 3.922 10.292 3.926 11.294 4.161C11.332 4.084 11.371 4.01 11.41 3.937L10.204 4.01Z" fill="#EA4335" />
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_353_57">
+                                            <rect width="20" height="20" fill="white" />
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+                                <span>Login with Google</span>
+                            </button>
+                            <div className="or-divider"><span className="or-text">Or</span></div>
+                            <form onSubmit={handleSubmit} className="login-form">
+                                {isRegistering && (
+                                    <div className="form-group">
+                                        <label className="form-label">Full Name</label>
+                                        <input
+                                            type="text"
+                                            name="name"
+                                            className="form-input"
+                                            value={formData.name}
+                                            onChange={handleChange}
+                                            placeholder="eg: John Doe"
+                                            required
+                                        />
+                                    </div>
+                                )}
+                                <div className="form-group">
+                                    <label className="form-label">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        className="form-input"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="eg:something@gmail.com"
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label className="form-label">Password</label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        className="form-input"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                </div>
+                                {error && <p className="error-message">{error}</p>}
+                                <button type="submit" className="btn-primary">
+                                    {isRegistering ? 'Sign Up' : 'Login'}
+                                </button>
+                            </form>
+                            <div className="login-footer">
+                                <p>
+                                    {isRegistering ? 'Already have an account?' : 'Don\'t have an account?'}
+                                    <button
+                                        className="toggle-login-btn"
+                                        onClick={() => setIsRegistering(!isRegistering)}
+                                    >
+                                        {isRegistering ? 'Login' : 'Sign Up'}
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ErrorBoundary>
+        );
     };
 
-    const filteredPosts = posts.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // Profile Dropdown Component - Displays user avatar and profile/logout options
+    const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useRef(null);
 
-    const handleAddToCalendar = (event) => {
-        if (!isLoggedIn) {
-            setShowLoginModal(true);
-            return;
-        }
-        setMyCalendarEvents(prev => {
-            if (prev.some(e => e._id === event._id)) {
-                return prev;
-            }
-            return [...prev, event];
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                    setIsOpen(false);
+                }
+            };
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+            };
+        }, []);
+
+        return (
+            <div className="profile-dropdown-container" ref={dropdownRef}>
+                <button
+                    className="profile-dropdown-toggle"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <div className="avatar-wrapper">
+                        <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                    </div>
+                </button>
+
+                {isOpen && (
+                    <div className="profile-dropdown-menu">
+                        <div className="profile-info">
+                            <div className="profile-avatar">
+                                <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                            </div>
+                            <div className="profile-details">
+                                <div className="profile-name-display">{user.name}</div>
+                                <div className="profile-email">{user.email}</div>
+                            </div>
+                        </div>
+                        <div className="dropdown-divider"></div>
+                        <button
+                            className="dropdown-item"
+                            onClick={() => {
+                                onProfileClick();
+                                setIsOpen(false);
+                            }}
+                        >
+                            <User size={16} className="dropdown-item-icon" />
+                            <span>Profile</span>
+                        </button>
+                        <button
+                            className="dropdown-item logout-btn"
+                            onClick={onLogout}
+                        >
+                            <LogOut size={16} className="dropdown-item-icon" />
+                            <span>Logout</span>
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Main App Component
+    const App = () => {
+        const [activeSection, setActiveSection] = useState('home');
+        const [posts, setPosts] = useState([]);
+        const [isModalOpen, setIsModalOpen] = useState(false);
+
+        const [currentUser, setCurrentUser] = useState(() => {
+            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            return savedUser || null;
         });
-    };
+        const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
-    const handleRegisterEvent = async (eventId, eventTitle) => {
-        if (!currentUser || !currentUser.token) {
-            console.error('User not authenticated for registration.');
-            return;
-        }
+        const [likedPosts, setLikedPosts] = useState(new Set());
 
-        try {
-            const res = await fetch(`${API_URL}/users/register-event/${eventId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-            });
-            if (res.ok) {
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `You are now registered for "${eventTitle}". See you there!`,
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-                fetchRegistrations(); // Re-fetch registrations to update the count
+        const [openCommentPostId, setOpenCommentPostId] = useState(null);
+        const [selectedEvent, setSelectedEvent] = useState(null);
+        const [selectedPost, setSelectedPost] = useState(null);
+        const [searchTerm, setSearchTerm] = useState('');
+        const [myCalendarEvents, setMyCalendarEvents] = useState([]);
+        const [showLoginModal, setShowLoginModal] = useState(false);
+        const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+        const [postToEdit, setPostToEdit] = useState(null);
+        const [registrations, setRegistrations] = useState({});
+        const [notifications, setNotifications] = useState([]);
+        const [adminNotifications, setAdminNotifications] = useState([]);
+        const [showHelpModal, setShowHelpModal] = useState(false);
+        const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+        const [reportPostData, setReportPostData] = useState(null);
+        const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+
+        const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
+
+        const formatPostDates = (post) => {
+            return {
+                ...post,
+                timestamp: new Date(post.timestamp),
+                eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
+                eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
+                commentData: post.commentData ? post.commentData.map(comment => ({
+                    ...comment,
+                    timestamp: new Date(comment.timestamp),
+                })) : [],
+            };
+        };
+
+        const fetchPosts = async () => {
+            try {
+                const res = await fetch(`${API_URL}/posts`);
+                const data = await res.json();
+                setPosts(data.map(formatPostDates));
+            } catch (error) {
+                console.error('Failed to fetch posts:', error);
+            }
+        };
+
+        const fetchRegistrations = async () => {
+            if (!currentUser || !currentUser.token) {
+                setRegistrations({});
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/users/my-events-registrations`, {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                const data = await res.json();
+                if (res.ok && data.registrations) {
+                    setRegistrations(data.registrations);
+                } else {
+                    console.error('Failed to fetch registrations:', data.message);
+                }
+            } catch (error) {
+                console.error('Failed to fetch registrations:', error);
+            }
+        };
+
+        const fetchNotifications = async () => {
+            if (!currentUser || !currentUser.token) return;
+            try {
+                const res = await fetch(`${API_URL}/notifications`, {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                const data = await res.json();
+                setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            } catch (error) {
+                console.error('Failed to fetch notifications:', error);
+            }
+        };
+
+        const fetchAdminNotifications = async () => {
+            if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+            try {
+                const res = await fetch(`${API_URL}/users/admin/reported-posts`, {
+                    headers: { 'Authorization': `Bearer ${currentUser.token}` }
+                });
+                const data = await res.json();
+                setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            } catch (error) {
+                console.error('Failed to fetch admin notifications (reported posts):', error);
+            }
+        };
+
+        const fetchLikedPosts = async (user) => {
+            if (!user || !user.token) {
+                console.log("Not logged in, skipping fetchLikedPosts.");
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/users/liked-posts`, {
+                    headers: {
+                        'Authorization': `Bearer ${user.token}`
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setLikedPosts(new Set(data.likedPostIds || []));
+                } else {
+                    console.error('Failed to fetch liked posts for user:', await res.json());
+                }
+            } catch (error) {
+                console.error('Error fetching liked posts:', error);
+            }
+        };
+
+
+        useEffect(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const name = urlParams.get('name');
+            const email = urlParams.get('email');
+            const avatar = urlParams.get('avatar');
+            const isAdmin = urlParams.get('isAdmin') === 'true';
+            const _id = urlParams.get('_id');
+
+            if (token && name && email && _id) {
+                const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
+                handleLogin(user);
+                window.history.replaceState({}, document.title, window.location.pathname);
             } else {
-                const errorData = await res.json();
-                console.error('Registration failed:', errorData.message);
+                const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+                if (savedUser && savedUser.token) {
+                    setIsLoggedIn(true);
+                    setCurrentUser(savedUser);
+                }
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+        }, [theme]);
+
+        useEffect(() => {
+            const fetchData = async () => {
+                if (isLoggedIn && currentUser) {
+                    await fetchLikedPosts(currentUser);
+                    fetchRegistrations();
+                    fetchNotifications();
+                    if (currentUser.isAdmin) {
+                        fetchAdminNotifications();
+                    }
+                } else {
+                    setLikedPosts(new Set());
+                }
+
+                fetchPosts();
+            };
+
+            fetchData();
+
+        }, [isLoggedIn, currentUser]);
+
+        useEffect(() => {
+            if (hasOpenModal) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.paddingRight = '15px';
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            };
+            return () => {
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            };
+        }, [hasOpenModal]);
+
+        const toggleTheme = () => {
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        };
+
+        const filteredPosts = posts.filter(post =>
+            post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+
+        const handleAddToCalendar = (event) => {
+            if (!isLoggedIn) {
+                setShowLoginModal(true);
+                return;
+            }
+            setMyCalendarEvents(prev => {
+                if (prev.some(e => e._id === event._id)) {
+                    return prev;
+                }
+                return [...prev, event];
+            });
+        };
+
+        const handleRegisterEvent = async (eventId, eventTitle) => {
+            if (!currentUser || !currentUser.token) {
+                console.error('User not authenticated for registration.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/users/register-event/${eventId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                });
+                if (res.ok) {
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `You are now registered for "${eventTitle}". See you there!`,
+                            timestamp: new Date(),
+                            type: 'success'
+                        },
+                        ...prev
+                    ]);
+                    setRegistrations(prevRegistrations => {
+                        const newCount = (prevRegistrations[eventId] || 0) + 1;
+                        return { ...prevRegistrations, [eventId]: newCount };
+                    });
+                } else {
+                    const errorData = await res.json();
+                    console.error('Registration failed:', errorData.message);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Registration for "${eventTitle}" failed: ${errorData.message}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
+                }
+            } catch (err) {
+                console.error('Registration failed:', err);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
+                        message: `Registration for "${eventTitle}" failed due to network error.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (err) {
-            console.error('Registration failed:', err);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Registration for "${eventTitle}" failed due to network error.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
+        };
 
-    const handleAddPost = async (newPost) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
-            console.error('User not authenticated for posting.');
-            return;
-        }
+        const handleAddPost = async (newPost) => {
+            if (!isLoggedIn || !currentUser || !currentUser.token) {
+                console.error('User not authenticated for posting.');
+                return;
+            }
 
-        try {
-            const endpoint = postToEdit ? `${API_URL}/posts/${postToEdit._id}` : `${API_URL}/posts`;
-            const method = postToEdit ? 'PUT' : 'POST';
+            try {
+                const endpoint = postToEdit ? `${API_URL}/posts/${postToEdit._id}` : `${API_URL}/posts`;
+                const method = postToEdit ? 'PUT' : 'POST';
 
-            const res = await fetch(endpoint, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-                body: JSON.stringify(newPost),
-            });
+                const res = await fetch(endpoint, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                    body: JSON.stringify(newPost),
+                });
 
-            if (res.ok) {
-                const responseData = await res.json();
-                const formattedResponsePost = formatPostDates(responseData);
+                if (res.ok) {
+                    const responseData = await res.json();
+                    const formattedResponsePost = formatPostDates(responseData);
 
-                setPostToEdit(null);
+                    setPostToEdit(null);
 
-                if (method === 'POST') {
-                    setPosts(prev => [formattedResponsePost, ...prev]);
+                    if (method === 'POST') {
+                        setPosts(prev => [formattedResponsePost, ...prev]);
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+                                timestamp: new Date(),
+                                type: 'success'
+                            },
+                            ...prev
+                        ]);
+                    } else {
+                        setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
+                                timestamp: new Date(),
+                                type: 'success'
+                            },
+                            ...prev
+                        ]);
+                    }
+                } else {
+                    const errorData = await res.json();
+                    console.error('Failed to save post:', errorData);
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+                            message: `Failed to save ${newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error saving post:', error);
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Network error: Could not save ${newPost.type} "${newPost.title}".`,
+                        timestamp: new Date(),
+                        type: 'error'
+                    },
+                    ...prev
+                ]);
+            }
+        };
+
+        const handleDeletePost = async (postId) => {
+            if (!isLoggedIn || !currentUser || !currentUser.token) {
+                console.error('User not authenticated for deleting posts.');
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/posts/${postId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                });
+                if (res.ok) {
+                    setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
+                    setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
+                    setLikedPosts(prev => {
+                        const newLiked = new Set(prev);
+                        newLiked.delete(postId);
+                        return newLiked;
+                    });
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Post has been deleted successfully.`,
                             timestamp: new Date(),
                             type: 'success'
                         },
                         ...prev
                     ]);
                 } else {
-                    setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                    const errorData = await res.json();
+                    console.error('Failed to delete post:', errorData);
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
+                            message: `Failed to delete post: ${errorData.message || 'Unknown error.'}`,
                             timestamp: new Date(),
-                            type: 'success'
+                            type: 'error'
                         },
                         ...prev
                     ]);
                 }
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to save post:', errorData);
+            } catch (error) {
+                console.error('Error deleting post:', error);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to save ${newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
+                        message: `Network error: Could not delete post.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (error) {
-            console.error('Error saving post:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not save ${newPost.type} "${newPost.title}".`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
+        };
 
-    const handleDeletePost = async (postId) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
-            console.error('User not authenticated for deleting posts.');
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/posts/${postId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-            });
-            if (res.ok) {
-                setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
-                setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
-                setLikedPosts(prev => {
-                    const newLiked = new Set(prev);
+        const handleEditPost = (post) => {
+            if (!isLoggedIn) {
+                setShowLoginModal(true);
+                return;
+            }
+            if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
+                setPostToEdit(post);
+                setIsModalOpen(true);
+                setActiveSection('profile');
+            }
+        };
+
+
+        const handleLikePost = async (postId) => {
+            if (!isLoggedIn || !currentUser || !currentUser.token) {
+                setShowLoginModal(true);
+                return;
+            }
+
+            const isCurrentlyLiked = likedPosts.has(postId);
+            const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
+            const method = 'PUT';
+
+            setLikedPosts(prev => {
+                const newLiked = new Set(prev);
+                if (isCurrentlyLiked) {
                     newLiked.delete(postId);
-                    return newLiked;
-                });
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Post has been deleted successfully.`,
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to delete post:', errorData);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to delete post: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
-                        type: 'error'
-                    },
-                    ...prev
-                ]);
-            }
-        } catch (error) {
-            console.error('Error deleting post:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not delete post.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
-
-    const handleEditPost = (post) => {
-        if (!isLoggedIn) {
-            setShowLoginModal(true);
-            return;
-        }
-        if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
-            setPostToEdit(post);
-            setIsModalOpen(true);
-            setActiveSection('profile');
-        }
-    };
-
-
-    const handleLikePost = async (postId) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
-            setShowLoginModal(true);
-            return;
-        }
-
-        const isCurrentlyLiked = likedPosts.has(postId);
-        const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
-        const method = 'PUT';
-
-        setLikedPosts(prev => {
-            const newLiked = new Set(prev);
-            if (isCurrentlyLiked) {
-                newLiked.delete(postId);
-            } else {
-                newLiked.add(postId);
-            }
-            return newLiked;
-        });
-
-        setPosts(prevPosts =>
-            prevPosts.map(post =>
-                post._id === postId
-                    ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
-                    : post
-            )
-        );
-
-        try {
-            const res = await fetch(endpoint, {
-                method,
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
+                } else {
+                    newLiked.add(postId);
+                }
+                return newLiked;
             });
 
-            if (!res.ok) {
-                console.error('Failed to like/unlike post:', await res.json());
+            setPosts(prevPosts =>
+                prevPosts.map(post =>
+                    post._id === postId
+                        ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
+                        : post
+                )
+            );
+
+            try {
+                const res = await fetch(endpoint, {
+                    method,
+                    headers: {
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                });
+
+                if (!res.ok) {
+                    console.error('Failed to like/unlike post:', await res.json());
+
+                    setLikedPosts(prev => {
+                        const newLiked = new Set(prev);
+                        if (isCurrentlyLiked) {
+                            newLiked.add(postId);
+                        } else {
+                            newLiked.delete(postId);
+                        }
+                        return newLiked;
+                    });
+                    setPosts(prevPosts =>
+                        prevPosts.map(post =>
+                            post._id === postId
+                                ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+                                : post
+                        )
+                    );
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error liking/unliking post:', error);
 
                 setLikedPosts(prev => {
                     const newLiked = new Set(prev);
@@ -2969,109 +2999,94 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
+                        message: `Network error: Could not ${isCurrentlyLiked ? 'unlike' : 'like'} post.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (error) {
-            console.error('Error liking/unliking post:', error);
+        };
 
-            setLikedPosts(prev => {
-                const newLiked = new Set(prev);
-                if (isCurrentlyLiked) {
-                    newLiked.add(postId);
+        const handleAddComment = async (postId, commentText) => {
+            if (!isLoggedIn || !currentUser || !currentUser.token) {
+                setShowLoginModal(true);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/posts/${postId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                    body: JSON.stringify({ text: commentText }),
+                });
+                if (res.ok) {
+                    const commentData = await res.json();
+                    setPosts(prevPosts =>
+                        prevPosts.map(post =>
+                            post._id === postId ? {
+                                ...post,
+                                commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
+                                comments: commentData.length
+                            } : post
+                        )
+                    );
                 } else {
-                    newLiked.delete(postId);
+                    const errorData = await res.json();
+                    console.error('Failed to add comment:', errorData);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Failed to add comment: ${errorData.message || 'Unknown error.'}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
                 }
-                return newLiked;
-            });
-            setPosts(prevPosts =>
-                prevPosts.map(post =>
-                    post._id === postId
-                        ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
-                        : post
-                )
-            );
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not ${isCurrentlyLiked ? 'unlike' : 'like'} post.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
-
-    const handleAddComment = async (postId, commentText) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
-            setShowLoginModal(true);
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_URL}/posts/${postId}/comments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-                body: JSON.stringify({ text: commentText }),
-            });
-            if (res.ok) {
-                const commentData = await res.json();
-                setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        post._id === postId ? {
-                            ...post,
-                            commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
-                            comments: commentData.length
-                        } : post
-                    )
-                );
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to add comment:', errorData);
+            } catch (error) {
+                console.error('Error adding comment:', error);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to add comment: ${errorData.message || 'Unknown error.'}`,
+                        message: `Network error: Could not add comment.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (error) {
-            console.error('Error adding comment:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not add comment.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
+        };
 
-    const handleShareClick = async (postId, postTitle, postContent) => {
-        const shareUrl = `${window.location.origin}/posts/${postId}`;
+        const handleShareClick = async (postId, postTitle, postContent) => {
+            const shareUrl = `${window.location.origin}/posts/${postId}`;
 
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
-                    url: shareUrl,
-                });
-            } catch (error) {
-                console.error('Share failed:', error);
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: postTitle,
+                        text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                        url: shareUrl,
+                    });
+                } catch (error) {
+                    console.error('Share failed:', error);
+                    try {
+                        const tempInput = document.createElement('textarea');
+                        tempInput.value = shareUrl;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        setShowShareAlert(true);
+                    } catch (err) {
+                        console.error('Copy to clipboard failed:', err);
+                        setShowShareAlert(true);
+                    }
+                }
+            } else {
                 try {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
@@ -3081,257 +3096,341 @@ const App = () => {
                     document.body.removeChild(tempInput);
                     setShowShareAlert(true);
                 } catch (err) {
-                    console.error('Copy to clipboard failed:', err);
                     setShowShareAlert(true);
                 }
             }
-        } else {
+        };
+
+        const handleOpenEventDetail = (event) => {
+            setSelectedEvent(event);
+            setOpenCommentPostId(null);
+            setSelectedPost(null);
+        };
+
+        const handleOpenPostDetail = (post) => {
+            setSelectedPost(post);
+            setOpenCommentPostId(null);
+            setSelectedEvent(null);
+        };
+
+        const handleCloseEventDetail = () => {
+            setSelectedEvent(null);
+        };
+
+        const handleLogin = (user) => {
+            setIsLoggedIn(true);
+            setCurrentUser(user);
+            localStorage.setItem('currentUser', JSON.stringify(user));
+        };
+
+        const handleLogout = () => {
+            setIsLoggedIn(false);
+            setCurrentUser(null);
+            setLikedPosts(new Set());
+            localStorage.removeItem('currentUser');
+        };
+
+        const handleOpenReportModal = (post) => {
+            if (!currentUser) {
+                setShowLoginModal(true);
+                return;
+            }
+            setReportPostData(post);
+            setIsReportModalOpen(true);
+        };
+
+        const handleCloseReportModal = () => {
+            setIsReportModalOpen(false);
+            setReportPostData(null);
+        };
+
+        const handleReportPost = async (postId, reason) => {
+            if (!currentUser || !currentUser.token) {
+                console.error('User not authenticated for reporting posts.');
+                return;
+            }
             try {
-                const tempInput = document.createElement('textarea');
-                tempInput.value = shareUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                setShowShareAlert(true);
-            } catch (err) {
-                setShowShareAlert(true);
-            }
-        }
-    };
-
-    const handleOpenEventDetail = (event) => {
-        setSelectedEvent(event);
-        setOpenCommentPostId(null);
-        setSelectedPost(null);
-    };
-
-    const handleOpenPostDetail = (post) => {
-        setSelectedPost(post);
-        setOpenCommentPostId(null);
-        setSelectedEvent(null);
-    };
-
-    const handleCloseEventDetail = () => {
-        setSelectedEvent(null);
-    };
-
-    const handleLogin = (user) => {
-        setIsLoggedIn(true);
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
-    };
-
-    const handleLogout = () => {
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-        setLikedPosts(new Set());
-        localStorage.removeItem('currentUser');
-    };
-
-    const handleOpenReportModal = (post) => {
-        if (!currentUser) {
-            setShowLoginModal(true);
-            return;
-        }
-        setReportPostData(post);
-        setIsReportModalOpen(true);
-    };
-
-    const handleCloseReportModal = () => {
-        setIsReportModalOpen(false);
-        setReportPostData(null);
-    };
-
-    const handleReportPost = async (postId, reason) => {
-        if (!currentUser || !currentUser.token) {
-            console.error('User not authenticated for reporting posts.');
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/posts/${postId}/report`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-                body: JSON.stringify({ reason }),
-            });
-            if (res.ok) {
-                if (currentUser.isAdmin) {
-                    fetchAdminNotifications();
+                const res = await fetch(`${API_URL}/posts/${postId}/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`,
+                    },
+                    body: JSON.stringify({ reason }),
+                });
+                if (res.ok) {
+                    if (currentUser.isAdmin) {
+                        fetchAdminNotifications();
+                    }
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Report for post ID ${postId} has been submitted. Thank you for your feedback!`,
+                            timestamp: new Date(),
+                            type: 'info'
+                        },
+                        ...prev
+                    ]);
+                } else {
+                    const errorData = await res.json();
+                    console.error('Failed to report post:', errorData);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Failed to report post: ${errorData.message || 'Unknown error.'}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
                 }
+            } catch (err) {
+                console.error('Error reporting post:', err);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Report for post ID ${postId} has been submitted. Thank you for your feedback!`,
-                        timestamp: new Date(),
-                        type: 'info'
-                    },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to report post:', errorData);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to report post: ${errorData.message || 'Unknown error.'}`,
+                        message: `Network error: Could not report post.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (err) {
-            console.error('Error reporting post:', err);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not report post.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
+        };
 
-    const handleDeleteReportedPost = async (postId) => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
-            console.error('User not authorized to delete reported posts.');
-            return;
-        }
-        try {
-            const res = await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-            });
-            if (res.ok) {
-                await fetchPosts();
-                await fetchAdminNotifications();
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Reported post (ID: ${postId}) has been deleted successfully.`,
-                        timestamp: new Date(),
-                        type: 'success'
+        const handleDeleteReportedPost = async (postId) => {
+            if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+                console.error('User not authorized to delete reported posts.');
+                return;
+            }
+            try {
+                const res = await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${currentUser.token}`,
                     },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to delete reported post:', errorData);
+                });
+                if (res.ok) {
+                    await fetchPosts();
+                    await fetchAdminNotifications();
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Reported post (ID: ${postId}) has been deleted successfully.`,
+                            timestamp: new Date(),
+                            type: 'success'
+                        },
+                        ...prev
+                    ]);
+                } else {
+                    const errorData = await res.json();
+                    console.error('Failed to delete reported post:', errorData);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Failed to delete reported post: ${errorData.message || 'Unknown error.'}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
+                }
+            } catch (error) {
+                console.error('Error deleting reported post:', error);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to delete reported post: ${errorData.message || 'Unknown error.'}`,
+                        message: `Network error: Could not delete reported post.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (error) {
-            console.error('Error deleting reported post:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not delete reported post.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
+        };
 
-    const handleUpdateAvatar = async (newAvatar) => {
-        if (!currentUser || !currentUser.token) {
-            console.error('User not authenticated for updating avatar.');
-            return;
-        }
+        const handleUpdateAvatar = async (newAvatar) => {
+            if (!currentUser || !currentUser.token) {
+                console.error('User not authenticated for updating avatar.');
+                return;
+            }
 
-        try {
-            const res = await fetch(`${API_URL}/users/profile/avatar`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-                body: JSON.stringify({ avatar: newAvatar }),
-            });
-
-            if (res.ok) {
-                const { avatar: updatedAvatar } = await res.json();
-                
-                const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
-                
-                setCurrentUser(newCurrentUser);
-                localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
-
-                setPosts(prevPosts =>
-                    prevPosts.map(post => {
-                        const updatedPost = post.userId === newCurrentUser._id
-                            ? { ...post, authorAvatar: newCurrentUser.avatar }
-                            : post;
-
-                        const updatedComments = updatedPost.commentData.map(comment => {
-                            if (comment.authorId === newCurrentUser._id) {
-                                return { ...comment, authorAvatar: newCurrentUser.avatar };
-                            }
-                            return comment;
-                        });
-                        
-                        return { ...updatedPost, commentData: updatedComments };
-                    })
-                );
-
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Your profile image has been updated successfully!`,
-                        timestamp: new Date(),
-                        type: 'success'
+            try {
+                const res = await fetch(`${API_URL}/users/profile/avatar`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentUser.token}`,
                     },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to update avatar:', errorData);
+                    body: JSON.stringify({ avatar: newAvatar }),
+                });
+
+                if (res.ok) {
+                    const { avatar: updatedAvatar } = await res.json();
+                    
+                    const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
+                    
+                    setCurrentUser(newCurrentUser);
+                    localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
+
+                    setPosts(prevPosts =>
+                        prevPosts.map(post => {
+                            const updatedPost = post.userId === newCurrentUser._id
+                                ? { ...post, authorAvatar: newCurrentUser.avatar }
+                                : post;
+
+                            const updatedComments = updatedPost.commentData.map(comment => {
+                                if (comment.authorId === newCurrentUser._id) {
+                                    return { ...comment, authorAvatar: newCurrentUser.avatar };
+                                }
+                                return comment;
+                            });
+                            
+                            return { ...updatedPost, commentData: updatedComments };
+                        })
+                    );
+
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Your profile image has been updated successfully!`,
+                            timestamp: new Date(),
+                            type: 'success'
+                        },
+                        ...prev
+                    ]);
+                } else {
+                    const errorData = await res.json();
+                    console.error('Failed to update avatar:', errorData);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Failed to update profile image: ${errorData.message || 'Unknown error.'}`,
+                            timestamp: new Date(),
+                            type: 'error'
+                        },
+                        ...prev
+                    ]);
+                }
+            } catch (err) {
+                console.error('Error updating avatar:', err);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to update profile image: ${errorData.message || 'Unknown error.'}`,
+                        message: `Network error: Could not update profile image.`,
                         timestamp: new Date(),
                         type: 'error'
                     },
                     ...prev
                 ]);
             }
-        } catch (err) {
-            console.error('Error updating avatar:', err);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not update profile image.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-        setShowProfileSettingsModal(false);
-    };
+            setShowProfileSettingsModal(false);
+        };
 
-    const menuItems = [
-        {
-            id: 'home',
-            label: 'Home',
-            icon: <Home className="nav-icon" />,
-            component: () => <HomeComponent
+        const menuItems = [
+            {
+                id: 'home',
+                label: 'Home',
+                icon: <Home className="nav-icon" />,
+                component: () => <HomeComponent
+                    posts={filteredPosts}
+                    onLike={handleLikePost}
+                    onShare={handleShareClick}
+                    onAddComment={handleAddComment}
+                    likedPosts={likedPosts}
+                    openCommentPostId={openCommentPostId}
+                    setOpenCommentPostId={setOpenCommentPostId}
+                    onOpenEventDetail={handleOpenEventDetail}
+                    onAddToCalendar={handleAddToCalendar}
+                    currentUser={currentUser}
+                    registrations={registrations}
+                    onReportPost={handleOpenReportModal}
+                />,
+                rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
+            },
+            {
+                id: 'events',
+                label: 'Events',
+                icon: <CalendarIcon className="nav-icon" />,
+                component: () => <EventsComponent
+                    posts={filteredPosts.filter(post => post.type === 'event')}
+                    onLike={handleLikePost}
+                    onShare={handleShareClick}
+                    onAddComment={handleAddComment}
+                    likedPosts={likedPosts}
+                    openCommentPostId={openCommentPostId}
+                    setOpenCommentPostId={setOpenCommentPostId}
+                    onOpenEventDetail={handleOpenEventDetail}
+                    onAddToCalendar={handleAddToCalendar}
+                    currentUser={currentUser}
+                    registrations={registrations}
+                    onReportPost={handleOpenReportModal}
+                />,
+                rightSidebar: () => <EventsRightSidebar
+                    posts={posts.filter(p => p.type === 'event')}
+                    myCalendarEvents={myCalendarEvents}
+                    onOpenEventDetail={handleOpenEventDetail}
+                />,
+            },
+            {
+                id: 'confessions',
+                label: 'Confessions',
+                icon: <MessageCircle className="nav-icon" />,
+                component: () => <ConfessionsComponent
+                    posts={filteredPosts.filter(post => post.type === 'confession')}
+                    onLike={handleLikePost}
+                    onShare={handleShareClick}
+                    onAddComment={handleAddComment}
+                    likedPosts={likedPosts}
+                    openCommentPostId={openCommentPostId}
+                    setOpenCommentPostId={setOpenCommentPostId}
+                    onOpenEventDetail={handleOpenEventDetail}
+                    onAddToCalendar={handleAddToCalendar}
+                    currentUser={currentUser}
+                    registrations={registrations}
+                    onReportPost={handleOpenReportModal}
+                />,
+                rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+            },
+            {
+                id: 'notifications',
+                label: 'Notifications',
+                icon: <Bell className="nav-icon" />,
+                component: () => <NotificationsComponent
+                    notifications={notifications}
+                    adminNotifications={adminNotifications}
+                    currentUser={currentUser}
+                    onDeleteReportedPost={handleDeleteReportedPost}
+                />,
+                rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
+            },
+            {
+                id: 'theme-toggle',
+                label: theme === 'light' ? 'Dark Mode' : 'Light Mode',
+                icon: theme === 'light' ? <Moon className="nav-icon" /> : <Sun className="nav-icon" />,
+                component: null,
+                rightSidebar: null,
+                action: toggleTheme
+            },
+            {
+                id: 'add',
+                label: 'Add',
+                icon: <Plus className="nav-icon" />,
+                component: null,
+                rightSidebar: null,
+                action: () => {
+                    if (!isLoggedIn) {
+                        setShowLoginModal(true);
+                    } else {
+                        setPostToEdit(null);
+                        setIsModalOpen(true);
+                    }
+                }
+            },
+        ];
+
+        const sectionComponents = {
+            home: () => <HomeComponent
                 posts={filteredPosts}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
@@ -3345,13 +3444,7 @@ const App = () => {
                 registrations={registrations}
                 onReportPost={handleOpenReportModal}
             />,
-            rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
-        },
-        {
-            id: 'events',
-            label: 'Events',
-            icon: <CalendarIcon className="nav-icon" />,
-            component: () => <EventsComponent
+            events: () => <EventsComponent
                 posts={filteredPosts.filter(post => post.type === 'event')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
@@ -3365,17 +3458,7 @@ const App = () => {
                 registrations={registrations}
                 onReportPost={handleOpenReportModal}
             />,
-            rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'event')}
-                myCalendarEvents={myCalendarEvents}
-                onOpenEventDetail={handleOpenEventDetail}
-            />,
-        },
-        {
-            id: 'confessions',
-            label: 'Confessions',
-            icon: <MessageCircle className="nav-icon" />,
-            component: () => <ConfessionsComponent
+            confessions: () => <ConfessionsComponent
                 posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
@@ -3389,335 +3472,253 @@ const App = () => {
                 registrations={registrations}
                 onReportPost={handleOpenReportModal}
             />,
-            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
-        },
-        {
-            id: 'notifications',
-            label: 'Notifications',
-            icon: <Bell className="nav-icon" />,
-            component: () => <NotificationsComponent
+            notifications: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
                 currentUser={currentUser}
                 onDeleteReportedPost={handleDeleteReportedPost}
             />,
-            rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
-        },
-        {
-            id: 'theme-toggle',
-            label: theme === 'light' ? 'Dark Mode' : 'Light Mode',
-            icon: theme === 'light' ? <Moon className="nav-icon" /> : <Sun className="nav-icon" />,
-            component: null,
-            rightSidebar: null,
-            action: toggleTheme
-        },
-        {
-            id: 'add',
-            label: 'Add',
-            icon: <Plus className="nav-icon" />,
-            component: null,
-            rightSidebar: null,
-            action: () => {
-                if (!isLoggedIn) {
-                    setShowLoginModal(true);
-                } else {
-                    setPostToEdit(null);
-                    setIsModalOpen(true);
-                }
-            }
-        },
-    ];
+            profile: () => <UsersComponent
+                posts={posts}
+                currentUser={currentUser}
+                onLike={handleLikePost}
+                onShare={handleShareClick}
+                onAddComment={handleAddComment}
+                likedPosts={likedPosts}
+                openCommentPostId={openCommentPostId}
+                setOpenCommentPostId={setOpenCommentPostId}
+                onOpenEventDetail={handleOpenEventDetail}
+                onAddToCalendar={handleAddToCalendar}
+                setIsModalOpen={setIsModalOpen}
+                onDeletePost={handleDeletePost}
+                onEditPost={handleEditPost}
+                registrations={registrations}
+                onReportPost={handleOpenReportModal}
+                onEditProfile={() => setShowProfileSettingsModal(true)}
+            />,
+        };
 
-    const sectionComponents = {
-        home: () => <HomeComponent
-            posts={filteredPosts}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-        />,
-        events: () => <EventsComponent
-            posts={filteredPosts.filter(post => post.type === 'event')}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-        />,
-        confessions: () => <ConfessionsComponent
-            posts={filteredPosts.filter(post => post.type === 'confession')}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-        />,
-        notifications: () => <NotificationsComponent
-            notifications={notifications}
-            adminNotifications={adminNotifications}
-            currentUser={currentUser}
-            onDeleteReportedPost={handleDeleteReportedPost}
-        />,
-        profile: () => <UsersComponent
-            posts={posts}
-            currentUser={currentUser}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
-            setIsModalOpen={setIsModalOpen}
-            onDeletePost={handleDeletePost}
-            onEditPost={handleEditPost}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-            onEditProfile={() => setShowProfileSettingsModal(true)}
-        />,
-    };
+        const sectionSidebars = {
+            home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
+            events: () => <EventsRightSidebar
+                posts={posts.filter(p => p.type === 'event')}
+                myCalendarEvents={myCalendarEvents}
+                onOpenEventDetail={handleOpenEventDetail}
+            />,
+            confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+            notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
+            profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
+        };
 
-    const sectionSidebars = {
-        home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
-        events: () => <EventsRightSidebar
-            posts={posts.filter(p => p.type === 'event')}
-            myCalendarEvents={myCalendarEvents}
-            onOpenEventDetail={handleOpenEventDetail}
-        />,
-        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
-        notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
-        profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
-    };
+        const CurrentComponent = sectionComponents[activeSection] || (() => null);
+        const CurrentRightSidebar = sectionSidebars[activeSection] || (() => null);
 
-    const CurrentComponent = sectionComponents[activeSection] || (() => null);
-    const CurrentRightSidebar = sectionSidebars[activeSection] || (() => null);
-
-    return (
-        <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                onLogin={handleLogin}
-            />
-
-            <ReportPostModal
-                isOpen={isReportModalOpen}
-                onClose={handleCloseReportModal}
-                onReport={handleReportPost}
-                post={reportPostData}
-            />
-
-            {currentUser && (
-                <ProfileSettingsModal
-                    isOpen={showProfileSettingsModal}
-                    onClose={() => setShowProfileSettingsModal(false)}
-                    onSave={handleUpdateAvatar}
-                    currentUser={currentUser}
+        return (
+            <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
+                <LoginModal
+                    isOpen={showLoginModal}
+                    onClose={() => setShowLoginModal(false)}
+                    onLogin={handleLogin}
                 />
-            )}
 
-            <header className="header">
-                <div className="header-container">
-                    <div className="header-content">
-                        <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
-                                <span className="app-title">Confique</span>
-                            </a>
-                        </div>
-                        <div className="header-search">
-                            <div className="search-container">
-                                <Search className="search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    className="search-input"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                <ReportPostModal
+                    isOpen={isReportModalOpen}
+                    onClose={handleCloseReportModal}
+                    onReport={handleReportPost}
+                    post={reportPostData}
+                />
+
+                {currentUser && (
+                    <ProfileSettingsModal
+                        isOpen={showProfileSettingsModal}
+                        onClose={() => setShowProfileSettingsModal(false)}
+                        onSave={handleUpdateAvatar}
+                        currentUser={currentUser}
+                    />
+                )}
+
+                <header className="header">
+                    <div className="header-container">
+                        <div className="header-content">
+                            <div className="header-left">
+                                <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
+                                    <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
+                                    <span className="app-title">Confique</span>
+                                </a>
+                            </div>
+                            <div className="header-search">
+                                <div className="search-container">
+                                    <Search className="search-icon" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search..."
+                                        className="search-input"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="header-right">
+                                {isLoggedIn ? (
+                                    <ProfileDropdown
+                                        user={currentUser}
+                                        onLogout={handleLogout}
+                                        onProfileClick={() => {
+                                            setActiveSection('profile');
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }}
+                                    />
+                                ) : (
+                                    <button
+                                        className="login-button"
+                                        onClick={() => setShowLoginModal(true)}
+                                    >
+                                        Login
+                                    </button>
+                                )}
                             </div>
                         </div>
-                        <div className="header-right">
-                            {isLoggedIn ? (
-                                <ProfileDropdown
-                                    user={currentUser}
-                                    onLogout={handleLogout}
-                                    onProfileClick={() => {
-                                        setActiveSection('profile');
-                                        setOpenCommentPostId(null);
-                                        setSelectedEvent(null);
-                                        setSelectedPost(null);
+                    </div>
+                </header>
+
+                <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
+                    <aside className="left-sidebar">
+                        <nav className="sidebar-nav">
+                            {menuItems.map(item => (
+                                <button
+                                    key={item.id}
+                                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (item.action) {
+                                            item.action();
+                                        } else {
+                                            setActiveSection(item.id);
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }
                                     }}
+                                >
+                                    {item.icon}
+                                    <span className="nav-label">{item.label}</span>
+                                </button>
+                            ))}
+                        </nav>
+                    </aside>
+
+                    <main className="main-content">
+                        <div className="content-padding">
+                            {selectedPost ? (
+                                <div className="single-post-and-feed">
+                                    <PostCard
+                                        post={selectedPost}
+                                        onLike={handleLikePost}
+                                        onShare={handleShareClick}
+                                        onAddComment={handleAddComment}
+                                        likedPosts={likedPosts}
+                                        isCommentsOpen={openCommentPostId === selectedPost._id}
+                                        setOpenCommentPostId={setOpenCommentPostId}
+                                        onOpenEventDetail={handleOpenEventDetail}
+                                        onAddToCalendar={handleAddToCalendar}
+                                        currentUser={currentUser}
+                                        onDeletePost={handleDeletePost}
+                                        onEditPost={handleEditPost}
+                                        isProfileView={selectedPost.userId === currentUser?._id}
+                                        registrationCount={registrations[selectedPost._id]}
+                                        onReportPost={handleOpenReportModal}
+                                    />
+                                    <hr className="section-divider" />
+                                    <h3 className="section-subtitle">More Posts</h3>
+                                    <div className="posts-container">
+                                        {posts
+                                            .filter(p => p._id !== selectedPost._id)
+                                            .map(post => (
+                                                <PostCard
+                                                    key={post._id}
+                                                    post={post}
+                                                    onLike={onLike}
+                                                    onShare={handleShareClick}
+                                                    onAddComment={handleAddComment}
+                                                    likedPosts={likedPosts}
+                                                    isCommentsOpen={openCommentPostId === post._id}
+                                                    setOpenCommentPostId={setOpenCommentPostId}
+                                                    onOpenEventDetail={handleOpenEventDetail}
+                                                    onAddToCalendar={handleAddToCalendar}
+                                                    currentUser={currentUser}
+                                                    isProfileView={false}
+                                                    registrationCount={registrations[post._id]}
+                                                    onReportPost={handleOpenReportModal}
+                                                />
+                                            ))}
+                                    </div>
+                                </div>
+                            ) : selectedEvent ? (
+                                <EventDetailPage
+                                    event={selectedEvent}
+                                    onClose={handleCloseEventDetail}
+                                    isLoggedIn={isLoggedIn}
+                                    onRequireLogin={() => setShowLoginModal(true)}
+                                    onAddToCalendar={handleAddToCalendar}
+                                    onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                    isRegistered={registrations[selectedEvent._id] > 0}
                                 />
                             ) : (
-                                <button
-                                    className="login-button"
-                                    onClick={() => setShowLoginModal(true)}
-                                >
-                                    Login
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
-                <aside className="left-sidebar">
-                    <nav className="sidebar-nav">
-                        {menuItems.map(item => (
-                            <button
-                                key={item.id}
-                                className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (item.action) {
-                                        item.action();
-                                    } else {
-                                        setActiveSection(item.id);
-                                        setOpenCommentPostId(null);
-                                        setSelectedEvent(null);
-                                        setSelectedPost(null);
-                                    }
-                                }}
-                            >
-                                {item.icon}
-                                <span className="nav-label">{item.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                </aside>
-
-                <main className="main-content">
-                    <div className="content-padding">
-                        {selectedPost ? (
-                            <div className="single-post-and-feed">
-                                <PostCard
-                                    post={selectedPost}
+                                <CurrentComponent
+                                    posts={filteredPosts}
                                     onLike={handleLikePost}
                                     onShare={handleShareClick}
                                     onAddComment={handleAddComment}
                                     likedPosts={likedPosts}
-                                    isCommentsOpen={openCommentPostId === selectedPost._id}
-                                    setOpenCommentPostId={setOpenCommentPostId}
+                                    openCommentPostId={openCommentPostId}
                                     onOpenEventDetail={handleOpenEventDetail}
+                                    setOpenCommentPostId={setOpenCommentPostId}
                                     onAddToCalendar={handleAddToCalendar}
                                     currentUser={currentUser}
                                     onDeletePost={handleDeletePost}
                                     onEditPost={handleEditPost}
-                                    isProfileView={selectedPost.userId === currentUser?._id}
-                                    registrationCount={registrations[selectedPost._id]}
+                                    registrations={registrations}
                                     onReportPost={handleOpenReportModal}
                                 />
-                                <hr className="section-divider" />
-                                <h3 className="section-subtitle">More Posts</h3>
-                                <div className="posts-container">
-                                    {posts
-                                        .filter(p => p._id !== selectedPost._id)
-                                        .map(post => (
-                                            <PostCard
-                                                key={post._id}
-                                                post={post}
-                                                onLike={onLike}
-                                                onShare={handleShareClick}
-                                                onAddComment={handleAddComment}
-                                                likedPosts={likedPosts}
-                                                isCommentsOpen={openCommentPostId === post._id}
-                                                setOpenCommentPostId={setOpenCommentPostId}
-                                                onOpenEventDetail={handleOpenEventDetail}
-                                                onAddToCalendar={handleAddToCalendar}
-                                                currentUser={currentUser}
-                                                isProfileView={false}
-                                                registrationCount={registrations[post._id]}
-                                                onReportPost={handleOpenReportModal}
-                                            />
-                                        ))}
-                                </div>
-                            </div>
-                        ) : selectedEvent ? (
-                            <EventDetailPage
-                                event={selectedEvent}
-                                onClose={handleCloseEventDetail}
-                                isLoggedIn={isLoggedIn}
-                                onRequireLogin={() => setShowLoginModal(true)}
-                                onAddToCalendar={handleAddToCalendar}
-                                onRegister={handleRegisterEvent}
-                                isRegistered={!!registrations[selectedEvent._id]}
-                            />
-                        ) : (
-                            <CurrentComponent
-                                posts={filteredPosts}
-                                onLike={handleLikePost}
-                                onShare={handleShareClick}
-                                onAddComment={handleAddComment}
-                                likedPosts={likedPosts}
-                                openCommentPostId={openCommentPostId}
-                                onOpenEventDetail={handleOpenEventDetail}
-                                setOpenCommentPostId={setOpenCommentPostId}
-                                onAddToCalendar={handleAddToCalendar}
-                                currentUser={currentUser}
-                                onDeletePost={handleDeletePost}
-                                onEditPost={handleEditPost}
-                                registrations={registrations}
-                                onReportPost={handleOpenReportModal}
-                            />
-                        )}
-                    </div>
-                </main>
-                <aside className="right-sidebar">
-                    <div className="right-sidebar-content">
-                        {selectedEvent ? (
-                            <EventDetailSidebar
-                                events={posts}
-                                currentEvent={selectedEvent}
-                                onOpenEventDetail={handleOpenEventDetail}
-                            />
-                        ) : (
-                            <CurrentRightSidebar
-                                posts={posts}
-                                onOpenPostDetail={handleOpenPostDetail}
-                            />
-                        )}
-                    </div>
-                </aside>
+                            )}
+                        </div>
+                    </main>
+                    <aside className="right-sidebar">
+                        <div className="right-sidebar-content">
+                            {selectedEvent ? (
+                                <EventDetailSidebar
+                                    events={posts}
+                                    currentEvent={selectedEvent}
+                                    onOpenEventDetail={handleOpenEventDetail}
+                                />
+                            ) : (
+                                <CurrentRightSidebar
+                                    posts={posts}
+                                    onOpenPostDetail={handleOpenPostDetail}
+                                />
+                            )}
+                        </div>
+                    </aside>
+                </div>
+
+                <AddPostModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setPostToEdit(null);
+                    }}
+                    onSubmit={handleAddPost}
+                    postToEdit={postToEdit}
+                    currentUser={currentUser}
+                />
+
+                <HelpAndSupportModal
+                    isOpen={showHelpModal}
+                    onClose={() => setShowHelpModal(false)}
+                />
             </div>
+        );
+    };
 
-            <AddPostModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setPostToEdit(null);
-                }}
-                onSubmit={handleAddPost}
-                postToEdit={postToEdit}
-                currentUser={currentUser}
-            />
-
-            <HelpAndSupportModal
-                isOpen={showHelpModal}
-                onClose={() => setShowHelpModal(false)}
-            />
-        </div>
-    );
-};
-
-export default App;
+    export default App;
