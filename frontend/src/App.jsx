@@ -1080,7 +1080,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         <div className="image-upload-preview">
                                             {imagePreviews.map((preview, index) => (
                                                 <div key={index} className="image-preview-item">
-                                                    <img src={preview} alt={`Preview ${index + 1}`} loading="lazy" decoding="async" />
+                                                    <img src={preview} alt={`Preview ${index + 1}`} className="post-image" onError={handleImageError} loading="lazy" decoding="async" />
                                                     <button
                                                         type="button"
                                                         className="remove-image-btn"
@@ -1523,22 +1523,22 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             <div className="post-header">
                 <div className="post-avatar-container">
                     <img
-                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
-                        alt={`${post.author}'s avatar`}
+                        src={isUserPost ? currentUser?.avatar : post?.authorAvatar || placeholderAvatar}
+                        alt={`${post?.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
                         decoding="async"
                     />
                 </div>
                 <div className="post-info">
-                    <h3 className="post-author">{post.author}</h3>
+                    <h3 className="post-author">{post?.author}</h3>
                     <p className="post-timestamp">
-                        {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(post?.timestamp)?.toLocaleDateString()} at {new Date(post?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
                 <div className="post-header-actions">
-                    <span className={`post-type-badge ${post.type}`}>
-                        {getPostTypeLabel(post.type)}
+                    <span className={`post-type-badge ${post?.type}`}>
+                        {getPostTypeLabel(post?.type)}
                     </span>
                     <PostOptions
                         post={post}
@@ -1552,13 +1552,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             </div>
 
             <div className="post-content">
-                <h2 className="post-title">{post.title}</h2>
+                <h2 className="post-title">{post?.title}</h2>
                 <div className="post-text-container">
                     <p
                         ref={contentRef}
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
                     >
-                        {post.content}
+                        {post?.content}
                     </p>
                     {needsShowMore && (
                         <button
@@ -1570,7 +1570,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     )}
                 </div>
 
-                {post.type === 'event' && (
+                {post?.type === 'event' && (
                     <div className="event-details">
                         {post.location && (
                             <div className="event-detail">
@@ -1590,7 +1590,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     </div>
                 )}
 
-                {post.images && post.images.length > 0 && (
+                {post?.images && post.images.length > 0 && (
                     <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
                         {post.images.map((image, index) => (
                             <img
@@ -1609,7 +1609,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
             {isInteractive && (
                 <>
-                    {post.type === 'event' && (
+                    {post?.type === 'event' && (
                         <div className="event-action-buttons-top">
                             <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
                                 <Info size={20} />
@@ -1623,13 +1623,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     )}
 
                     <div className="post-actions">
-                        <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
-                            <span>{post.likes}</span>
+                        <button className={`action-btn ${likedPosts?.has(post?._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post?._id); }}>
+                            <Heart size={20} fill={likedPosts?.has(post?._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post?._id) ? '#ef4444' : '#9ca3af'} />
+                            <span>{post?.likes}</span>
                         </button>
                         <button className="action-btn" onClick={handleCommentIconClick}>
                             <MessageIcon size={20} />
-                            <span>{post.commentData ? post.commentData.length : 0}</span>
+                            <span>{post?.commentData ? post?.commentData.length : 0}</span>
                         </button>
                         {isUserPost && isProfileView && (
                             <div className="post-stat">
@@ -1637,7 +1637,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span>{registrationCount || 0}</span>
                             </div>
                         )}
-                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post?._id, post?.title, post?.content); }}>
                             <Share2 size={20} />
                             <span>Share</span>
                         </button>
@@ -1645,8 +1645,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                     {isCommentsOpen && (
                         <CommentSection
-                            comments={post.commentData || []}
-                            onAddComment={(commentText) => onAddComment(post._id, commentText)}
+                            comments={post?.commentData || []}
+                            onAddComment={(commentText) => onAddComment(post?._id, commentText)}
                             onCloseComments={handleBackArrowClick}
                             currentUser={currentUser}
                         />
@@ -1680,10 +1680,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
 // Home Component - Displays a feed of posts
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const newsHighlights = [...posts]
-        .filter(post => post.type === 'news')
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, 2);
+    const newsHighlights = [...posts].filter(post => post?.type === 'news').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 2);
 
     return (
         <div>
@@ -1692,19 +1689,19 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                     <div className="posts-container news-highlights-section">
                         {newsHighlights.map(post => (
                             <PostCard
-                                key={post._id}
+                                key={post?._id}
                                 post={post}
                                 onLike={onLike}
                                 onShare={onShare}
                                 onAddComment={onAddComment}
                                 likedPosts={likedPosts}
-                                isCommentsOpen={openCommentPostId === post._id}
+                                isCommentsOpen={openCommentPostId === post?._id}
                                 setOpenCommentPostId={setOpenCommentPostId}
                                 onOpenEventDetail={onOpenEventDetail}
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
                                 isProfileView={false}
-                                registrationCount={registrations[post._id]}
+                                registrationCount={registrations[post?._id]}
                                 onReportPost={onReportPost}
                                 onDeletePost={onDeletePost}
                                 onEditPost={onEditPost}
@@ -1716,21 +1713,21 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             )}
 
             <div className="posts-container">
-                {posts.filter(p => p.type !== 'news').map(post => (
+                {posts.filter(p => p?.type !== 'news').map(post => (
                     <PostCard
-                        key={post._id}
+                        key={post?._id}
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
                         likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
+                        isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrationCount={registrations?.[post?._id]}
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
@@ -1743,26 +1740,26 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 
 // Events Component - Displays only event posts
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const eventPosts = posts.filter(post => post.type === 'event');
+    const eventPosts = posts.filter(post => post?.type === 'event');
 
     return (
         <div id="events-section-content">
             <div className="posts-container">
                 {eventPosts.map(post => (
                     <PostCard
-                        key={post._id}
+                        key={post?._id}
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
                         likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
+                        isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrationCount={registrations?.[post?._id]}
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
@@ -1775,26 +1772,26 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 
 // Confessions Component - Displays only confession posts
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const confessionPosts = posts.filter(post => post.type === 'confession');
+    const confessionPosts = posts.filter(post => post?.type === 'confession');
 
     return (
         <div>
             <div className="posts-container">
                 {confessionPosts.map(post => (
                     <PostCard
-                        key={post._id}
+                        key={post?._id}
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
                         likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
+                        isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrationCount={registrations?.[post?._id]}
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
@@ -1817,25 +1814,25 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
                 {displayNotifications.length > 0 ? (
                     <div className="notifications-list">
                         {displayNotifications.map((notification) => (
-                            <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
+                            <div key={notification?._id} className={`notification-item ${notification?.type || ''}`}>
                                 <Bell size={20} className="notification-icon" />
                                 <div className="notification-content">
                                     <p className="notification-text">
-                                        {notification.message}
-                                        {isAdmin && notification.reportReason && (
+                                        {notification?.message}
+                                        {isAdmin && notification?.reportReason && (
                                             <span className="report-reason">
-                                                Report Reason: {notification.reportReason}
+                                                Report Reason: {notification?.reportReason}
                                             </span>
                                         )}
                                     </p>
                                     <span className="notification-timestamp">
-                                        {new Date(notification.timestamp).toLocaleDateString()}
+                                        {new Date(notification?.timestamp).toLocaleDateString()}
                                     </span>
-                                    {isAdmin && notification.postId && (
+                                    {isAdmin && notification?.postId && (
                                         <div className="admin-actions">
                                             <button
                                                 className="btn-danger"
-                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                                onClick={() => onDeleteReportedPost(notification.postId?._id)}
                                             >
                                                 <Trash2 size={16} /> Delete Post
                                             </button>
@@ -1917,7 +1914,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                     <div className="current-avatar-container">
                         <h4 className="modal-subtitle">Current Profile Image</h4>
                         <div className="current-avatar-preview">
-                            <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                            <img src={currentUser?.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
                         </div>
                     </div>
                     <div className="avatar-options-container">
@@ -1995,16 +1992,16 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         );
     }
 
-    const userPosts = posts.filter(post =>
-        post.userId === currentUser._id
+    const userPosts = (posts || []).filter(post =>
+        post.userId === currentUser?._id
     );
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2014,14 +2011,14 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
             <div className="profile-header">
                 <div className="profile-avatar-container">
-                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                    <img src={currentUser?.avatar || placeholderAvatar} alt={`${currentUser?.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
                     <button className="edit-avatar-button" onClick={onEditProfile}>
                         <Edit3 size={16} />
                     </button>
                 </div>
                 <div className="profile-info">
-                    <h3 className="profile-name">{currentUser.name}</h3>
-                    <p className="profile-email">{currentUser.email}</p>
+                    <h3 className="profile-name">{currentUser?.name}</h3>
+                    <p className="profile-email">{currentUser?.email}</p>
                     <div className="profile-stats">
                         <div className="stat-item">
                             <span className="stat-number">{userStats.posts}</span>
@@ -2049,21 +2046,21 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                 <div className="posts-container">
                     {userPosts.map(post => (
                         <PostCard
-                            key={post._id}
+                            key={post?._id}
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
                             onAddComment={onAddComment}
                             likedPosts={likedPosts}
-                            isCommentsOpen={openCommentPostId === post._id}
+                            isCommentsOpen={openCommentPostId === post?._id}
                             setOpenCommentPostId={setOpenCommentPostId}
                             onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={handleAddToCalendar}
+                            onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             isProfileView={true}
                             onDeletePost={onDeletePost}
                             onEditPost={onEditPost}
-                            registrationCount={registrations[post._id]}
+                            registrationCount={registrations?.[post?._id]}
                             onReportPost={onReportPost}
                         />
                     ))}
@@ -2082,7 +2079,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
 // Home Right Sidebar Component - Displays popular posts
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+    const popularPosts = [...(posts || [])].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 3);
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -2092,14 +2089,14 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
                 <div className="widget-list">
                     {popularPosts.map(post => (
                         <div
-                            key={post._id}
+                            key={post?._id}
                             className="popular-post-item clickable"
                             onClick={() => onOpenPostDetail(post)}
                         >
-                            <p className="widget-item-title">{post.title}</p>
+                            <p className="widget-item-title">{post?.title}</p>
                             <div className="popular-post-stats">
-                                <span className="popular-stat">{post.likes} likes</span>
-                                <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
+                                <span className="popular-stat">{post?.likes || 0} likes</span>
+                                <span className="popular-stat">{post?.commentData?.length || 0} comments</span>
                             </div>
                         </div>
                     ))}
@@ -2113,12 +2110,12 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
-    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+    const allEvents = [...(posts || []).filter(p => p?.type === 'event'), ...(myCalendarEvents || [])];
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
             const hasEvent = allEvents.some(post =>
-                post.eventStartDate &&
+                post?.eventStartDate &&
                 new Date(post.eventStartDate).getDate() === date.getDate() &&
                 new Date(post.eventStartDate).getMonth() === date.getMonth() &&
                 new Date(post.eventStartDate).getFullYear() === date.getFullYear()
@@ -2128,8 +2125,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents
-        .filter(e => new Date(e.eventStartDate) > new Date())
+    const upcomingCalendarEvents = (myCalendarEvents || [])
+        .filter(e => new Date(e?.eventStartDate) > new Date())
         .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
         .slice(0, 3);
 
@@ -2158,19 +2155,19 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                         <div className="widget-list">
                             {upcomingCalendarEvents.map(event => (
                                 <div
-                                    key={event._id}
+                                    key={event?._id}
                                     className="sidebar-event-item clickable"
                                     onClick={() => onOpenEventDetail(event)}
                                 >
-                                    <h4 className="sidebar-event-title">{event.title}</h4>
+                                    <h4 className="sidebar-event-title">{event?.title}</h4>
                                     <div className="sidebar-event-date">
-                                        {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                        {new Date(event?.eventStartDate).toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric'
                                         })}
                                     </div>
                                     <div className="sidebar-event-time">
-                                        {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(event?.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
                             ))}
@@ -2184,8 +2181,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
 
 // Confessions Right Sidebar Component - Displays recent confessions
 const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const recentConfessions = [...posts]
-        .filter(post => post.type === 'confession')
+    const recentConfessions = [...(posts || [])]
+        .filter(post => post?.type === 'confession')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3);
     return (
@@ -2197,13 +2194,13 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
                 <div className="widget-list">
                     {recentConfessions.map(post => (
                         <div
-                            key={post._id}
+                            key={post?._id}
                             className="recent-confession-item clickable"
                             onClick={() => onOpenPostDetail(post)}
                         >
-                            <p className="widget-item-title">{post.title}</p>
+                            <p className="widget-item-title">{post?.title}</p>
                             <p className="confession-preview">
-                                {post.content.substring(0, 60)}...
+                                {post?.content?.substring(0, 60)}...
                             </p>
                         </div>
                     ))}
@@ -2217,14 +2214,14 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
 const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
     if (!currentUser) return null;
 
-    const userPosts = posts.filter(post => post.userId === currentUser._id);
+    const userPosts = (posts || []).filter(post => post.userId === currentUser?._id);
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2429,7 +2426,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="avatar-wrapper">
-                    <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                    <img src={user?.avatar || placeholderAvatar} alt={`${user?.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                 </div>
             </button>
 
@@ -2437,11 +2434,11 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 <div className="profile-dropdown-menu">
                     <div className="profile-info">
                         <div className="profile-avatar">
-                            <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                            <img src={user?.avatar || placeholderAvatar} alt={`${user?.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                         </div>
                         <div className="profile-details">
-                            <div className="profile-name-display">{user.name}</div>
-                            <div className="profile-email">{user.email}</div>
+                            <div className="profile-name-display">{user?.name}</div>
+                            <div className="profile-email">{user?.email}</div>
                         </div>
                     </div>
                     <div className="dropdown-divider"></div>
@@ -2487,7 +2484,7 @@ const App = () => {
     const [selectedPost, setSelectedPost] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [myCalendarEvents, setMyCalendarEvents] = useState([]);
-    const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set()); // New state to track user's registrations
+    const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const [postToEdit, setPostToEdit] = useState(null);
@@ -2535,7 +2532,7 @@ const App = () => {
             });
             if (res.ok) {
                 const data = await res.json();
-                setRegistrations(data.registrations);
+                setRegistrations(data.registrations || {});
             } else {
                 console.error('Failed to fetch registrations:', await res.text());
                 setRegistrations({});
@@ -2557,7 +2554,7 @@ const App = () => {
             });
             if (res.ok) {
                 const data = await res.json();
-                setMyRegisteredEvents(new Set(data.registeredEventIds));
+                setMyRegisteredEvents(new Set(data.registeredEventIds || []));
             } else {
                 console.error('Failed to fetch my registrations:', await res.text());
             }
@@ -2572,10 +2569,16 @@ const App = () => {
             const res = await fetch(`${API_URL}/notifications`, {
                 headers: { 'Authorization': `Bearer ${currentUser.token}` }
             });
-            const data = await res.json();
-            setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            } else {
+                console.error('Failed to fetch notifications:', await res.text());
+                setNotifications([]);
+            }
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+            setNotifications([]);
         }
     };
 
@@ -2590,9 +2593,11 @@ const App = () => {
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
+                setAdminNotifications([]);
             }
         } catch (error) {
             console.error('Failed to fetch admin notifications (reported posts):', error);
+            setAdminNotifications([]);
         }
     };
 
@@ -2686,7 +2691,7 @@ const App = () => {
         localStorage.setItem('theme', newTheme);
     };
 
-    const filteredPosts = posts.filter(post =>
+    const filteredPosts = (posts || []).filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
