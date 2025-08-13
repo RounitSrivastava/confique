@@ -38,7 +38,7 @@ import './App.css';
 // Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
-const placeholderAvatar = '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)';
+const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -524,7 +524,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                                 className="payment-qr"
                                 loading="lazy"
                                 decoding="async"
-                                onError={(e) => e.target.src = "[https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error](https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error)"}
+                                onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                             />
                             <div className="form-group">
                                 <label className="form-label">Last 4 Digits of Transaction ID</label>
@@ -778,7 +778,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
         };
 
         onSubmit(submissionData);
@@ -1010,7 +1010,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             value={formData.registrationLink}
                                             onChange={handleFormChange}
                                             name="registrationLink"
-                                            placeholder="[https://example.com/register](https://example.com/register)"
+                                            placeholder="https://example.com/register"
                                         />
                                     </div>
 
@@ -1061,7 +1061,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                         value={formData.paymentLink}
                                                         onChange={handleFormChange}
                                                         name="paymentLink"
-                                                        placeholder="[https://example.com/payment](https://example.com/payment)"
+                                                        placeholder="https://example.com/payment"
                                                         required
                                                     />
                                                 </div>
@@ -1290,12 +1290,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         <img
                             src={event.images[0]}
                             alt={event.title}
-                            onError={(e) => e.target.src = "[https://placehold.co/800x450/cccccc/000000?text=Event+Image](https://placehold.co/800x450/cccccc/000000?text=Event+Image)"}
+                            onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
                             loading="lazy"
                             decoding="async"
                         />
                     ) : (
-                        <img src="[https://placehold.co/800x450/cccccc/000000?text=No+Event+Image](https://placehold.co/800x450/cccccc/000000?text=No+Event+Image)" alt="Placeholder" loading="lazy" decoding="async" />
+                        <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
                     )}
                     <div className="event-detail-header-overlay">
                         <button onClick={onClose} className="event-detail-back-button">
@@ -1469,7 +1469,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
         const [showShareAlert, setShowShareAlert] = useState(false);
 
         const handleImageError = (e) => {
-            e.target.src = "[https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error](https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error)";
+            e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
             e.target.onerror = null;
         };
 
@@ -1492,6 +1492,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 
         const isInteractive = post.type !== 'news';
         const isUserPost = currentUser && post.userId === currentUser._id;
+        const isRegistered = registrationCount && registrationCount > 0;
 
         const handleCommentIconClick = (e) => {
             e.stopPropagation();
@@ -2099,8 +2100,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
                                 isProfileView={true}
-                                onDeletePost={onDeletePost}
-                                onEditPost={onEditPost}
+                                onDeletePost={handleDeletePost}
+                                onEditPost={handleEditPost}
                                 registrationCount={registrations[post._id]}
                                 onReportPost={onReportPost}
                             />
@@ -2209,13 +2210,13 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                         </div>
                                         <div className="sidebar-event-time">
                                             {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
             </>
         );
     };
@@ -2365,7 +2366,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         </div>
                         <div className="modal-body">
                             <button className="btn-google" onClick={handleGoogleLoginClick}>
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <g clipPath="url(#clip0_353_57)">
                                         <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4" />
                                         <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853" />
@@ -2747,7 +2748,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Registration for "${eventTitle}" failed: ${errorData.message}`,
+                            message: `Registration for "${eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
                             timestamp: new Date(),
                             type: 'error'
                         },
@@ -3542,7 +3543,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         <div className="header-content">
                             <div className="header-left">
                                 <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                                    <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
                                     <span className="app-title">Confique</span>
                                 </a>
                             </div>
@@ -3662,7 +3663,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                     onRequireLogin={() => setShowLoginModal(true)}
                                     onAddToCalendar={handleAddToCalendar}
                                     onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                                    isRegistered={registrations[selectedEvent._id] > 0}
+                                    isRegistered={!!registrations[selectedEvent._id]}
                                 />
                             ) : (
                                 <CurrentComponent
