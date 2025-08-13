@@ -322,7 +322,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
             {isOpen && (
                 <div className="post-options-menu">
-                    {isAuthorOrAdmin && post.type === 'event' && (
+                    {isAuthorOrAdmin && post?.type === 'event' && (
                         <button className="post-option-item" onClick={handleEdit}>
                             <Edit3 size={16} />
                             <span>Edit</span>
@@ -348,7 +348,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
-    const isCommentAuthor = currentUser && comment.userId === currentUser._id;
+    const isCommentAuthor = currentUser && comment?.userId === currentUser?._id;
     const avatarSrc = isCommentAuthor ? currentUser?.avatar : (comment?.authorAvatar || placeholderAvatar);
 
     return (
@@ -437,7 +437,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         email: '',
         phone: '',
         transactionId: '',
-        ...(event.registrationFields ?
+        ...(event?.registrationFields ?
             Object.fromEntries(
                 event.registrationFields.split(',').map(field => [field.trim(), ''])
             ) : {})
@@ -450,7 +450,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const qrCodeRef = useRef(null);
 
-    const customFields = event.registrationFields ?
+    const customFields = event?.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
         [];
 
@@ -475,11 +475,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         setFormSubmitted(true);
 
-        if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
+        if (event?.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
             setShowPaymentStep(true);
         } else {
-            setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
-            onRegister(event._id, event.title);
+            setSuccessMessage(`Thank you ${formData.name} for registering for ${event?.title}!`);
+            onRegister(event?._id, event?.title);
             setShowSuccessModal(true);
         }
     };
@@ -487,13 +487,13 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const handlePaymentConfirm = (e) => {
         e.preventDefault();
 
-        if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
+        if (event?.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
         setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-        onRegister(event._id, event.title);
+        onRegister(event?._id, event?.title);
         setShowSuccessModal(true);
     };
 
@@ -616,7 +616,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary">
-                        {event.price > 0 && event.enableRegistrationForm ? 'Proceed to Payment' : 'Submit Registration'}
+                        {event?.price > 0 && event.enableRegistrationForm ? 'Proceed to Payment' : 'Submit Registration'}
                     </button>
                 </div>
             </form>
@@ -1530,7 +1530,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 <div className="post-info">
                     <h3 className="post-author">{post?.author}</h3>
                     <p className="post-timestamp">
-                        {new Date(post?.timestamp)?.toLocaleDateString()} at {new Date(post?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(post?.timestamp)?.toLocaleDateString() || 'N/A'} at {new Date(post?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'N/A'}
                     </p>
                 </div>
                 <div className="post-header-actions">
@@ -1579,8 +1579,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             <div className="event-detail">
                                 <Clock size={16} />
                                 <span>
-                                    {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
-                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(post.eventStartDate).toLocaleDateString() || 'N/A'} at{' '}
+                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'N/A'}
                                 </span>
                             </div>
                         )}
@@ -1802,7 +1802,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
 // Notifications Component - Displays user notifications or admin reported posts
 const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
     const isAdmin = currentUser?.isAdmin;
-    const displayNotifications = isAdmin ? adminNotifications : notifications;
+    const displayNotifications = isAdmin ? (adminNotifications || []) : (notifications || []);
 
     return (
         <div>
@@ -3050,7 +3050,7 @@ const App = () => {
                     prevPosts.map(post =>
                         post._id === postId ? {
                             ...post,
-                            commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
+                            commentData: (commentData || []).map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
                             comments: commentData.length
                         } : post
                     )
@@ -3302,7 +3302,7 @@ const App = () => {
                             : post;
 
                         const updatedComments = (updatedPost.commentData || []).map(comment => {
-                            if (comment?.authorId === newCurrentUser._id) {
+                            if (comment?.userId === newCurrentUser._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
@@ -3666,7 +3666,7 @@ const App = () => {
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
                                 <div className="posts-container">
-                                    {posts
+                                    {(posts || [])
                                         .filter(p => p._id !== selectedPost._id)
                                         .map(post => (
                                             <PostCard
