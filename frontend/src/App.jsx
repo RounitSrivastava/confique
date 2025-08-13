@@ -1677,7 +1677,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
 // Home Component - Displays a feed of posts
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const newsHighlights = [...(posts || [])].filter(post => post?.type === 'news').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 2);
+    const newsHighlights = [...(posts || [])].filter(post => post?.type === 'news').sort((a, b) => new Date(b?.timestamp) - new Date(a?.timestamp)).slice(0, 2);
 
     return (
         <div>
@@ -1690,7 +1690,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 post={post}
                                 onLike={onLike}
                                 onShare={onShare}
-                                onAddComment={handleAddComment}
+                                onAddComment={onAddComment}
                                 likedPosts={likedPosts}
                                 isCommentsOpen={openCommentPostId === post?._id}
                                 setOpenCommentPostId={setOpenCommentPostId}
@@ -1748,7 +1748,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2215,10 +2215,10 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post?.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post?.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
+            return post?.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2925,7 +2925,7 @@ const App = () => {
             setShowLoginModal(true);
             return;
         }
-        if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
+        if (currentUser && (post?.userId === currentUser?._id || currentUser?.isAdmin)) {
             setPostToEdit(post);
             setIsModalOpen(true);
             setActiveSection('profile');
@@ -2954,9 +2954,9 @@ const App = () => {
         });
 
         setPosts(prevPosts =>
-            prevPosts.map(post =>
-                post._id === postId
-                    ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
+            (prevPosts || []).map(post =>
+                post?._id === postId
+                    ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) - 1 : (post.likes || 0) + 1 }
                     : post
             )
         );
@@ -2982,9 +2982,9 @@ const App = () => {
                     return newLiked;
                 });
                 setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        post._id === postId
-                            ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+                    (prevPosts || []).map(post =>
+                        post?._id === postId
+                            ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) + 1 : (post.likes || 0) - 1 }
                             : post
                     )
                 );
@@ -3011,9 +3011,9 @@ const App = () => {
                 return newLiked;
             });
             setPosts(prevPosts =>
-                prevPosts.map(post =>
-                    post._id === postId
-                        ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+                (prevPosts || []).map(post =>
+                    post?._id === postId
+                        ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) + 1 : (post.likes || 0) - 1 }
                         : post
                 )
             );
@@ -3047,8 +3047,8 @@ const App = () => {
             if (res.ok) {
                 const commentData = await res.json();
                 setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        post._id === postId ? {
+                    (prevPosts || []).map(post =>
+                        post?._id === postId ? {
                             ...post,
                             commentData: (commentData || []).map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
                             comments: commentData.length
@@ -3297,12 +3297,12 @@ const App = () => {
 
                 setPosts(prevPosts =>
                     (prevPosts || []).map(post => {
-                        const updatedPost = post?.userId === newCurrentUser._id
+                        const updatedPost = post?.userId === newCurrentUser?._id
                             ? { ...post, authorAvatar: newCurrentUser.avatar }
                             : post;
 
                         const updatedComments = (updatedPost.commentData || []).map(comment => {
-                            if (comment?.userId === newCurrentUser._id) {
+                            if (comment?.userId === newCurrentUser?._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
