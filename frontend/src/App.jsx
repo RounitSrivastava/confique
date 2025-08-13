@@ -2058,7 +2058,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
                             onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={handleAddToCalendar}
+                            onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             isProfileView={true}
                             onDeletePost={onDeletePost}
