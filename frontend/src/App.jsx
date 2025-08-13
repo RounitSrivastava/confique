@@ -1556,6 +1556,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
                     document.body.appendChild(tempInput);
+                    tempInput.select();
                     document.execCommand('copy');
                     document.body.removeChild(tempInput);
                     setShowShareAlert(true);
