@@ -211,17 +211,18 @@ body {
 }
 
 .login-button {
-  background: #3b82f6;
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
   color: white;
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .login-button:hover {
-  background: #2563eb;
+  background-image: linear-gradient(to right, #9c77fe, #7190fd);
 }
 
 .user-profile {
@@ -1207,7 +1208,11 @@ body {
 .app-title {
   font-weight: bold;
   font-size: 1.1em;
-  color: var(--text-primary);
+  /* Applying the gradient text color */
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Adjusted for PostDetailComponent placeholder */
@@ -1444,9 +1449,22 @@ body {
 .widget-title {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin: 0;
 }
+
+.react-calendar__navigation__label {
+  font-weight: 700;
+  font-size: 1.05em;
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 
 .widget-content {
   padding: 1rem;
@@ -1904,7 +1922,10 @@ body {
 .react-calendar__navigation__label {
   font-weight: 700;
   font-size: 1.05em;
-  color: var(--text-primary);
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .react-calendar__navigation__arrow {
@@ -2803,7 +2824,6 @@ body.modal-open {
     min-height: 100px;
     -ms-overflow-style: none;
     scrollbar-width: none;
-    min-width: 0;
   }
 
   .comments-list::-webkit-scrollbar {
