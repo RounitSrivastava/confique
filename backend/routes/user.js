@@ -71,7 +71,6 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         
         await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
 
-        // FIX: Changed 'authorId' to 'userId' to match the schema
         await Post.updateMany(
             { 'commentData.userId': user._id },
             { $set: { 'commentData.$[elem].authorAvatar': updatedUser.avatar } },
@@ -91,15 +90,57 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// NEW ROUTE: Get a list of all posts the user has liked
-// This is what the frontend needs to check if a post is already liked
+// @desc   Get a list of all posts the user has liked
+// @route   GET /api/users/liked-posts
+// @access  Private
 router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     const likedPosts = await Post.find({ likedBy: req.user._id }).select('_id');
     const likedPostIds = likedPosts.map(post => post._id);
     res.json({ likedPostIds });
 }));
 
-// Register for an event
+// @desc    Get registration counts for my events
+// @route   GET /api/users/my-events-registrations
+// @access  Private
+// FIX: This route now uses aggregation to count registrations only for the logged-in user's events.
+router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
+    const registrations = await User.aggregate([
+        // Deconstruct the registrations array for all users
+        { $unwind: '$registrations' },
+        // Look up the event details for each registration
+        {
+            $lookup: {
+                from: 'posts',
+                localField: 'registrations.eventId',
+                foreignField: '_id',
+                as: 'eventDetails'
+            }
+        },
+        // Deconstruct the eventDetails array (one event per registration)
+        { $unwind: '$eventDetails' },
+        // Match only registrations for events owned by the current user
+        { $match: { 'eventDetails.userId': req.user._id } },
+        // Group by event ID and count the number of registrations for each
+        {
+            $group: {
+                _id: '$eventDetails._id',
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+    
+    // Format the result into the map that the frontend expects
+    const registrationsMap = registrations.reduce((acc, reg) => {
+        acc[reg._id.toString()] = reg.count;
+        return acc;
+    }, {});
+
+    res.json({ registrations: registrationsMap });
+}));
+
+// @desc   Register for an event
+// @route   POST /api/users/register-event/:id
+// @access  Private
 router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
     const user = await User.findById(req.user._id);
@@ -120,7 +161,9 @@ router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
     res.status(201).json({ message: 'Registration successful', registration: registrationData });
 }));
 
-// Admin endpoint to get all reported posts
+// @desc   Admin endpoint to get all reported posts
+// @route   GET /api/users/admin/reported-posts
+// @access  Private, Admin
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
     const reportedPosts = await Notification.find({ reportReason: { $exists: true } })
         .populate('reporter', 'name email phone')
@@ -128,7 +171,9 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
     res.json(reportedPosts);
 }));
 
-// Admin endpoint to delete a post and its reports
+// @desc   Admin endpoint to delete a post and its reports
+// @route   DELETE /api/users/admin/delete-post/:id
+// @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
