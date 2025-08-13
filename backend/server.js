@@ -14,7 +14,7 @@ const { passport } = require('./config/passport-setup'); // Path to your passpor
 const authRoutes = require('./routes/auth');
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
-const notificationsRoutes = require('./routes/notifications'); // <--- CORRECTED: notificationsRoutes is now imported
+const notificationsRoutes = require('./routes/notifications'); 
 
 const app = express();
 
@@ -35,13 +35,9 @@ app.use(express.json()); // For parsing application/json
 app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded (if needed)
 
 // CORS Configuration
-// Allows requests from your frontend URLs.
-// IMPORTANT: Adjust 'origin' based on your frontend's deployment.
-// If frontend is local: 'http://localhost:5173'
-// If frontend is deployed: 'https://your-frontend-domain.com'
-// If both: ['http://localhost:5173', 'https://your-frontend-domain.com']
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://confique.onrender.com'], // Add all possible frontend origins
+  // The origin array now includes your Vercel deployment URL
+  origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://confique.vercel.app'], 
   credentials: true, // Allow cookies to be sent
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
@@ -67,7 +63,7 @@ app.use(passport.session()); // Enable persistent login sessions
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/notifications', notificationsRoutes); // <--- CORRECTED: notificationsRoutes is now mounted
+app.use('/api/notifications', notificationsRoutes); 
 
 // Basic error handling middleware (optional, but good practice)
 app.use((err, req, res, next) => {
