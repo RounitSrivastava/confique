@@ -38,7 +38,7 @@ import './App.css';
 // Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
-const placeholderAvatar = '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)';
+const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -431,7 +431,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 };
 
 // Registration Form Modal Component for events
-const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -464,6 +464,12 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         if (!isLoggedIn) {
             onRequireLogin();
+            return;
+        }
+
+        if (isRegistered) { // Check again if already registered
+            setFormAlertMessage("You are already registered for this event.");
+            setShowFormAlert(true);
             return;
         }
 
@@ -524,7 +530,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                                 className="payment-qr"
                                 loading="lazy"
                                 decoding="async"
-                                onError={(e) => e.target.src = "[https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error](https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error)"}
+                                onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                             />
                             <div className="form-group">
                                 <label className="form-label">Last 4 Digits of Transaction ID</label>
@@ -778,7 +784,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)'
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
         };
 
         onSubmit(submissionData);
@@ -1010,7 +1016,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             value={formData.registrationLink}
                                             onChange={handleFormChange}
                                             name="registrationLink"
-                                            placeholder="[https://example.com/register](https://example.com/register)"
+                                            placeholder="https://example.com/register"
                                         />
                                     </div>
 
@@ -1061,7 +1067,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                         value={formData.paymentLink}
                                                         onChange={handleFormChange}
                                                         name="paymentLink"
-                                                        placeholder="[https://example.com/payment](https://example.com/payment)"
+                                                        placeholder="https://example.com/payment"
                                                         required
                                                     />
                                                 </div>
@@ -1290,12 +1296,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         <img
                             src={event.images[0]}
                             alt={event.title}
-                            onError={(e) => e.target.src = "[https://placehold.co/800x450/cccccc/000000?text=Event+Image](https://placehold.co/800x450/cccccc/000000?text=Event+Image)"}
+                            onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
                             loading="lazy"
                             decoding="async"
                         />
                     ) : (
-                        <img src="[https://placehold.co/800x450/cccccc/000000?text=No+Event+Image](https://placehold.co/800x450/cccccc/000000?text=No+Event+Image)" alt="Placeholder" loading="lazy" decoding="async" />
+                        <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
                     )}
                     <div className="event-detail-header-overlay">
                         <button onClick={onClose} className="event-detail-back-button">
@@ -1393,6 +1399,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         isLoggedIn={isLoggedIn}
                         onRequireLogin={onRequireLogin}
                         onRegister={onRegister}
+                        isRegistered={isRegistered} // Pass isRegistered to the modal
                     />
                 )}
                 <CustomMessageModal
@@ -1445,647 +1452,300 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 </div>
                                 <div className="sidebar-event-time">
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="no-events-message">
-                            <CalendarPlus size={24} />
-                            <p>No upcoming events found</p>
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="no-events-message">
+                        <CalendarPlus size={24} />
+                        <p>No upcoming events found</p>
+                    </div>
+                )}
             </div>
-        );
+        </div>
+    );
+};
+
+// Post Card Component - Displays a single post (confession, event, or news)
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
+    const overlayRef = useRef(null);
+    const [showFullContent, setShowFullContent] = useState(false);
+    const contentRef = useRef(null);
+    const [needsShowMore, setNeedsShowMore] = useState(false);
+    const [showShareAlert, setShowShareAlert] = useState(false);
+
+    const handleImageError = (e) => {
+        e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
+        e.target.onerror = null;
     };
 
-    // Post Card Component - Displays a single post (confession, event, or news)
-    const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
-        const overlayRef = useRef(null);
-        const [showFullContent, setShowFullContent] = useState(false);
-        const contentRef = useRef(null);
-        const [needsShowMore, setNeedsShowMore] = useState(false);
-        const [showShareAlert, setShowShareAlert] = useState(false);
+    useEffect(() => {
+        if (contentRef.current) {
+            const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
+            const maxHeight = lineHeight * 3;
+            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+        }
+    }, [post.content]);
 
-        const handleImageError = (e) => {
-            e.target.src = "[https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error](https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error)";
-            e.target.onerror = null;
-        };
+    const getPostTypeLabel = (type) => {
+        switch (type) {
+            case 'confession': return 'Confession';
+            case 'event': return 'Event';
+            case 'news': return 'News';
+            default: return 'Post';
+        }
+    };
 
-        useEffect(() => {
-            if (contentRef.current) {
-                const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
-                const maxHeight = lineHeight * 3;
-                setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
-            }
-        }, [post.content]);
+    const isInteractive = post.type !== 'news';
+    const isUserPost = currentUser && post.userId === currentUser._id;
 
-        const getPostTypeLabel = (type) => {
-            switch (type) {
-                case 'confession': return 'Confession';
-                case 'event': return 'Event';
-                case 'news': return 'News';
-                default: return 'Post';
-            }
-        };
+    const handleCommentIconClick = (e) => {
+        e.stopPropagation();
+        setOpenCommentPostId(isCommentsOpen ? null : post._id);
+    };
 
-        const isInteractive = post.type !== 'news';
-        const isUserPost = currentUser && post.userId === currentUser._id;
+    const handleBackArrowClick = (e) => {
+        e.stopPropagation();
+        setOpenCommentPostId(null);
+    };
 
-        const handleCommentIconClick = (e) => {
-            e.stopPropagation();
-            setOpenCommentPostId(isCommentsOpen ? null : post._id);
-        };
-
-        const handleBackArrowClick = (e) => {
-            e.stopPropagation();
-            setOpenCommentPostId(null);
-        };
-
-        useEffect(() => {
-            const handleClickOutside = (event) => {
-                if (overlayRef.current && !overlayRef.current.contains(event.target)) {
-                    setOpenCommentPostId(null);
-                }
-            };
-
-            if (isCommentsOpen) {
-                document.addEventListener('mousedown', handleClickOutside);
-            } else {
-                document.removeEventListener('mousedown', handleClickOutside);
-            };
-            return () => {
-                document.removeEventListener('mousedown', handleClickOutside);
-            };
-        }, [isCommentsOpen, setOpenCommentPostId]);
-
-        const handleAddToCalendarClick = () => {
-            if (post.type === 'event' && post.eventStartDate) {
-                onAddToCalendar(post);
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (overlayRef.current && !overlayRef.current.contains(event.target)) {
+                setOpenCommentPostId(null);
             }
         };
 
-        const handleShare = async (postId, postTitle, postContent) => {
-            const shareUrl = `${window.location.origin}/posts/${postId}`;
+        if (isCommentsOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        } else {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isCommentsOpen, setOpenCommentPostId]);
 
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: postTitle,
-                        text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
-                        url: shareUrl,
-                    });
-                } catch (error) {
-                    console.error('Share failed:', error);
-                    try {
-                        const tempInput = document.createElement('textarea');
-                        tempInput.value = shareUrl;
-                        document.body.appendChild(tempInput);
-                        document.execCommand('copy');
-                        document.body.removeChild(tempInput);
-                        setShowShareAlert(true);
-                    } catch (err) {
-                        console.error('Copy to clipboard failed:', err);
-                        setShowShareAlert(true);
-                    }
-                }
-            } else {
+    const handleAddToCalendarClick = () => {
+        if (post.type === 'event' && post.eventStartDate) {
+            onAddToCalendar(post);
+        }
+    };
+
+    const handleShare = async (postId, postTitle, postContent) => {
+        const shareUrl = `${window.location.origin}/posts/${postId}`;
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: postTitle,
+                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                    url: shareUrl,
+                });
+            } catch (error) {
+                console.error('Share failed:', error);
                 try {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
                     document.body.appendChild(tempInput);
+                    tempInput.select();
                     document.execCommand('copy');
                     document.body.removeChild(tempInput);
                     setShowShareAlert(true);
                 } catch (err) {
+                    console.error('Copy to clipboard failed:', err);
                     setShowShareAlert(true);
                 }
             }
-        };
+        } else {
+            try {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                setShowShareAlert(true);
+            } catch (err) {
+                setShowShareAlert(true);
+            }
+        }
+    };
 
-        const renderPostCardContent = () => (
-            <>
-                <div className="post-header">
-                    <div className="post-avatar-container">
-                        <img
-                            src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
-                            alt={`${post.author}'s avatar`}
-                            className="post-avatar"
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    </div>
-                    <div className="post-info">
-                        <h3 className="post-author">{post.author}</h3>
-                        <p className="post-timestamp">
-                            {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                    </div>
-                    <div className="post-header-actions">
-                        <span className={`post-type-badge ${post.type}`}>
-                            {getPostTypeLabel(post.type)}
-                        </span>
-                        <PostOptions
-                            post={post}
-                            onDelete={onDeletePost}
-                            onEdit={onEditPost}
-                            isProfilePage={isProfileView}
-                            currentUser={currentUser}
-                            onReport={onReportPost}
-                        />
-                    </div>
+    const renderPostCardContent = () => (
+        <>
+            <div className="post-header">
+                <div className="post-avatar-container">
+                    <img
+                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
+                        alt={`${post.author}'s avatar`}
+                        className="post-avatar"
+                        loading="lazy"
+                        decoding="async"
+                    />
                 </div>
+                <div className="post-info">
+                    <h3 className="post-author">{post.author}</h3>
+                    <p className="post-timestamp">
+                        {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                </div>
+                <div className="post-header-actions">
+                    <span className={`post-type-badge ${post.type}`}>
+                        {getPostTypeLabel(post.type)}
+                    </span>
+                    <PostOptions
+                        post={post}
+                        onDelete={onDeletePost}
+                        onEdit={onEditPost}
+                        isProfilePage={isProfileView}
+                        currentUser={currentUser}
+                        onReport={onReportPost}
+                    />
+                </div>
+            </div>
 
-                <div className="post-content">
-                    <h2 className="post-title">{post.title}</h2>
-                    <div className="post-text-container">
-                        <p
-                            ref={contentRef}
-                            className={`post-text ${showFullContent ? 'expanded' : ''}`}
+            <div className="post-content">
+                <h2 className="post-title">{post.title}</h2>
+                <div className="post-text-container">
+                    <p
+                        ref={contentRef}
+                        className={`post-text ${showFullContent ? 'expanded' : ''}`}
+                    >
+                        {post.content}
+                    </p>
+                    {needsShowMore && (
+                        <button
+                            className="show-more-button"
+                            onClick={() => setShowFullContent(!showFullContent)}
                         >
-                            {post.content}
-                        </p>
-                        {needsShowMore && (
-                            <button
-                                className="show-more-button"
-                                onClick={() => setShowFullContent(!showFullContent)}
-                            >
-                                {showFullContent ? 'Show Less' : 'Show More'}
-                            </button>
-                        )}
-                    </div>
-
-                    {post.type === 'event' && (
-                        <div className="event-details">
-                            {post.location && (
-                                <div className="event-detail">
-                                    <MapPin size={16} />
-                                    <span>{post.location}</span>
-                                </div>
-                            )}
-                            {post.eventStartDate && (
-                                <div className="event-detail">
-                                    <Clock size={16} />
-                                    <span>
-                                        {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
-                                        {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {post.images && post.images.length > 0 && (
-                        <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
-                            {post.images.map((image, index) => (
-                                <img
-                                    key={index}
-                                    src={image}
-                                    alt={`Post image ${index + 1}`}
-                                    className="post-image"
-                                    onError={handleImageError}
-                                    loading="lazy"
-                                    decoding="async"
-                                />
-                            ))}
-                        </div>
+                            {showFullContent ? 'Show Less' : 'Show More'}
+                        </button>
                     )}
                 </div>
 
-                {isInteractive && (
-                    <>
-                        {post.type === 'event' && (
-                            <div className="event-action-buttons-top">
-                                <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
-                                    <Info size={20} />
-                                    <span>Details</span>
-                                </button>
-                                <button className="action-btn" onClick={handleAddToCalendarClick}>
-                                    <CalendarPlus size={20} />
-                                    <span>Add to Calendar</span>
-                                </button>
+                {post.type === 'event' && (
+                    <div className="event-details">
+                        {post.location && (
+                            <div className="event-detail">
+                                <MapPin size={16} />
+                                <span>{post.location}</span>
                             </div>
                         )}
+                        {post.eventStartDate && (
+                            <div className="event-detail">
+                                <Clock size={16} />
+                                <span>
+                                    {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
+                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                        <div className="post-actions">
-                            <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                                <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
-                                <span>{post.likes}</span>
+                {post.images && post.images.length > 0 && (
+                    <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
+                        {post.images.map((image, index) => (
+                            <img
+                                key={index}
+                                src={image}
+                                alt={`Post image ${index + 1}`}
+                                className="post-image"
+                                onError={handleImageError}
+                                loading="lazy"
+                                decoding="async"
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {isInteractive && (
+                <>
+                    {post.type === 'event' && (
+                        <div className="event-action-buttons-top">
+                            <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
+                                <Info size={20} />
+                                <span>Details</span>
                             </button>
-                            <button className="action-btn" onClick={handleCommentIconClick}>
-                                <MessageIcon size={20} />
-                                <span>{post.commentData ? post.commentData.length : 0}</span>
-                            </button>
-                            {isUserPost && isProfileView && (
-                                <div className="post-stat">
-                                    <Ticket size={20} />
-                                    <span>{registrationCount || 0}</span>
-                                </div>
-                            )}
-                            <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
-                                <Share2 size={20} />
-                                <span>Share</span>
+                            <button className="action-btn" onClick={handleAddToCalendarClick}>
+                                <CalendarPlus size={20} />
+                                <span>Add to Calendar</span>
                             </button>
                         </div>
+                    )}
 
-                        {isCommentsOpen && (
-                            <CommentSection
-                                comments={post.commentData || []}
-                                onAddComment={(commentText) => onAddComment(post._id, commentText)}
-                                onCloseComments={handleBackArrowClick}
-                                currentUser={currentUser}
-                            />
+                    <div className="post-actions">
+                        <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                            <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
+                            <span>{post.likes}</span>
+                        </button>
+                        <button className="action-btn" onClick={handleCommentIconClick}>
+                            <MessageIcon size={20} />
+                            <span>{post.commentData ? post.commentData.length : 0}</span>
+                        </button>
+                        {isUserPost && isProfileView && (
+                            <div className="post-stat">
+                                <Ticket size={20} />
+                                <span>{registrationCount || 0}</span>
+                            </div>
                         )}
-                    </>
-                )}
-                <CustomMessageModal
-                    isOpen={showShareAlert}
-                    onClose={() => setShowShareAlert(false)}
-                    title="Link Copied!"
-                    message="The link has been copied to your clipboard."
-                    showConfirm={false}
-                />
-            </>
-        );
-
-        return (
-            isCommentsOpen ? (
-                <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
-                    <div className="post-card comments-open-fixed">
-                        {renderPostCardContent()}
+                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                            <Share2 size={20} />
+                            <span>Share</span>
+                        </button>
                     </div>
-                </div>
-            ) : (
-                <div className="post-card">
+
+                    {isCommentsOpen && (
+                        <CommentSection
+                            comments={post.commentData || []}
+                            onAddComment={(commentText) => onAddComment(post._id, commentText)}
+                            onCloseComments={handleBackArrowClick}
+                            currentUser={currentUser}
+                        />
+                    )}
+                </>
+            )}
+            <CustomMessageModal
+                isOpen={showShareAlert}
+                onClose={() => setShowShareAlert(false)}
+                title="Link Copied!"
+                message="The link has been copied to your clipboard."
+                showConfirm={false}
+            />
+        </>
+    );
+
+    return (
+        isCommentsOpen ? (
+            <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
+                <div className="post-card comments-open-fixed">
                     {renderPostCardContent()}
                 </div>
-            )
-        );
-    };
-
-    // Home Component - Displays a feed of posts
-    const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-        const newsHighlights = [...posts]
-            .filter(post => post.type === 'news')
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            .slice(0, 2);
-
-        return (
-            <div>
-                {newsHighlights.length > 0 && (
-                    <>
-                        <div className="posts-container news-highlights-section">
-                            {newsHighlights.map(post => (
-                                <PostCard
-                                    key={post._id}
-                                    post={post}
-                                    onLike={onLike}
-                                    onShare={onShare}
-                                    onAddComment={onAddComment}
-                                    likedPosts={likedPosts}
-                                    isCommentsOpen={openCommentPostId === post._id}
-                                    setOpenCommentPostId={setOpenCommentPostId}
-                                    onOpenEventDetail={onOpenEventDetail}
-                                    onAddToCalendar={onAddToCalendar}
-                                    currentUser={currentUser}
-                                    isProfileView={false}
-                                    registrationCount={registrations[post._id]}
-                                    onReportPost={onReportPost}
-                                />
-                            ))}
-                        </div>
-                        <hr className="section-divider" />
-                    </>
-                )}
-
-                <div className="posts-container">
-                    {posts.filter(p => p.type !== 'news').map(post => (
-                        <PostCard
-                            key={post._id}
-                            post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
-                            isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
-                            isProfileView={false}
-                            registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                        />
-                    ))}
-                </div>
             </div>
-        );
-    };
-
-    // Events Component - Displays only event posts
-    const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-        const eventPosts = posts.filter(post => post.type === 'event');
-
-        return (
-            <div id="events-section-content">
-                <div className="posts-container">
-                    {eventPosts.map(post => (
-                        <PostCard
-                            key={post._id}
-                            post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
-                            isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
-                            isProfileView={false}
-                            registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                        />
-                    ))}
-                </div>
+        ) : (
+            <div className="post-card">
+                {renderPostCardContent()}
             </div>
-        );
-    };
+        )
+    );
+};
 
-    // Confessions Component - Displays only confession posts
-    const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
-        const confessionPosts = posts.filter(post => post.type === 'confession');
+// Home Component - Displays a feed of posts
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+    const newsHighlights = [...posts]
+        .filter(post => post.type === 'news')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 2);
 
-        return (
-            <div>
-                <div className="posts-container">
-                    {confessionPosts.map(post => (
-                        <PostCard
-                            key={post._id}
-                            post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
-                            isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
-                            isProfileView={false}
-                            registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                        />
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    // Notifications Component - Displays user notifications or admin reported posts
-    const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
-        const isAdmin = currentUser?.isAdmin;
-        const displayNotifications = isAdmin ? adminNotifications : notifications;
-
-        return (
-            <div>
-                <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
-                <div className="notifications-container">
-                    {displayNotifications.length > 0 ? (
-                        <div className="notifications-list">
-                            {displayNotifications.map((notification) => (
-                                <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
-                                    <Bell size={20} className="notification-icon" />
-                                    <div className="notification-content">
-                                        <p className="notification-text">
-                                            {notification.message}
-                                            {isAdmin && notification.reportReason && (
-                                                <span className="report-reason">
-                                                    Report Reason: {notification.reportReason}
-                                                </span>
-                                            )}
-                                        </p>
-                                        <span className="notification-timestamp">
-                                            {new Date(notification.timestamp).toLocaleDateString()}
-                                        </span>
-                                        {isAdmin && notification.postId && (
-                                            <div className="admin-actions">
-                                                <button
-                                                    className="btn-danger"
-                                                    onClick={() => onDeleteReportedPost(notification.postId._id)}
-                                                >
-                                                    <Trash2 size={16} /> Delete Post
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="placeholder-card">
-                            <p className="placeholder-text">
-                                {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    // Profile Settings Modal Component - Allows user to change their avatar
-    const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
-        const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
-        const [customAvatar, setCustomAvatar] = useState('');
-        const [avatarError, setAvatarError] = useState('');
-        const fileInputRef = useRef(null);
-
-        useEffect(() => {
-            if (isOpen) {
-                setSelectedAvatar(currentUser?.avatar || '');
-                setCustomAvatar('');
-                setAvatarError('');
-            }
-        }, [isOpen, currentUser]);
-
-        const predefinedAvatars = [
-            { src: avatar1, alt: 'Anime style avatar' },
-            { src: avatar2, alt: 'ChatGPT avatar' }
-        ];
-
-        const handleCustomImageUpload = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (file.size > 2 * 1024 * 1024) {
-                    setAvatarError('Image size cannot exceed 2MB.');
-                    return;
-                }
-                compressImage(file, (compressedDataUrl) => {
-                    setCustomAvatar(compressedDataUrl);
-                    setSelectedAvatar(null);
-                    setAvatarError('');
-                });
-            }
-        };
-
-        const handleSave = () => {
-            if (!selectedAvatar && !customAvatar) {
-                setAvatarError('Please select or upload an avatar.');
-                return;
-            }
-            const newAvatar = customAvatar || selectedAvatar;
-            onSave(newAvatar);
-            onClose();
-        };
-
-        if (!isOpen) return null;
-
-        return (
-            <div className="modal-overlay">
-                <div className="modal-content profile-settings-modal">
-                    <div className="modal-header">
-                        <h2 className="modal-title">Edit Profile Image</h2>
-                        <button className="modal-close" onClick={onClose}>
-                            <X size={24} />
-                        </button>
-                    </div>
-                    <div className="modal-body profile-settings-body">
-                        <div className="current-avatar-container">
-                            <h4 className="modal-subtitle">Current Profile Image</h4>
-                            <div className="current-avatar-preview">
-                                <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
-                            </div>
-                        </div>
-                        <div className="avatar-options-container">
-                            <h4 className="modal-subtitle">Choose a new avatar</h4>
-                            <div className="predefined-avatars-grid">
-                                {predefinedAvatars.map((av, index) => (
-                                    <div
-                                        key={index}
-                                        className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
-                                        onClick={() => {
-                                            setSelectedAvatar(av.src);
-                                            setCustomAvatar('');
-                                            setAvatarError('');
-                                        }}
-                                    >
-                                        <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="or-divider">
-                                <span className="or-text">OR</span>
-                            </div>
-                            <div className="custom-avatar-upload-section">
-                                <h4 className="modal-subtitle">Upload your own</h4>
-                                <div className="custom-upload-container">
-                                    {customAvatar ? (
-                                        <div className="custom-avatar-preview">
-                                            <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
-                                            <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
-                                                <X size={14} />
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <button className="upload-button" onClick={() => fileInputRef.current.click()}>
-                                            <ImageIcon size={20} />
-                                            <span>Upload Image</span>
-                                        </button>
-                                    )}
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        accept="image/*"
-                                        onChange={handleCustomImageUpload}
-                                        style={{ display: 'none' }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                        {avatarError && <p className="error-message">{avatarError}</p>}
-                    </div>
-                    <div className="modal-actions">
-                        <button className="btn-secondary" onClick={onClose}>
-                            Cancel
-                        </button>
-                        <button className="btn-primary" onClick={handleSave}>
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-
-    // Users Component - Displays user's profile and their posts
-    const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
-        if (!currentUser) {
-            return (
-                <div>
-                    <h2 className="page-title">Profile</h2>
-                    <div className="placeholder-card">
-                        <p className="placeholder-text">Please log in to view your profile.</p>
-                    </div>
-                </div>
-            );
-        }
-
-        const userPosts = posts.filter(post =>
-            post.userId === currentUser._id
-        );
-
-        const userStats = {
-            posts: userPosts.length,
-            likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-            commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
-            registrationsReceived: userPosts.reduce((sum, post) => {
-                return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
-            }, 0)
-        };
-
-        return (
-            <div>
-                <h2 className="page-title">Your Profile</h2>
-
-                <div className="profile-header">
-                    <div className="profile-avatar-container">
-                        <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
-                        <button className="edit-avatar-button" onClick={onEditProfile}>
-                            <Edit3 size={16} />
-                        </button>
-                    </div>
-                    <div className="profile-info">
-                        <h3 className="profile-name">{currentUser.name}</h3>
-                        <p className="profile-email">{currentUser.email}</p>
-                        <div className="profile-stats">
-                            <div className="stat-item">
-                                <span className="stat-number">{userStats.posts}</span>
-                                <span className="stat-label">Posts</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-number">{userStats.likesReceived}</span>
-                                <span className="stat-label">Likes</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-number">{userStats.commentsReceived}</span>
-                                <span className="stat-label">Comments</span>
-                            </div>
-                            <div className="stat-item">
-                                <span className="stat-number">{userStats.registrationsReceived}</span>
-                                <span className="stat-label">Registrations</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <h3 className="section-subtitle">Your Posts</h3>
-
-                {userPosts.length > 0 ? (
-                    <div className="posts-container">
-                        {userPosts.map(post => (
+    return (
+        <div>
+            {newsHighlights.length > 0 && (
+                <>
+                    <div className="posts-container news-highlights-section">
+                        {newsHighlights.map(post => (
                             <PostCard
                                 key={post._id}
                                 post={post}
@@ -2098,204 +1758,552 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 onOpenEventDetail={onOpenEventDetail}
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
-                                isProfileView={true}
-                                onDeletePost={onDeletePost}
-                                onEditPost={onEditPost}
+                                isProfileView={false}
                                 registrationCount={registrations[post._id]}
                                 onReportPost={onReportPost}
                             />
                         ))}
                     </div>
-                ) : (
-                    <div className="placeholder-card">
-                        <p className="placeholder-text">You haven't created any posts yet.</p>
-                        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
-                            <Plus size={16} /> Create Your First Post
-                        </button>
-                    </div>
-                )}
-            </div>
-        );
-    };
+                    <hr className="section-divider" />
+                </>
+            )}
 
-    // Home Right Sidebar Component - Displays popular posts
-    const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-        const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
-        return (
-            <div className="sidebar-widget">
-                <div className="widget-header">
-                    <h3 className="widget-title">Popular Posts</h3>
-                </div>
-                <div className="widget-content">
-                    <div className="widget-list">
-                        {popularPosts.map(post => (
-                            <div
-                                key={post._id}
-                                className="popular-post-item clickable"
-                                onClick={() => onOpenPostDetail(post)}
-                            >
-                                <p className="widget-item-title">{post.title}</p>
-                                <div className="popular-post-stats">
-                                    <span className="popular-stat">{post.likes} likes</span>
-                                    <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
+            <div className="posts-container">
+                {posts.filter(p => p.type !== 'news').map(post => (
+                    <PostCard
+                        key={post._id}
+                        post={post}
+                        onLike={onLike}
+                        onShare={onShare}
+                        onAddComment={onAddComment}
+                        likedPosts={likedPosts}
+                        isCommentsOpen={openCommentPostId === post._id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
+                        currentUser={currentUser}
+                        isProfileView={false}
+                        registrationCount={registrations[post._id]}
+                        onReportPost={onReportPost}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Events Component - Displays only event posts
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+    const eventPosts = posts.filter(post => post.type === 'event');
+
+    return (
+        <div id="events-section-content">
+            <div className="posts-container">
+                {eventPosts.map(post => (
+                    <PostCard
+                        key={post._id}
+                        post={post}
+                        onLike={onLike}
+                        onShare={onShare}
+                        onAddComment={onAddComment}
+                        likedPosts={likedPosts}
+                        isCommentsOpen={openCommentPostId === post._id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
+                        currentUser={currentUser}
+                        isProfileView={false}
+                        registrationCount={registrations[post._id]}
+                        onReportPost={onReportPost}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Confessions Component - Displays only confession posts
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
+    const confessionPosts = posts.filter(post => post.type === 'confession');
+
+    return (
+        <div>
+            <div className="posts-container">
+                {confessionPosts.map(post => (
+                    <PostCard
+                        key={post._id}
+                        post={post}
+                        onLike={onLike}
+                        onShare={onShare}
+                        onAddComment={onAddComment}
+                        likedPosts={likedPosts}
+                        isCommentsOpen={openCommentPostId === post._id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
+                        currentUser={currentUser}
+                        isProfileView={false}
+                        registrationCount={registrations[post._id]}
+                        onReportPost={onReportPost}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Notifications Component - Displays user notifications or admin reported posts
+const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+    const isAdmin = currentUser?.isAdmin;
+    const displayNotifications = isAdmin ? adminNotifications : notifications;
+
+    return (
+        <div>
+            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+            <div className="notifications-container">
+                {displayNotifications.length > 0 ? (
+                    <div className="notifications-list">
+                        {displayNotifications.map((notification) => (
+                            <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
+                                <Bell size={20} className="notification-icon" />
+                                <div className="notification-content">
+                                    <p className="notification-text">
+                                        {notification.message}
+                                        {isAdmin && notification.reportReason && (
+                                            <span className="report-reason">
+                                                Report Reason: {notification.reportReason}
+                                            </span>
+                                        )}
+                                    </p>
+                                    <span className="notification-timestamp">
+                                        {new Date(notification.timestamp).toLocaleDateString()}
+                                    </span>
+                                    {isAdmin && notification.postId && (
+                                        <div className="admin-actions">
+                                            <button
+                                                className="btn-danger"
+                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                            >
+                                                <Trash2 size={16} /> Delete Post
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
                     </div>
-                </div>
-            </div>
-        );
-    };
-
-    // Events Right Sidebar Component - Displays calendar and user's upcoming events
-    const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
-        const [value, onChange] = useState(new Date());
-
-        const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
-
-        const tileContent = ({ date, view }) => {
-            if (view === 'month') {
-                const hasEvent = allEvents.some(post =>
-                    post.eventStartDate &&
-                    new Date(post.eventStartDate).getDate() === date.getDate() &&
-                    new Date(post.eventStartDate).getMonth() === date.getMonth() &&
-                    new Date(post.eventStartDate).getFullYear() === date.getFullYear()
-                );
-                return hasEvent ? <div className="event-dot"></div> : null;
-            }
-            return null;
-        };
-
-        const upcomingCalendarEvents = myCalendarEvents
-            .filter(e => new Date(e.eventStartDate) > new Date())
-            .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-            .slice(0, 3);
-
-        return (
-            <>
-                <div className="calendar-widget">
-                    <div className="widget-content calendar-container">
-                        <Calendar
-                            onChange={onChange}
-                            value={value}
-                            tileContent={tileContent}
-                            className="react-calendar"
-                            prev2Label={null}
-                            next2Label={null}
-                            locale="en-US"
-                        />
-                    </div>
-                </div>
-
-                {upcomingCalendarEvents.length > 0 && (
-                    <div className="sidebar-widget my-calendar-events">
-                        <div className="widget-header">
-                            <h3 className="widget-title">My Calendar Events</h3>
-                        </div>
-                        <div className="widget-content">
-                            <div className="widget-list">
-                                {upcomingCalendarEvents.map(event => (
-                                    <div
-                                        key={event._id}
-                                        className="sidebar-event-item clickable"
-                                        onClick={() => onOpenEventDetail(event)}
-                                    >
-                                        <h4 className="sidebar-event-title">{event.title}</h4>
-                                        <div className="sidebar-event-date">
-                                            {new Date(event.eventStartDate).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric'
-                                            })}
-                                        </div>
-                                        <div className="sidebar-event-time">
-                                            {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                ) : (
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">
+                            {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+                        </p>
                     </div>
                 )}
-            </>
-        );
+            </div>
+        </div>
+    );
+};
+
+// Profile Settings Modal Component - Allows user to change their avatar
+const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
+    const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
+    const [customAvatar, setCustomAvatar] = useState('');
+    const [avatarError, setAvatarError] = useState('');
+    const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedAvatar(currentUser?.avatar || '');
+            setCustomAvatar('');
+            setAvatarError('');
+        }
+    }, [isOpen, currentUser]);
+
+    const predefinedAvatars = [
+        { src: avatar1, alt: 'Anime style avatar' },
+        { src: avatar2, alt: 'ChatGPT avatar' }
+    ];
+
+    const handleCustomImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                setAvatarError('Image size cannot exceed 2MB.');
+                return;
+            }
+            compressImage(file, (compressedDataUrl) => {
+                setCustomAvatar(compressedDataUrl);
+                setSelectedAvatar(null);
+                setAvatarError('');
+            });
+        }
     };
 
-    // Confessions Right Sidebar Component - Displays recent confessions
-    const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
-        const recentConfessions = [...posts]
-            .filter(post => post.type === 'confession')
-            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-            .slice(0, 3);
-        return (
-            <div className="sidebar-widget">
-                <div className="widget-header">
-                    <h3 className="widget-title">Recent Confessions</h3>
+    const handleSave = () => {
+        if (!selectedAvatar && !customAvatar) {
+            setAvatarError('Please select or upload an avatar.');
+            return;
+        }
+        const newAvatar = customAvatar || selectedAvatar;
+        onSave(newAvatar);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content profile-settings-modal">
+                <div className="modal-header">
+                    <h2 className="modal-title">Edit Profile Image</h2>
+                    <button className="modal-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
                 </div>
-                <div className="widget-content">
-                    <div className="widget-list">
-                        {recentConfessions.map(post => (
-                            <div
-                                key={post._id}
-                                className="recent-confession-item clickable"
-                                onClick={() => onOpenPostDetail(post)}
-                            >
-                                <p className="widget-item-title">{post.title}</p>
-                                <p className="confession-preview">
-                                    {post.content.substring(0, 60)}...
-                                </p>
+                <div className="modal-body profile-settings-body">
+                    <div className="current-avatar-container">
+                        <h4 className="modal-subtitle">Current Profile Image</h4>
+                        <div className="current-avatar-preview">
+                            <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                        </div>
+                    </div>
+                    <div className="avatar-options-container">
+                        <h4 className="modal-subtitle">Choose a new avatar</h4>
+                        <div className="predefined-avatars-grid">
+                            {predefinedAvatars.map((av, index) => (
+                                <div
+                                    key={index}
+                                    className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedAvatar(av.src);
+                                        setCustomAvatar('');
+                                        setAvatarError('');
+                                    }}
+                                >
+                                    <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="or-divider">
+                            <span className="or-text">OR</span>
+                        </div>
+                        <div className="custom-avatar-upload-section">
+                            <h4 className="modal-subtitle">Upload your own</h4>
+                            <div className="custom-upload-container">
+                                {customAvatar ? (
+                                    <div className="custom-avatar-preview">
+                                        <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
+                                        <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="upload-button" onClick={() => fileInputRef.current.click()}>
+                                        <ImageIcon size={20} />
+                                        <span>Upload Image</span>
+                                    </button>
+                                )}
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    accept="image/*"
+                                    onChange={handleCustomImageUpload}
+                                    style={{ display: 'none' }}
+                                />
                             </div>
-                        ))}
+                        </div>
                     </div>
+                    {avatarError && <p className="error-message">{avatarError}</p>}
+                </div>
+                <div className="modal-actions">
+                    <button className="btn-secondary" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button className="btn-primary" onClick={handleSave}>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+// Users Component - Displays user's profile and their posts
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
+    if (!currentUser) {
+        return (
+            <div>
+                <h2 className="page-title">Profile</h2>
+                <div className="placeholder-card">
+                    <p className="placeholder-text">Please log in to view your profile.</p>
                 </div>
             </div>
         );
+    }
+
+    const userPosts = posts.filter(post =>
+        post.userId === currentUser._id
+    );
+
+    const userStats = {
+        posts: userPosts.length,
+        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+        registrationsReceived: userPosts.reduce((sum, post) => {
+            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+        }, 0)
     };
 
-    // Users Right Sidebar Component - Displays current user's statistics
-    const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
-        if (!currentUser) return null;
+    return (
+        <div>
+            <h2 className="page-title">Your Profile</h2>
 
-        const userPosts = posts.filter(post => post.userId === currentUser._id);
-
-        const userStats = {
-            posts: userPosts.length,
-            likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
-            commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
-            registrationsReceived: userPosts.reduce((sum, post) => {
-                return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
-            }, 0)
-        };
-
-        return (
-            <div className="sidebar-widget">
-                <div className="widget-header">
-                    <h3 className="widget-title">Profile Stats</h3>
+            <div className="profile-header">
+                <div className="profile-avatar-container">
+                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                    <button className="edit-avatar-button" onClick={onEditProfile}>
+                        <Edit3 size={16} />
+                    </button>
                 </div>
-                <div className="widget-content">
-                    <div className="widget-list">
-                        <p className="widget-item">Posts: <span className="widget-stat">{userStats.posts}</span></p>
-                        <p className="widget-item">Likes Received: <span className="widget-stat">{userStats.likesReceived}</span></p>
-                        <p className="widget-item">Comments: <span className="widget-stat">{userStats.commentsReceived}</span></p>
-                        <p className="widget-item">Registrations: <span className="widget-stat">{userStats.registrationsReceived}</span></p>
+                <div className="profile-info">
+                    <h3 className="profile-name">{currentUser.name}</h3>
+                    <p className="profile-email">{currentUser.email}</p>
+                    <div className="profile-stats">
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.posts}</span>
+                            <span className="stat-label">Posts</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.likesReceived}</span>
+                            <span className="stat-label">Likes</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.commentsReceived}</span>
+                            <span className="stat-label">Comments</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.registrationsReceived}</span>
+                            <span className="stat-label">Registrations</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        );
+
+            <h3 className="section-subtitle">Your Posts</h3>
+
+            {userPosts.length > 0 ? (
+                <div className="posts-container">
+                    {userPosts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            isProfileView={true}
+                            onDeletePost={onDeletePost}
+                            onEditPost={onEditPost}
+                            registrationCount={registrations[post._id]}
+                            onReportPost={onReportPost}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="placeholder-card">
+                    <p className="placeholder-text">You haven't created any posts yet.</p>
+                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+                        <Plus size={16} /> Create Your First Post
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Home Right Sidebar Component - Displays popular posts
+const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
+    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Popular Posts</h3>
+            </div>
+            <div className="widget-content">
+                <div className="widget-list">
+                    {popularPosts.map(post => (
+                        <div
+                            key={post._id}
+                            className="popular-post-item clickable"
+                            onClick={() => onOpenPostDetail(post)}
+                        >
+                            <p className="widget-item-title">{post.title}</p>
+                            <div className="popular-post-stats">
+                                <span className="popular-stat">{post.likes} likes</span>
+                                <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Events Right Sidebar Component - Displays calendar and user's upcoming events
+const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
+    const [value, onChange] = useState(new Date());
+
+    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+
+    const tileContent = ({ date, view }) => {
+        if (view === 'month') {
+            const hasEvent = allEvents.some(post =>
+                post.eventStartDate &&
+                new Date(post.eventStartDate).getDate() === date.getDate() &&
+                new Date(post.eventStartDate).getMonth() === date.getMonth() &&
+                new Date(post.eventStartDate).getFullYear() === date.getFullYear()
+            );
+            return hasEvent ? <div className="event-dot"></div> : null;
+        }
+        return null;
     };
 
-    // Notifications Right Sidebar Component - Provides link to help & support
-    const NotificationsRightSidebar = ({ onShowHelpModal }) => {
-        return (
-            <div className="sidebar-widget">
-                <div className="widget-header">
-                    <h3 className="widget-title">Help</h3>
+    const upcomingCalendarEvents = myCalendarEvents
+        .filter(e => new Date(e.eventStartDate) > new Date())
+        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+        .slice(0, 3);
+
+    return (
+        <>
+            <div className="calendar-widget">
+                <div className="widget-content calendar-container">
+                    <Calendar
+                        onChange={onChange}
+                        value={value}
+                        tileContent={tileContent}
+                        className="react-calendar"
+                        prev2Label={null}
+                        next2Label={null}
+                        locale="en-US"
+                    />
                 </div>
-                <div className="widget-content">
-                    <div className="widget-list">
-                        <button className="widget-item-button" onClick={onShowHelpModal}>
-                            Help & Support
-                        </button>
+            </div>
+
+            {upcomingCalendarEvents.length > 0 && (
+                <div className="sidebar-widget my-calendar-events">
+                    <div className="widget-header">
+                        <h3 className="widget-title">My Calendar Events</h3>
                     </div>
+                    <div className="widget-content">
+                        <div className="widget-list">
+                            {upcomingCalendarEvents.map(event => (
+                                <div
+                                    key={event._id}
+                                    className="sidebar-event-item clickable"
+                                    onClick={() => onOpenEventDetail(event)}
+                                >
+                                    <h4 className="sidebar-event-title">{event.title}</h4>
+                                    <div className="sidebar-event-date">
+                                        {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}
+                                    </div>
+                                    <div className="sidebar-event-time">
+                                        {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+// Confessions Right Sidebar Component - Displays recent confessions
+const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
+    const recentConfessions = [...posts]
+        .filter(post => post.type === 'confession')
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+        .slice(0, 3);
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Recent Confessions</h3>
+            </div>
+            <div className="widget-content">
+                <div className="widget-list">
+                    {recentConfessions.map(post => (
+                        <div
+                            key={post._id}
+                            className="recent-confession-item clickable"
+                            onClick={() => onOpenPostDetail(post)}
+                        >
+                            <p className="widget-item-title">{post.title}</p>
+                            <p className="confession-preview">
+                                {post.content.substring(0, 60)}...
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Users Right Sidebar Component - Displays current user's statistics
+const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
+    if (!currentUser) return null;
+
+    const userPosts = posts.filter(post => post.userId === currentUser._id);
+
+    const userStats = {
+        posts: userPosts.length,
+        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+        registrationsReceived: userPosts.reduce((sum, post) => {
+            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+        }, 0)
+    };
+
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Profile Stats</h3>
+            </div>
+            <div className="widget-content">
+                <div className="widget-list">
+                    <p className="widget-item">Posts: <span className="widget-stat">{userStats.posts}</span></p>
+                    <p className="widget-item">Likes Received: <span className="widget-stat">{userStats.likesReceived}</span></p>
+                    <p className="widget-item">Comments: <span className="widget-stat">{userStats.commentsReceived}</span></p>
+                    <p className="widget-item">Registrations: <span className="widget-stat">{userStats.registrationsReceived}</span></p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Notifications Right Sidebar Component - Provides link to help & support
+const NotificationsRightSidebar = ({ onShowHelpModal }) => {
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Help</h3>
+            </div>
+            <div className="widget-content">
+                <div className="widget-list">
+                    <button className="widget-item-button" onClick={onShowHelpModal}>
+                        Help & Support
+                    </button>
                 </div>
             </div>
         );
@@ -2365,7 +2373,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         </div>
                         <div className="modal-body">
                             <button className="btn-google" onClick={handleGoogleLoginClick}>
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <g clipPath="url(#clip0_353_57)">
                                         <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4" />
                                         <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853" />
@@ -2514,11 +2522,17 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 
         const [currentUser, setCurrentUser] = useState(() => {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            // FIX: Initialize registeredEventIds from savedUser.registrations
+            if (savedUser && savedUser.registrations) {
+                savedUser.registeredEventIds = new Set(savedUser.registrations.map(reg => reg.eventId));
+            }
             return savedUser || null;
         });
         const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
         const [likedPosts, setLikedPosts] = useState(new Set());
+        // FIX: Add a new state to track registered event IDs for the current user
+        const [registeredEventIds, setRegisteredEventIds] = useState(new Set());
 
         const [openCommentPostId, setOpenCommentPostId] = useState(null);
         const [selectedEvent, setSelectedEvent] = useState(null);
@@ -2648,6 +2662,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                 if (savedUser && savedUser.token) {
                     setIsLoggedIn(true);
                     setCurrentUser(savedUser);
+                    // FIX: Initialize registeredEventIds from local storage on load
+                    setRegisteredEventIds(savedUser.registeredEventIds || new Set());
                 }
             }
             document.documentElement.setAttribute('data-theme', theme);
@@ -2737,6 +2753,9 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         },
                         ...prev
                     ]);
+                    // FIX: Update the registeredEventIds state for the current user
+                    setRegisteredEventIds(prevIds => new Set(prevIds).add(eventId));
+                    // FIX: Optimistically update the registrations count for the host
                     setRegistrations(prevRegistrations => {
                         const newCount = (prevRegistrations[eventId] || 0) + 1;
                         return { ...prevRegistrations, [eventId]: newCount };
@@ -2759,7 +2778,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${eventTitle}" failed due to network error.`,
+                        message: `Network error: Could not register for "${eventTitle}".`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -2816,6 +2835,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                             ...prev
                         ]);
                     }
+                    // FIX: Re-fetch posts after adding/updating a post to update popular posts
+                    fetchPosts();
                 } else {
                     const errorData = await res.json();
                     console.error('Failed to save post:', errorData);
@@ -2872,6 +2893,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         },
                         ...prev
                     ]);
+                    // FIX: Re-fetch posts after deleting a post to update popular posts
+                    fetchPosts();
                 } else {
                     const errorData = await res.json();
                     console.error('Failed to delete post:', errorData);
@@ -2976,6 +2999,9 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         },
                         ...prev
                     ]);
+                } else {
+                    // FIX: Re-fetch posts after liking/unliking to update popular posts
+                    fetchPosts();
                 }
             } catch (error) {
                 console.error('Error liking/unliking post:', error);
@@ -3034,6 +3060,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                             } : post
                         )
                     );
+                    // FIX: Re-fetch posts after adding a comment to update popular posts
+                    fetchPosts();
                 } else {
                     const errorData = await res.json();
                     console.error('Failed to add comment:', errorData);
@@ -3119,14 +3147,22 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 
         const handleLogin = (user) => {
             setIsLoggedIn(true);
-            setCurrentUser(user);
-            localStorage.setItem('currentUser', JSON.stringify(user));
+            const userWithProcessedRegistrations = {
+                ...user,
+                registeredEventIds: user.registrations ? new Set(user.registrations.map(reg => reg.eventId)) : new Set()
+            };
+            setCurrentUser(userWithProcessedRegistrations);
+            // FIX: Update the dedicated state for registered event IDs
+            setRegisteredEventIds(userWithProcessedRegistrations.registeredEventIds);
+            localStorage.setItem('currentUser', JSON.stringify(userWithProcessedRegistrations));
         };
 
         const handleLogout = () => {
             setIsLoggedIn(false);
             setCurrentUser(null);
             setLikedPosts(new Set());
+            // FIX: Clear registered events on logout
+            setRegisteredEventIds(new Set());
             localStorage.removeItem('currentUser');
         };
 
@@ -3146,7 +3182,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 
         const handleReportPost = async (postId, reason) => {
             if (!currentUser || !currentUser.token) {
-                console.error('User not authenticated for reporting posts.');
+                setShowLoginModal(true);
                 return;
             }
             try {
@@ -3216,12 +3252,14 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Reported post (ID: ${postId}) has been deleted successfully.`,
+                            message: `Reported post (ID: ${postId}) has been deleted successfully!`,
                             timestamp: new Date(),
                             type: 'success'
                         },
                         ...prev
                     ]);
+                    // FIX: Re-fetch posts after deleting a reported post to update popular posts
+                    fetchPosts();
                 } else {
                     const errorData = await res.json();
                     console.error('Failed to delete reported post:', errorData);
@@ -3542,7 +3580,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                         <div className="header-content">
                             <div className="header-left">
                                 <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                                    <svg xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
                                     <span className="app-title">Confique</span>
                                 </a>
                             </div>
@@ -3638,7 +3676,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                                 <PostCard
                                                     key={post._id}
                                                     post={post}
-                                                    onLike={onLike}
+                                                    onLike={handleLikePost}
                                                     onShare={handleShareClick}
                                                     onAddComment={handleAddComment}
                                                     likedPosts={likedPosts}
@@ -3662,7 +3700,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                     onRequireLogin={() => setShowLoginModal(true)}
                                     onAddToCalendar={handleAddToCalendar}
                                     onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                                    isRegistered={registrations[selectedEvent._id] > 0}
+                                    isRegistered={currentUser ? registeredEventIds.has(selectedEvent._id) : false} // Pass isRegistered
                                 />
                             ) : (
                                 <CurrentComponent
