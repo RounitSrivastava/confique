@@ -1,3 +1,5 @@
+// server.js
+
 require('dotenv').config(); // MUST BE THE VERY FIRST LINE
 console.log('Server file is being executed!');
 
@@ -12,7 +14,7 @@ const { passport } = require('./config/passport-setup'); // Path to your passpor
 const authRoutes = require('./routes/auth');
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
-// IMPORTANT: No 'notificationsRoutes' import here, as that file does not exist.
+const notificationsRoutes = require('./routes/notifications'); // <--- CORRECTED: notificationsRoutes is now imported
 
 const app = express();
 
@@ -65,7 +67,7 @@ app.use(passport.session()); // Enable persistent login sessions
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
-// IMPORTANT: No 'app.use('/api/notifications', notificationsRoutes);' here.
+app.use('/api/notifications', notificationsRoutes); // <--- CORRECTED: notificationsRoutes is now mounted
 
 // Basic error handling middleware (optional, but good practice)
 app.use((err, req, res, next) => {
