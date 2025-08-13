@@ -882,7 +882,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                 />
                             </div>
 
-                            {/* FIX: Author Input is now always disabled and shows the user's name */}
                             <div className="form-group">
                                 <label className="form-label">Author</label>
                                 <input
@@ -1036,19 +1035,23 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                 </button>
                                                             </div>
                                                         ) : (
-                                                            <div className="upload-btn-wrapper">
-                                                                <div className="upload-btn">
-                                                                    <ImageIcon size={16} />
-                                                                    <span>Upload QR Code</span>
-                                                                </div>
+                                                            <>
+                                                                {/* FIX: Use a label to link to the hidden input */}
+                                                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                    <div className="upload-btn">
+                                                                        <ImageIcon size={16} />
+                                                                        <span>Upload QR Code</span>
+                                                                    </div>
+                                                                </label>
                                                                 <input
+                                                                    id="qr-file-input" // Add an ID to link with the label
                                                                     ref={qrFileInputRef}
                                                                     type="file"
                                                                     accept="image/*"
                                                                     onChange={handlePaymentQRUpload}
                                                                     style={{ display: 'none' }}
                                                                 />
-                                                            </div>
+                                                            </>
                                                         )}
                                                     </div>
                                                 </div>
@@ -3081,7 +3084,6 @@ const App = () => {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
                     document.body.appendChild(tempInput);
-                    tempInput.select();
                     document.execCommand('copy');
                     document.body.removeChild(tempInput);
                     setShowShareAlert(true);
