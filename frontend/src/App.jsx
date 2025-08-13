@@ -286,7 +286,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
     const handleDelete = (e) => {
         e.stopPropagation();
-        onDelete(post._id);
+        onDelete(post?._id);
         setIsOpen(false);
     };
 
@@ -302,7 +302,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
         setIsOpen(false);
     };
 
-    const isAuthorOrAdmin = currentUser && (post.userId === currentUser._id || currentUser.isAdmin);
+    const isAuthorOrAdmin = currentUser && (post?.userId === currentUser?._id || currentUser?.isAdmin);
 
     return (
         <div className="post-options-container" ref={dropdownRef}>
@@ -348,7 +348,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
-    const isCommentAuthor = currentUser && comment.authorId === currentUser._id;
+    const isCommentAuthor = currentUser && comment.userId === currentUser._id;
     const avatarSrc = isCommentAuthor ? currentUser?.avatar : (comment?.authorAvatar || placeholderAvatar);
 
     return (
@@ -356,7 +356,7 @@ const CommentItem = ({ comment, currentUser }) => {
             <div className="comment-avatar">
                 <img
                     src={avatarSrc}
-                    alt={`${comment.author}'s avatar`}
+                    alt={`${comment?.author}'s avatar`}
                     className="comment-avatar-img"
                     loading="lazy"
                     decoding="async"
@@ -364,12 +364,12 @@ const CommentItem = ({ comment, currentUser }) => {
             </div>
             <div className="comment-content-wrapper">
                 <div className="comment-header-info">
-                    <span className="comment-author">{comment.author}</span>
+                    <span className="comment-author">{comment?.author}</span>
                     <span className="comment-timestamp">
-                        {new Date(comment.timestamp).toLocaleDateString()} at {new Date(comment.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(comment?.timestamp)?.toLocaleDateString()} at {new Date(comment?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                 </div>
-                <p className="comment-text">{comment.text}</p>
+                <p className="comment-text">{comment?.text}</p>
             </div>
         </div>
     );
@@ -413,7 +413,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
             <div className="comments-list">
                 {comments && comments.length > 0 ? (
                     comments.map(comment => (
-                        <CommentItem key={comment._id} comment={comment} currentUser={currentUser} />
+                        <CommentItem key={comment?._id} comment={comment} currentUser={currentUser} />
                     ))
                 ) : (
                     <p className="no-comments-message">No comments yet. Be the first to comment!</p>
@@ -519,7 +519,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         <p>Please scan the QR code to make your payment and enter the transaction details below.</p>
                         <div className="qr-payment-section" ref={qrCodeRef}>
                             <img
-                                src={event.paymentQRCode}
+                                src={event?.paymentQRCode}
                                 alt="Payment QR Code"
                                 className="payment-qr"
                                 loading="lazy"
@@ -596,7 +596,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                     />
                 </div>
 
-                {/* Render custom fields dynamically */}
                 {customFields.map(field => (
                     field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
                         <div key={field} className="form-group">
@@ -629,7 +628,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             <div className="modal-overlay">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h2 className="modal-title">Register for {event.title}</h2>
+                        <h2 className="modal-title">Register for {event?.title}</h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
                         </button>
@@ -659,7 +658,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Add Post Modal Component (for creating/editing confessions and events)
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
-    // Initial form data structure
     const initialFormData = {
         type: 'confession',
         title: '',
@@ -1473,7 +1471,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
-        if (post?.type === 'event' && post.eventStartDate) {
+        if (post?.type === 'event' && post?.eventStartDate) {
             onAddToCalendar(post);
         }
     };
@@ -1571,13 +1569,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                 {post?.type === 'event' && (
                     <div className="event-details">
-                        {post.location && (
+                        {post?.location && (
                             <div className="event-detail">
                                 <MapPin size={16} />
                                 <span>{post.location}</span>
                             </div>
                         )}
-                        {post.eventStartDate && (
+                        {post?.eventStartDate && (
                             <div className="event-detail">
                                 <Clock size={16} />
                                 <span>
@@ -1692,7 +1690,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 post={post}
                                 onLike={onLike}
                                 onShare={onShare}
-                                onAddComment={onAddComment}
+                                onAddComment={handleAddComment}
                                 likedPosts={likedPosts}
                                 isCommentsOpen={openCommentPostId === post?._id}
                                 setOpenCommentPostId={setOpenCommentPostId}
@@ -1825,7 +1823,7 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
                                         )}
                                     </p>
                                     <span className="notification-timestamp">
-                                        {new Date(notification?.timestamp).toLocaleDateString()}
+                                        {new Date(notification?.timestamp)?.toLocaleDateString()}
                                     </span>
                                     {isAdmin && notification?.postId && (
                                         <div className="admin-actions">
@@ -2049,7 +2047,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={handleAddComment}
+                            onAddComment={onAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post?._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2213,7 +2211,7 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
 const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
     if (!currentUser) return null;
 
-    const userPosts = (posts || []).filter(post => post.userId === currentUser?._id);
+    const userPosts = (posts || []).filter(post => post?.userId === currentUser?._id);
 
     const userStats = {
         posts: userPosts.length,
@@ -2500,12 +2498,12 @@ const App = () => {
     const formatPostDates = (post) => {
         return {
             ...post,
-            timestamp: new Date(post?.timestamp),
-            eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
-            eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
-            commentData: post.commentData ? post.commentData.map(comment => ({
+            timestamp: post?.timestamp ? new Date(post.timestamp) : new Date(),
+            eventStartDate: post?.eventStartDate ? new Date(post.eventStartDate) : null,
+            eventEndDate: post?.eventEndDate ? new Date(post.eventEndDate) : null,
+            commentData: post?.commentData ? post.commentData.map(comment => ({
                 ...comment,
-                timestamp: new Date(comment.timestamp),
+                timestamp: comment?.timestamp ? new Date(comment.timestamp) : new Date(),
             })) : [],
         };
     };
@@ -2513,10 +2511,16 @@ const App = () => {
     const fetchPosts = async () => {
         try {
             const res = await fetch(`${API_URL}/posts`);
-            const data = await res.json();
-            setPosts(data.map(formatPostDates));
+            if (res.ok) {
+                const data = await res.json();
+                setPosts(data.map(formatPostDates));
+            } else {
+                console.error('Failed to fetch posts:', await res.text());
+                setPosts([]);
+            }
         } catch (error) {
             console.error('Failed to fetch posts:', error);
+            setPosts([]);
         }
     };
 
@@ -2556,21 +2560,26 @@ const App = () => {
                 setMyRegisteredEvents(new Set(data.registeredEventIds || []));
             } else {
                 console.error('Failed to fetch my registrations:', await res.text());
+                setMyRegisteredEvents(new Set());
             }
         } catch (error) {
             console.error('Error fetching my registrations:', error);
+            setMyRegisteredEvents(new Set());
         }
     };
 
     const fetchNotifications = async () => {
-        if (!currentUser || !currentUser.token) return;
+        if (!currentUser || !currentUser.token) {
+            setNotifications([]);
+            return;
+        }
         try {
             const res = await fetch(`${API_URL}/notifications`, {
                 headers: { 'Authorization': `Bearer ${currentUser.token}` }
             });
             if (res.ok) {
                 const data = await res.json();
-                setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+                setNotifications((data || []).map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch notifications:', await res.text());
                 setNotifications([]);
@@ -2582,14 +2591,17 @@ const App = () => {
     };
 
     const fetchAdminNotifications = async () => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+            setAdminNotifications([]);
+            return;
+        }
         try {
             const res = await fetch(`${API_URL}/users/admin/reported-posts`, {
                 headers: { 'Authorization': `Bearer ${currentUser.token}` }
             });
             if(res.ok) {
                 const data = await res.json();
-                setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+                setAdminNotifications((data || []).map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
                 setAdminNotifications([]);
@@ -2603,6 +2615,7 @@ const App = () => {
     const fetchLikedPosts = async (user) => {
         if (!user || !user.token) {
             console.log("Not logged in, skipping fetchLikedPosts.");
+            setLikedPosts(new Set());
             return;
         }
         try {
@@ -2702,7 +2715,7 @@ const App = () => {
             return;
         }
         setMyCalendarEvents(prev => {
-            if (prev.some(e => e._id === event._id)) {
+            if (prev.some(e => e?._id === event?._id)) {
                 return prev;
             }
             return [...prev, event];
@@ -3283,17 +3296,17 @@ const App = () => {
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
                 setPosts(prevPosts =>
-                    prevPosts.map(post => {
+                    (prevPosts || []).map(post => {
                         const updatedPost = post?.userId === newCurrentUser._id
                             ? { ...post, authorAvatar: newCurrentUser.avatar }
                             : post;
 
-                        const updatedComments = updatedPost.commentData?.map(comment => {
-                            if (comment.authorId === newCurrentUser._id) {
+                        const updatedComments = (updatedPost.commentData || []).map(comment => {
+                            if (comment?.authorId === newCurrentUser._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
-                        }) || [];
+                        });
                         
                         return { ...updatedPost, commentData: updatedComments };
                     })
