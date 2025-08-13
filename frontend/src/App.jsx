@@ -2728,8 +2728,7 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                // Re-fetch registrations to update the count in the profile view
-                fetchRegistrations();
+                // Add a new notification
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -2739,6 +2738,11 @@ const App = () => {
                     },
                     ...prev
                 ]);
+                // OPTIMISTIC UI UPDATE: Update the registration count immediately
+                setRegistrations(prevRegistrations => {
+                    const newCount = (prevRegistrations[eventId] || 0) + 1;
+                    return { ...prevRegistrations, [eventId]: newCount };
+                });
             } else {
                 const errorData = await res.json();
                 console.error('Registration failed:', errorData.message);
@@ -3433,8 +3437,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
