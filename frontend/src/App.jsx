@@ -431,7 +431,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 };
 
 // Registration Form Modal Component for events
-const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -464,6 +464,13 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         if (!isLoggedIn) {
             onRequireLogin();
+            return;
+        }
+        
+        // ADDED: Check if already registered
+        if (isRegistered) {
+            setFormAlertMessage("You are already registered for this event.");
+            setShowFormAlert(true);
             return;
         }
 
@@ -1392,6 +1399,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         isLoggedIn={isLoggedIn}
                         onRequireLogin={onRequireLogin}
                         onRegister={onRegister}
+                        isRegistered={isRegistered}
                     />
                 )}
                 <CustomMessageModal
@@ -1460,7 +1468,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1491,6 +1499,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
+    // ADDED: Check if the current user is registered for this event
+    const isRegistered = post.type === 'event' && currentUser && registrations[post._id];
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
@@ -1632,6 +1642,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 </span>
                             </div>
                         )}
+                        {/* ADDED: Registration Status for events on the card */}
+                        {post.type === 'event' && (
+                            <div className="event-detail registration-status">
+                                <Ticket size={16} />
+                                <span className={isRegistered ? 'status-registered' : 'status-not-registered'}>
+                                    {isRegistered ? 'Registered' : 'Not Registered'}
+                                </span>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1679,7 +1698,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         {isUserPost && isProfileView && (
                             <div className="post-stat">
                                 <Ticket size={20} />
-                                <span>{registrationCount || 0}</span>
+                                <span>{registrations[post._id] || 0}</span>
                             </div>
                         )}
                         <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
@@ -1748,8 +1767,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onOpenEventDetail={onOpenEventDetail}
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
-                                isProfileView={false}
-                                registrationCount={registrations[post._id]}
+                                registrations={registrations}
                                 onReportPost={onReportPost}
                             />
                         ))}
@@ -1773,7 +1791,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrations={registrations}
                         onReportPost={onReportPost}
                     />
                 ))}
@@ -1803,7 +1821,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrations={registrations}
                         onReportPost={onReportPost}
                     />
                 ))}
@@ -1833,7 +1851,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
+                        registrations={registrations}
                         onReportPost={onReportPost}
                     />
                 ))}
@@ -2100,7 +2118,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             isProfileView={true}
                             onDeletePost={onDeletePost}
                             onEditPost={onEditPost}
-                            registrationCount={registrations[post._id]}
+                            registrations={registrations}
                             onReportPost={onReportPost}
                         />
                     ))}
@@ -2534,6 +2552,8 @@ const App = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+    // NEW STATE: A Set to quickly check if a user is registered for an event
+    const [registeredEventIds, setRegisteredEventIds] = useState(new Set());
 
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
 
@@ -2563,6 +2583,7 @@ const App = () => {
     const fetchRegistrations = async () => {
         if (!currentUser || !currentUser.token) {
             setRegistrations({});
+            setRegisteredEventIds(new Set());
             return;
         }
         try {
@@ -2571,12 +2592,10 @@ const App = () => {
             });
             const data = await res.json();
             if (res.ok && data.registrations) {
-                // Assuming the backend returns an array of registered event IDs
-                const registeredEventsMap = data.registrations.reduce((acc, reg) => {
-                    acc[reg.eventId] = (acc[reg.eventId] || 0) + 1;
-                    return acc;
-                }, {});
-                setRegistrations(registeredEventsMap);
+                setRegistrations(data.registrations);
+                // NEW: Populate the set of registered event IDs
+                const registeredIds = new Set(Object.keys(data.registrations));
+                setRegisteredEventIds(registeredIds);
             } else {
                 console.error('Failed to fetch registrations:', data.message);
             }
@@ -2668,6 +2687,8 @@ const App = () => {
                 }
             } else {
                 setLikedPosts(new Set());
+                setRegisteredEventIds(new Set());
+                setRegistrations({});
             }
 
             fetchPosts();
@@ -2717,11 +2738,16 @@ const App = () => {
         });
     };
 
-    // FIX: This function now updates both `registrations` and `posts` state.
     const handleRegisterEvent = async (eventId, eventTitle) => {
         if (!currentUser || !currentUser.token) {
             console.error('User not authenticated for registration.');
             return;
+        }
+
+        // ADDED: New check to prevent double registration
+        if (registeredEventIds.has(eventId)) {
+            console.log('User is already registered for this event.');
+            return; // Exit the function to prevent double registration
         }
 
         try {
@@ -2733,23 +2759,6 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                // Update the registrations count for the specific event
-                setRegistrations(prevRegistrations => ({
-                    ...prevRegistrations,
-                    [eventId]: (prevRegistrations[eventId] || 0) + 1
-                }));
-
-                // Update the main posts state to reflect the new registration count
-                setPosts(prevPosts =>
-                    prevPosts.map(post => {
-                        if (post._id === eventId) {
-                            // Assuming 'registrations' is a number in the post object for display purposes
-                            return { ...post, registrations: (post.registrations || 0) + 1 };
-                        }
-                        return post;
-                    })
-                );
-
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -2759,6 +2768,13 @@ const App = () => {
                     },
                     ...prev
                 ]);
+                setRegistrations(prevRegistrations => {
+                    const newCount = (prevRegistrations[eventId] || 0) + 1;
+                    return { ...prevRegistrations, [eventId]: newCount };
+                });
+                // NEW: Add the event ID to the registeredEventIds set
+                setRegisteredEventIds(prev => new Set(prev).add(eventId));
+
             } else {
                 const errorData = await res.json();
                 console.error('Registration failed:', errorData.message);
@@ -3644,7 +3660,7 @@ const App = () => {
                                     onDeletePost={handleDeletePost}
                                     onEditPost={handleEditPost}
                                     isProfileView={selectedPost.userId === currentUser?._id}
-                                    registrationCount={registrations[selectedPost._id]}
+                                    registrations={registrations}
                                     onReportPost={handleOpenReportModal}
                                 />
                                 <hr className="section-divider" />
@@ -3666,7 +3682,7 @@ const App = () => {
                                                 onAddToCalendar={handleAddToCalendar}
                                                 currentUser={currentUser}
                                                 isProfileView={false}
-                                                registrationCount={registrations[post._id]}
+                                                registrations={registrations}
                                                 onReportPost={handleOpenReportModal}
                                             />
                                         ))}
@@ -3679,9 +3695,9 @@ const App = () => {
                                 isLoggedIn={isLoggedIn}
                                 onRequireLogin={() => setShowLoginModal(true)}
                                 onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId, eventTitle) => handleRegisterEvent(eventId, eventTitle)}
-                                // FIX: Check if the event ID exists as a key in the registrations object
-                                isRegistered={!!registrations[selectedEvent._id]}
+                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                // UPDATED: Pass the check for registration status to the component
+                                isRegistered={registeredEventIds.has(selectedEvent._id)}
                             />
                         ) : (
                             <CurrentComponent
