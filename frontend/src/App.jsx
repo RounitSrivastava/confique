@@ -1990,15 +1990,15 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
     }
 
     const userPosts = (posts || []).filter(post =>
-        post.userId === currentUser?._id
+        post?.userId === currentUser?._id
     );
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post?.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post?.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
+            return post?.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2826,7 +2826,7 @@ const App = () => {
                         ...prev
                     ]);
                 } else {
-                    setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                    setPosts(prev => (prev || []).map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
@@ -2877,8 +2877,8 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
-                setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
+                setPosts(prevPosts => (prevPosts || []).filter(post => post._id !== postId));
+                setMyCalendarEvents(prevEvents => (prevEvents || []).filter(event => event._id !== postId));
                 setLikedPosts(prev => {
                     const newLiked = new Set(prev);
                     newLiked.delete(postId);
