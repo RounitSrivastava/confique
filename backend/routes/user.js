@@ -24,9 +24,9 @@ const uploadImage = async (image) => {
     }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 router.get('/profile', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
@@ -43,9 +43,9 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Update user avatar
-// @route   PUT /api/users/profile/avatar
-// @access  Private
+// @desc    Update user avatar
+// @route   PUT /api/users/profile/avatar
+// @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
 
@@ -60,7 +60,6 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         let updatedAvatarUrl = newAvatar;
 
         if (newAvatar.startsWith('data:image')) {
-            // Delete old avatar if it's on Cloudinary
             if (user.avatar && user.avatar.includes('cloudinary')) {
                 const parts = user.avatar.split('/');
                 const publicId = `confique_avatars/${parts[parts.length - 1].split('.')[0]}`;
@@ -83,7 +82,6 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         user.avatar = updatedAvatarUrl;
         const updatedUser = await user.save();
         
-        // Update authorAvatar in posts and comments created by this user
         await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
         await Post.updateMany(
             { 'commentData.userId': user._id },
@@ -104,11 +102,10 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Get a list of all posts the user has liked
-// @route   GET /api/users/liked-posts
-// @access  Private
+// @desc    Get a list of all posts the user has liked
+// @route   GET /api/users/liked-posts
+// @access  Private
 router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
-    // Corrected implementation: retrieve likedPosts directly from the user document
     const user = await User.findById(req.user._id).select('likedPosts');
     if (!user) {
         res.status(404);
@@ -117,9 +114,9 @@ router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     res.json({ likedPostIds: user.likedPosts });
 }));
 
-// @desc    Get event IDs the current user has registered for
-// @route   GET /api/users/my-events-registrations
-// @access  Private
+// @desc    Get event IDs the current user has registered for
+// @route   GET /api/users/my-events-registrations
+// @access  Private
 router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('registrations');
     if (!user) {
@@ -132,33 +129,48 @@ router.get('/my-events-registrations', protect, asyncHandler(async (req, res) =>
     res.json({ registeredEventIds });
 }));
 
-// @desc    Get registration counts for events created by the logged-in user
-// @route   GET /api/users/my-events/registration-counts
-// @access  Private
+// @desc    Get registration counts for events created by the logged-in user
+// @route   GET /api/users/my-events/registration-counts
+// @access  Private
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
-    const registrations = await Post.aggregate([
-        // Stage 1: Filter to get only events created by the current user
-        { $match: { userId: req.user._id, type: 'event' } },
-        // Stage 2: Project the event ID and the size of the registeredUsers array
-        {
-            $project: {
-                _id: '$_id',
-                count: { $size: '$registeredUsers' }
+    try {
+        const registrations = await Post.aggregate([
+            { $match: { userId: req.user._id, type: 'event' } },
+            {
+                $addFields: {
+                    registeredUsersArray: {
+                        $cond: {
+                            if: { $isArray: '$registeredUsers' },
+                            then: '$registeredUsers',
+                            else: []
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: '$_id',
+                    count: { $size: '$registeredUsersArray' }
+                }
             }
-        }
-    ]);
-    
-    const registrationsMap = registrations.reduce((acc, reg) => {
-        acc[reg._id.toString()] = reg.count;
-        return acc;
-    }, {});
+        ]);
+        
+        const registrationsMap = registrations.reduce((acc, reg) => {
+            acc[reg._id.toString()] = reg.count;
+            return acc;
+        }, {});
 
-    res.json({ registrations: registrationsMap });
+        res.json({ registrations: registrationsMap });
+
+    } catch (error) {
+        console.error('Error in registration-counts route:', error);
+        res.status(500).json({ message: 'Failed to fetch registration counts due to a server error. Check server logs.' });
+    }
 }));
 
-// @desc    Register for an event
-// @route   POST /api/users/register-event/:id
-// @access  Private
+// @desc    Register for an event
+// @route   POST /api/users/register-event/:id
+// @access  Private
 router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
     const user = await User.findById(req.user._id);
@@ -168,14 +180,12 @@ router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
         throw new Error('Event or user not found');
     }
 
-    // Check if the user is already registered for this specific event
     const isRegistered = user.registrations.some(reg => reg.eventId.toString() === event._id.toString());
     if (isRegistered) {
         res.status(400);
         throw new Error('User is already registered for this event');
     }
 
-    // Add the new registration to the user's registrations array
     user.registrations.push({
         eventId: event._id,
         eventName: event.title,
@@ -183,11 +193,9 @@ router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
     });
     await user.save();
 
-    // Add user to the event's registeredUsers array
     event.registeredUsers.push(user._id);
     await event.save();
     
-    // Create a new notification for the event creator
     const eventCreator = await User.findById(event.userId);
     if(eventCreator) {
         const newNotification = new Notification({
@@ -203,9 +211,9 @@ router.post('/register-event/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Admin endpoint to get all reported posts
-// @route   GET /api/users/admin/reported-posts
-// @access  Private, Admin
+// @desc    Admin endpoint to get all reported posts
+// @route   GET /api/users/admin/reported-posts
+// @access  Private, Admin
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
     const reportedPosts = await Notification.find({ type: 'report' })
         .populate('reporter', 'name email')
@@ -213,9 +221,9 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
     res.json(reportedPosts);
 }));
 
-// @desc    Admin endpoint to delete a post and its reports
-// @route   DELETE /api/users/admin/delete-post/:id
-// @access  Private, Admin
+// @desc    Admin endpoint to delete a post and its reports
+// @route   DELETE /api/users/admin/delete-post/:id
+// @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const postId = req.params.id;
     const post = await Post.findById(postId);
