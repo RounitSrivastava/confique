@@ -941,6 +941,31 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
+                                    
+                                    <div className="form-group">
+                                        <label className="form-label">Duration</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.duration}
+                                            onChange={handleFormChange}
+                                            name="duration"
+                                            placeholder="e.g., 2 hours, All Day"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Tickets Needed For</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.ticketsNeeded}
+                                            onChange={handleFormChange}
+                                            name="ticketsNeeded"
+                                            placeholder="e.g., Individual, Group, Family"
+                                            required
+                                        />
+                                    </div>
 
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
@@ -982,10 +1007,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             <label className="form-label">Custom Registration Fields (comma-separated)</label>
                                             <input
                                                 type="text"
-                                                name="registrationFields"
                                                 className="form-input"
                                                 value={formData.registrationFields}
                                                 onChange={handleFormChange}
+                                                name="registrationFields"
                                                 placeholder="e.g., Roll Number, Branch, Semester"
                                             />
                                         </div>
@@ -1036,7 +1061,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                {/* FIX: Use a label to link to the hidden input */}
                                                                 <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                     <div className="upload-btn">
                                                                         <ImageIcon size={16} />
@@ -1044,7 +1068,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                     </div>
                                                                 </label>
                                                                 <input
-                                                                    id="qr-file-input" // Add an ID to link with the label
+                                                                    id="qr-file-input"
                                                                     ref={qrFileInputRef}
                                                                     type="file"
                                                                     accept="image/*"
