@@ -1721,8 +1721,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         ) : (
             <div className="post-card">
                 {renderPostCardContent()}
-            )
+            </div>
         )
+    );
 };
 
 // Home Component - Displays a feed of posts
@@ -2738,10 +2739,7 @@ const App = () => {
                     },
                     ...prev
                 ]);
-                setRegistrations(prevRegistrations => {
-                    const newCount = (prevRegistrations[eventId] || 0) + 1;
-                    return { ...prevRegistrations, [eventId]: newCount };
-                });
+                fetchRegistrations(); // Re-fetch registrations to update the count
             } else {
                 const errorData = await res.json();
                 console.error('Registration failed:', errorData.message);
@@ -3639,7 +3637,7 @@ const App = () => {
                                             <PostCard
                                                 key={post._id}
                                                 post={post}
-                                                onLike={handleLikePost}
+                                                onLike={onLike}
                                                 onShare={handleShareClick}
                                                 onAddComment={handleAddComment}
                                                 likedPosts={likedPosts}
@@ -3662,7 +3660,7 @@ const App = () => {
                                 isLoggedIn={isLoggedIn}
                                 onRequireLogin={() => setShowLoginModal(true)}
                                 onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                onRegister={handleRegisterEvent}
                                 isRegistered={!!registrations[selectedEvent._id]}
                             />
                         ) : (
