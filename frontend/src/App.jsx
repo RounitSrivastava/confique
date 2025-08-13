@@ -349,7 +349,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
     const isCommentAuthor = currentUser && comment.authorId === currentUser._id;
-    const avatarSrc = isCommentAuthor ? currentUser.avatar : (comment.authorAvatar || placeholderAvatar);
+    const avatarSrc = isCommentAuthor ? currentUser?.avatar : (comment?.authorAvatar || placeholderAvatar);
 
     return (
         <div className="comment-item">
@@ -1239,7 +1239,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
         <ErrorBoundary>
             <div className="event-detail-page-container">
                 <div className="event-detail-header">
-                    {event.images && event.images.length > 0 ? (
+                    {event?.images && event.images.length > 0 ? (
                         <img
                             src={event.images[0]}
                             alt={event.title}
@@ -1259,10 +1259,10 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                 <div className="event-detail-content-section">
                     <div className="event-detail-title-card">
-                        <h1>{event.title}</h1>
+                        <h1>{event?.title}</h1>
                         <div className="event-detail-meta-item">
                             <Landmark size={18} />
-                            <span>{event.location}</span>
+                            <span>{event?.location}</span>
                         </div>
                         <div className="event-detail-meta-item">
                             <CalendarIcon size={18} />
@@ -1270,12 +1270,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         </div>
                         <div className="event-detail-meta-item">
                             <MapPin size={18} />
-                            <span>{event.venueAddress}</span>
+                            <span>{event?.venueAddress}</span>
                         </div>
 
                         <div className="event-detail-price-book">
                             <span className="event-detail-price">
-                                {event.price === 0 ? 'FREE' : `₹${event.price}`}
+                                {event?.price === 0 ? 'FREE' : `₹${event?.price}`}
                             </span>
                             <button
                                 className={`event-detail-book-button ${isButtonDisabled ? 'disabled' : ''}`}
@@ -1304,21 +1304,21 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                             <Languages size={20} />
                             <div>
                                 <strong>Language</strong>
-                                <p>{event.language || 'N/A'}</p>
+                                <p>{event?.language || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="info-grid-item">
                             <Timer size={20} />
                             <div>
                                 <strong>Duration</strong>
-                                <p>{event.duration || 'N/A'}</p>
+                                <p>{event?.duration || 'N/A'}</p>
                             </div>
                         </div>
                         <div className="info-grid-item">
                             <Ticket size={20} />
                             <div>
                                 <strong>Tickets Needed For</strong>
-                                <p>{event.ticketsNeeded || 'N/A'}</p>
+                                <p>{event?.ticketsNeeded || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
@@ -1327,8 +1327,8 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         <h2>Venue</h2>
                         <div className="venue-info">
                             <div>
-                                <p><strong>{event.location}</strong></p>
-                                <p>{event.venueAddress}</p>
+                                <p><strong>{event?.location}</strong></p>
+                                <p>{event?.venueAddress}</p>
                             </div>
                             <button className="get-directions-button" onClick={handleGetDirections}>
                                 <MapPin size={16} /> GET DIRECTIONS
@@ -1337,7 +1337,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     </div>
                 </div>
 
-                {/* Modals for registration, geolocation error, and calendar confirmation */}
                 {showRegistrationForm && (
                     <RegistrationFormModal
                         isOpen={showRegistrationForm}
@@ -1369,10 +1368,10 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
 // Event Detail Sidebar Component - Displays upcoming events related to the current event
 const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
-    const upcomingEvents = events.filter(e =>
-        e.type === 'event' &&
-        e._id !== currentEvent?._id &&
-        new Date(e.eventStartDate) > new Date()
+    const upcomingEvents = (events || []).filter(e =>
+        e?.type === 'event' &&
+        e?._id !== currentEvent?._id &&
+        new Date(e?.eventStartDate) > new Date()
     ).slice(0, 3);
 
     return (
@@ -1385,19 +1384,19 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                     <div className="widget-list">
                         {upcomingEvents.map(event => (
                             <div
-                                key={event._id}
+                                key={event?._id}
                                 className="sidebar-event-item clickable"
                                 onClick={() => onOpenEventDetail(event)}
                             >
-                                <h4 className="sidebar-event-title">{event.title}</h4>
+                                <h4 className="sidebar-event-title">{event?.title}</h4>
                                 <div className="sidebar-event-date">
-                                    {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                    {new Date(event?.eventStartDate)?.toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric'
                                     })}
                                 </div>
                                 <div className="sidebar-event-time">
-                                    {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(event?.eventStartDate)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
                         ))}
@@ -1432,7 +1431,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             const maxHeight = lineHeight * 3;
             setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
         }
-    }, [post.content]);
+    }, [post?.content]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -1443,12 +1442,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         }
     };
 
-    const isInteractive = post.type !== 'news';
-    const isUserPost = currentUser && post.userId === currentUser._id;
+    const isInteractive = post?.type !== 'news';
+    const isUserPost = currentUser && post?.userId === currentUser?._id;
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
-        setOpenCommentPostId(isCommentsOpen ? null : post._id);
+        setOpenCommentPostId(isCommentsOpen ? null : post?._id);
     };
 
     const handleBackArrowClick = (e) => {
@@ -1474,7 +1473,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
-        if (post.type === 'event' && post.eventStartDate) {
+        if (post?.type === 'event' && post.eventStartDate) {
             onAddToCalendar(post);
         }
     };
@@ -1486,7 +1485,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             try {
                 await navigator.share({
                     title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                    text: postContent?.substring(0, 100) + (postContent?.length > 100 ? '...' : ''),
                     url: shareUrl,
                 });
             } catch (error) {
@@ -1629,7 +1628,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         </button>
                         <button className="action-btn" onClick={handleCommentIconClick}>
                             <MessageIcon size={20} />
-                            <span>{post?.commentData ? post?.commentData.length : 0}</span>
+                            <span>{post?.commentData?.length || 0}</span>
                         </button>
                         {isUserPost && isProfileView && (
                             <div className="post-stat">
@@ -1680,7 +1679,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
 // Home Component - Displays a feed of posts
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const newsHighlights = [...posts].filter(post => post?.type === 'news').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 2);
+    const newsHighlights = [...(posts || [])].filter(post => post?.type === 'news').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 2);
 
     return (
         <div>
@@ -1701,7 +1700,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
                                 isProfileView={false}
-                                registrationCount={registrations[post?._id]}
+                                registrationCount={registrations?.[post?._id]}
                                 onReportPost={onReportPost}
                                 onDeletePost={onDeletePost}
                                 onEditPost={onEditPost}
@@ -1713,13 +1712,13 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             )}
 
             <div className="posts-container">
-                {posts.filter(p => p?.type !== 'news').map(post => (
+                {(posts || []).filter(p => p?.type !== 'news').map(post => (
                     <PostCard
                         key={post?._id}
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -1740,7 +1739,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 
 // Events Component - Displays only event posts
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const eventPosts = posts.filter(post => post?.type === 'event');
+    const eventPosts = (posts || []).filter(post => post?.type === 'event');
 
     return (
         <div id="events-section-content">
@@ -1751,7 +1750,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -1772,7 +1771,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 
 // Confessions Component - Displays only confession posts
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const confessionPosts = posts.filter(post => post?.type === 'confession');
+    const confessionPosts = (posts || []).filter(post => post?.type === 'confession');
 
     return (
         <div>
@@ -1783,7 +1782,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2050,7 +2049,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={onAddComment}
+                            onAddComment={handleAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post?._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2161,13 +2160,13 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                                 >
                                     <h4 className="sidebar-event-title">{event?.title}</h4>
                                     <div className="sidebar-event-date">
-                                        {new Date(event?.eventStartDate).toLocaleDateString('en-US', {
+                                        {new Date(event?.eventStartDate)?.toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric'
                                         })}
                                     </div>
                                     <div className="sidebar-event-time">
-                                        {new Date(event?.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {new Date(event?.eventStartDate)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
                             ))}
@@ -2501,7 +2500,7 @@ const App = () => {
     const formatPostDates = (post) => {
         return {
             ...post,
-            timestamp: new Date(post.timestamp),
+            timestamp: new Date(post?.timestamp),
             eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
             eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
             commentData: post.commentData ? post.commentData.map(comment => ({
@@ -2692,9 +2691,9 @@ const App = () => {
     };
 
     const filteredPosts = (posts || []).filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+        post?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post?.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post?.type === 'event' && post?.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleAddToCalendar = (event) => {
@@ -3077,7 +3076,7 @@ const App = () => {
             try {
                 await navigator.share({
                     title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                    text: postContent?.substring(0, 100) + (postContent?.length > 100 ? '...' : ''),
                     url: shareUrl,
                 });
             } catch (error) {
@@ -3285,16 +3284,16 @@ const App = () => {
 
                 setPosts(prevPosts =>
                     prevPosts.map(post => {
-                        const updatedPost = post.userId === newCurrentUser._id
+                        const updatedPost = post?.userId === newCurrentUser._id
                             ? { ...post, authorAvatar: newCurrentUser.avatar }
                             : post;
 
-                        const updatedComments = updatedPost.commentData.map(comment => {
+                        const updatedComments = updatedPost.commentData?.map(comment => {
                             if (comment.authorId === newCurrentUser._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
-                        });
+                        }) || [];
                         
                         return { ...updatedPost, commentData: updatedComments };
                     })
@@ -3365,7 +3364,7 @@ const App = () => {
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
             component: () => <EventsComponent
-                posts={filteredPosts.filter(post => post.type === 'event')}
+                posts={filteredPosts.filter(post => post?.type === 'event')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3381,7 +3380,7 @@ const App = () => {
                 onEditPost={handleEditPost}
             />,
             rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'event')}
+                posts={posts.filter(p => p?.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
                 onOpenEventDetail={handleOpenEventDetail}
             />,
@@ -3391,7 +3390,7 @@ const App = () => {
             label: 'Confessions',
             icon: <MessageCircle className="nav-icon" />,
             component: () => <ConfessionsComponent
-                posts={filteredPosts.filter(post => post.type === 'confession')}
+                posts={filteredPosts.filter(post => post?.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3406,7 +3405,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
             />,
-            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p?.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
             id: 'notifications',
@@ -3463,7 +3462,7 @@ const App = () => {
             onEditPost={handleEditPost}
         />,
         events: () => <EventsComponent
-            posts={filteredPosts.filter(post => post.type === 'event')}
+            posts={filteredPosts.filter(post => post?.type === 'event')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -3479,7 +3478,7 @@ const App = () => {
             onEditPost={handleEditPost}
         />,
         confessions: () => <ConfessionsComponent
-            posts={filteredPosts.filter(post => post.type === 'confession')}
+            posts={filteredPosts.filter(post => post?.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -3523,11 +3522,11 @@ const App = () => {
     const sectionSidebars = {
         home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         events: () => <EventsRightSidebar
-            posts={posts.filter(p => p.type === 'event')}
+            posts={posts.filter(p => p?.type === 'event')}
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
-        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p?.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
     };
