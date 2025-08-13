@@ -322,7 +322,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
             {isOpen && (
                 <div className="post-options-menu">
-                    {isAuthorOrAdmin && post?.type === 'event' && (
+                    {isAuthorOrAdmin && post.type === 'event' && (
                         <button className="post-option-item" onClick={handleEdit}>
                             <Edit3 size={16} />
                             <span>Edit</span>
@@ -348,7 +348,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
-    const isCommentAuthor = currentUser && comment?.userId === currentUser?._id;
+    const isCommentAuthor = currentUser && comment.userId === currentUser._id;
     const avatarSrc = isCommentAuthor ? currentUser?.avatar : (comment?.authorAvatar || placeholderAvatar);
 
     return (
@@ -437,7 +437,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         email: '',
         phone: '',
         transactionId: '',
-        ...(event?.registrationFields ?
+        ...(event.registrationFields ?
             Object.fromEntries(
                 event.registrationFields.split(',').map(field => [field.trim(), ''])
             ) : {})
@@ -450,7 +450,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const qrCodeRef = useRef(null);
 
-    const customFields = event?.registrationFields ?
+    const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
         [];
 
@@ -475,11 +475,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         setFormSubmitted(true);
 
-        if (event?.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
+        if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
             setShowPaymentStep(true);
         } else {
-            setSuccessMessage(`Thank you ${formData.name} for registering for ${event?.title}!`);
-            onRegister(event?._id, event?.title);
+            setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
+            onRegister(event._id, event.title);
             setShowSuccessModal(true);
         }
     };
@@ -487,13 +487,13 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const handlePaymentConfirm = (e) => {
         e.preventDefault();
 
-        if (event?.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
+        if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
         setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-        onRegister(event?._id, event?.title);
+        onRegister(event._id, event.title);
         setShowSuccessModal(true);
     };
 
@@ -616,7 +616,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         Cancel
                     </button>
                     <button type="submit" className="btn-primary">
-                        {event?.price > 0 && event.enableRegistrationForm ? 'Proceed to Payment' : 'Submit Registration'}
+                        {event.price > 0 && event.enableRegistrationForm ? 'Proceed to Payment' : 'Submit Registration'}
                     </button>
                 </div>
             </form>
@@ -1530,7 +1530,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 <div className="post-info">
                     <h3 className="post-author">{post?.author}</h3>
                     <p className="post-timestamp">
-                        {new Date(post?.timestamp)?.toLocaleDateString() || 'N/A'} at {new Date(post?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'N/A'}
+                        {new Date(post?.timestamp)?.toLocaleDateString()} at {new Date(post?.timestamp)?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
                 <div className="post-header-actions">
@@ -1579,8 +1579,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             <div className="event-detail">
                                 <Clock size={16} />
                                 <span>
-                                    {new Date(post.eventStartDate).toLocaleDateString() || 'N/A'} at{' '}
-                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || 'N/A'}
+                                    {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
+                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                         )}
@@ -1677,7 +1677,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
 // Home Component - Displays a feed of posts
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const newsHighlights = [...(posts || [])].filter(post => post?.type === 'news').sort((a, b) => new Date(b?.timestamp) - new Date(a?.timestamp)).slice(0, 2);
+    const newsHighlights = [...(posts || [])].filter(post => post?.type === 'news').sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 2);
 
     return (
         <div>
@@ -1690,7 +1690,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 post={post}
                                 onLike={onLike}
                                 onShare={onShare}
-                                onAddComment={onAddComment}
+                                onAddComment={handleAddComment}
                                 likedPosts={likedPosts}
                                 isCommentsOpen={openCommentPostId === post?._id}
                                 setOpenCommentPostId={setOpenCommentPostId}
@@ -1748,7 +1748,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post?._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -1802,7 +1802,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
 // Notifications Component - Displays user notifications or admin reported posts
 const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
     const isAdmin = currentUser?.isAdmin;
-    const displayNotifications = isAdmin ? (adminNotifications || []) : (notifications || []);
+    const displayNotifications = isAdmin ? adminNotifications : notifications;
 
     return (
         <div>
@@ -1990,15 +1990,15 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
     }
 
     const userPosts = (posts || []).filter(post =>
-        post?.userId === currentUser?._id
+        post.userId === currentUser?._id
     );
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + (post?.likes || 0), 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post?.commentData?.length || 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post?.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
+            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2215,10 +2215,10 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + (post?.likes || 0), 0),
-        commentsReceived: userPosts.reduce((sum, post) => sum + (post?.commentData?.length || 0), 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData?.length || 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post?.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
+            return post.type === 'event' ? sum + (registrations?.[post?._id] || 0) : sum;
         }, 0)
     };
 
@@ -2826,7 +2826,7 @@ const App = () => {
                         ...prev
                     ]);
                 } else {
-                    setPosts(prev => (prev || []).map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                    setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
@@ -2877,8 +2877,8 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                setPosts(prevPosts => (prevPosts || []).filter(post => post._id !== postId));
-                setMyCalendarEvents(prevEvents => (prevEvents || []).filter(event => event._id !== postId));
+                setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
+                setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
                 setLikedPosts(prev => {
                     const newLiked = new Set(prev);
                     newLiked.delete(postId);
@@ -2925,7 +2925,7 @@ const App = () => {
             setShowLoginModal(true);
             return;
         }
-        if (currentUser && (post?.userId === currentUser?._id || currentUser?.isAdmin)) {
+        if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
             setPostToEdit(post);
             setIsModalOpen(true);
             setActiveSection('profile');
@@ -2954,9 +2954,9 @@ const App = () => {
         });
 
         setPosts(prevPosts =>
-            (prevPosts || []).map(post =>
-                post?._id === postId
-                    ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) - 1 : (post.likes || 0) + 1 }
+            prevPosts.map(post =>
+                post._id === postId
+                    ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
                     : post
             )
         );
@@ -2982,9 +2982,9 @@ const App = () => {
                     return newLiked;
                 });
                 setPosts(prevPosts =>
-                    (prevPosts || []).map(post =>
-                        post?._id === postId
-                            ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) + 1 : (post.likes || 0) - 1 }
+                    prevPosts.map(post =>
+                        post._id === postId
+                            ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
                             : post
                     )
                 );
@@ -3011,9 +3011,9 @@ const App = () => {
                 return newLiked;
             });
             setPosts(prevPosts =>
-                (prevPosts || []).map(post =>
-                    post?._id === postId
-                        ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) + 1 : (post.likes || 0) - 1 }
+                prevPosts.map(post =>
+                    post._id === postId
+                        ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
                         : post
                 )
             );
@@ -3047,10 +3047,10 @@ const App = () => {
             if (res.ok) {
                 const commentData = await res.json();
                 setPosts(prevPosts =>
-                    (prevPosts || []).map(post =>
-                        post?._id === postId ? {
+                    prevPosts.map(post =>
+                        post._id === postId ? {
                             ...post,
-                            commentData: (commentData || []).map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
+                            commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
                             comments: commentData.length
                         } : post
                     )
@@ -3297,12 +3297,12 @@ const App = () => {
 
                 setPosts(prevPosts =>
                     (prevPosts || []).map(post => {
-                        const updatedPost = post?.userId === newCurrentUser?._id
+                        const updatedPost = post?.userId === newCurrentUser._id
                             ? { ...post, authorAvatar: newCurrentUser.avatar }
                             : post;
 
                         const updatedComments = (updatedPost.commentData || []).map(comment => {
-                            if (comment?.userId === newCurrentUser?._id) {
+                            if (comment?.authorId === newCurrentUser._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
@@ -3666,7 +3666,7 @@ const App = () => {
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
                                 <div className="posts-container">
-                                    {(posts || [])
+                                    {posts
                                         .filter(p => p._id !== selectedPost._id)
                                         .map(post => (
                                             <PostCard
