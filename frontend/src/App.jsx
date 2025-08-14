@@ -2021,14 +2021,6 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         }, 0)
     };
 
-    const handleDeletePost = (postId) => {
-        onDeletePost(postId);
-    };
-
-    const handleEditPost = (post) => {
-        onEditPost(post);
-    };
-
     return (
         <div>
             <h2 className="page-title">Your Profile</h2>
@@ -2082,8 +2074,8 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             isProfileView={true}
-                            onDeletePost={handleDeletePost}
-                            onEditPost={handleEditPost}
+                            onDeletePost={onDeletePost}
+                            onEditPost={onEditPost}
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                         />
@@ -2782,6 +2774,7 @@ const App = () => {
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    // MODIFIED: This function now also opens the calendar modal.
     const handleAddToCalendar = (event) => {
         if (!isLoggedIn) {
             setShowLoginModal(true);
@@ -2793,6 +2786,8 @@ const App = () => {
             }
             return [...prev, event];
         });
+        // Added this line to open the calendar modal after adding the event
+        setShowCalendarModal(true);
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
