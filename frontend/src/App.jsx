@@ -656,10 +656,10 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 };
 
 // Add Post Modal Component (for creating/editing confessions and events)
-const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
+const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, initialType = 'confession' }) => {
     // Initial form data structure
     const initialFormData = {
-        type: 'confession',
+        type: initialType,
         title: '',
         content: '',
         author: currentUser?.name || '',
@@ -716,12 +716,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         } else if (isOpen) {
             setFormData(prev => ({
                 ...initialFormData,
-                author: currentUser?.name || '',
+                author: currentUser?.name || ''
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
         }
-    }, [postToEdit, currentUser, isOpen]);
+    }, [postToEdit, currentUser, isOpen, initialType]);
 
     const handleFormChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -2582,6 +2582,9 @@ const App = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+    
+    // New state for showing the "Add Event" floating button
+    const [showEventFab, setShowEventFab] = useState(false);
 
     // Update hasOpenModal to include the new calendar modal
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
@@ -2767,6 +2770,11 @@ const App = () => {
             document.body.style.paddingRight = '';
         };
     }, [hasOpenModal]);
+    
+    // Control the visibility of the FAB based on the active section
+    useEffect(() => {
+        setShowEventFab(activeSection === 'events' && !selectedEvent && !selectedPost);
+    }, [activeSection, selectedEvent, selectedPost]);
 
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -3413,6 +3421,16 @@ const App = () => {
         setShowProfileSettingsModal(false);
     };
 
+    // New function to open the AddPostModal for events
+    const onOpenAddEventModal = () => {
+        if (!isLoggedIn) {
+            setShowLoginModal(true);
+            return;
+        }
+        setPostToEdit(null); // Ensure no post is being edited
+        setIsModalOpen(true);
+    };
+
     const menuItems = [
         {
             id: 'home',
@@ -3511,6 +3529,20 @@ const App = () => {
                 }
             }
         },
+        // Adding a new entry for the Calendar Modal in the mobile nav
+        {
+            id: 'my-calendar',
+            label: 'My Calendar',
+            icon: <CalendarIcon className="nav-icon" />,
+            component: null, // No component, as it opens a modal
+            action: () => {
+                if (isLoggedIn) {
+                    setShowCalendarModal(true);
+                } else {
+                    setShowLoginModal(true);
+                }
+            },
+        }
     ];
 
     const sectionComponents = {
@@ -3627,7 +3659,6 @@ const App = () => {
                 />
             )}
 
-            {/* New Calendar Modal */}
             {currentUser && (
                 <CalendarModal
                     isOpen={showCalendarModal}
@@ -3646,9 +3677,9 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
-                        {/* Mobile Calendar Icon - visible only on smaller screens */}
+                        {/* Mobile Calendar Icon - This is now in the nav bar instead of header */}
                         <div className="mobile-calendar-icon-container">
-                            {currentUser && ( // Only show if user is logged in
+                            {currentUser && (
                                 <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
                                     <CalendarIcon size={24} />
                                 </button>
@@ -3695,25 +3726,31 @@ const App = () => {
             <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
                 <aside className="left-sidebar">
                     <nav className="sidebar-nav">
-                        {menuItems.map(item => (
-                            <button
-                                key={item.id}
-                                className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (item.action) {
-                                        item.action();
-                                    } else {
-                                        setActiveSection(item.id);
-                                        setOpenCommentPostId(null);
-                                        setSelectedEvent(null);
-                                        setSelectedPost(null);
-                                    }
-                                }}
-                            >
-                                {item.icon}
-                                <span className="nav-label">{item.label}</span>
-                            </button>
-                        ))}
+                        {menuItems.map(item => {
+                             // Skip rendering the 'add' item in the main nav on mobile, as it will be a floating button
+                            if (item.id === 'add' && showEventFab) {
+                                return null;
+                            }
+                            return (
+                                <button
+                                    key={item.id}
+                                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (item.action) {
+                                            item.action();
+                                        } else {
+                                            setActiveSection(item.id);
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }
+                                    }}
+                                >
+                                    {item.icon}
+                                    <span className="nav-label">{item.label}</span>
+                                </button>
+                            );
+                        })}
                     </nav>
                 </aside>
 
@@ -3817,6 +3854,17 @@ const App = () => {
                     </div>
                 </aside>
             </div>
+            
+            {/* FAB for adding new events on mobile for the events section */}
+            {showEventFab && (
+                <button
+                    className="fab mobile-only"
+                    onClick={onOpenAddEventModal}
+                    title="Add new event"
+                >
+                    <Plus size={24} />
+                </button>
+            )}
 
             <AddPostModal
                 isOpen={isModalOpen}
@@ -3827,6 +3875,7 @@ const App = () => {
                 onSubmit={handleAddPost}
                 postToEdit={postToEdit}
                 currentUser={currentUser}
+                initialType={activeSection === 'events' ? 'event' : 'confession'} // Pass the type
             />
 
             <HelpAndSupportModal
