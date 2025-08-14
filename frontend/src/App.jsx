@@ -35,10 +35,9 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './App.css';
 
-// Import predefined avatars and new logo
+// Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
-import confiquelogo from './assets/confiquelogo.jpg';
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
@@ -835,7 +834,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h2 className="modal-title">
-                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Consight' : 'Event'}`}
+                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Confession' : 'Event'}`}
                         </h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
@@ -852,7 +851,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     value={formData.type}
                                     onChange={handleTypeChange}
                                 >
-                                    <option value="confession">Consight</option>
+                                    <option value="confession">Confession</option>
                                     <option value="event">Event</option>
                                 </select>
                             </div>
@@ -1464,7 +1463,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const getPostTypeLabel = (type) => {
         switch (type) {
-            case 'confession': return 'Consight';
+            case 'confession': return 'Confession';
             case 'event': return 'Event';
             case 'news': return 'News';
             default: return 'Post';
@@ -1801,8 +1800,8 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-// Consight Component - Displays only confession posts
-const ConsightComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
+// Confessions Component - Displays only confession posts
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -2210,8 +2209,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     );
 };
 
-// Consight Right Sidebar Component - Displays recent confessions
-const ConsightRightSidebar = ({ posts, onOpenPostDetail }) => {
+// Confessions Right Sidebar Component - Displays recent confessions
+const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
     const recentConfessions = [...posts]
         .filter(post => post.type === 'confession')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -2219,7 +2218,7 @@ const ConsightRightSidebar = ({ posts, onOpenPostDetail }) => {
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
-                <h3 className="widget-title">Recent Consights</h3>
+                <h3 className="widget-title">Recent Confessions</h3>
             </div>
             <div className="widget-content">
                 <div className="widget-list">
@@ -2518,6 +2517,7 @@ const App = () => {
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
     
+    // NOTE: Removed `theme` state, `setTheme` and `toggleTheme`.
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
@@ -2710,9 +2710,6 @@ const App = () => {
             document.body.style.paddingRight = '';
         };
     }, [hasOpenModal]);
-    
-    // NOTE: Removed `isSearchVisible` state and related logic as they were causing a crash.
-    // The search bar will now be always present but styled compactly.
 
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -2830,7 +2827,7 @@ const App = () => {
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Your new ${newPost.type === 'confession' ? 'Consight' : newPost.type} "${newPost.title}" has been posted successfully!`,
+                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
                             timestamp: new Date(),
                             type: 'success'
                         },
@@ -2841,7 +2838,7 @@ const App = () => {
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
-                            message: `Your ${newPost.type === 'confession' ? 'Consight' : newPost.type} "${newPost.title}" has been updated successfully!`,
+                            message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
                             timestamp: new Date(),
                             type: 'success'
                         },
@@ -2854,7 +2851,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to save ${newPost.type === 'confession' ? 'Consight' : newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
+                        message: `Failed to save ${newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -2866,7 +2863,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Network error: Could not save ${newPost.type === 'confession' ? 'Consight' : newPost.type} "${newPost.title}".`,
+                    message: `Network error: Could not save ${newPost.type} "${newPost.title}".`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -3409,10 +3406,10 @@ const App = () => {
             />,
         },
         {
-            id: 'consight',
-            label: 'Consight',
+            id: 'confessions',
+            label: 'Confessions',
             icon: <MessageCircle className="nav-icon" />,
-            component: () => <ConsightComponent
+            component: () => <ConfessionsComponent
                 posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
@@ -3428,7 +3425,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
             />,
-            rightSidebar: () => <ConsightRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
             id: 'notifications',
@@ -3493,7 +3490,7 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
         />,
-        consight: () => <ConsightComponent
+        confessions: () => <ConfessionsComponent
             posts={filteredPosts.filter(post => post.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
@@ -3542,7 +3539,7 @@ const App = () => {
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
-        consight: () => <ConsightRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
     };
@@ -3579,7 +3576,7 @@ const App = () => {
                     <div className="header-content">
                         <div className="header-left">
                             <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                                <img src={confiquelogo} alt="Confique Logo" className="app-logo-img" />
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
