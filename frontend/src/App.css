@@ -2661,6 +2661,34 @@ body.modal-open {
     justify-content: flex-end;
     padding-right: 0.5rem;
   }
+  
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
 
   /* Fixed Mobile Navigation Bar at the Bottom */
   .left-sidebar {
@@ -2971,6 +2999,31 @@ body.modal-open {
     font-size: 0.875rem;
     word-break: break-word;
     overflow-wrap: break-word;
+  }
+  
+  /* Calendar icon for mobile (in event section) */
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 50px; /* Slightly larger for better tap area */
+    height: 50px; /* Slightly larger for better tap area */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+    position: fixed; /* Position fixed relative to the viewport */
+    bottom: 5rem; /* A bit above the bottom navbar */
+    right: 1.5rem;
+    z-index: 55; /* Above main content, but below modals */
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
   }
 }
 
@@ -3388,4 +3441,46 @@ body.modal-open {
 .report-form {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   scrollbar-width: thin;
+}
+
+/* The following CSS is for the new calendar icon and its placement on mobile */
+@media (max-width: 767px) {
+  /* ... (your existing mobile styles) ... */
+
+  /* Events Header for mobile */
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  /* Calendar icon specifically on the Events page for mobile */
+  .mobile-calendar-icon-container {
+    position: fixed;
+    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    right: 1.5rem;
+    z-index: 55;
+  }
+
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
 }
