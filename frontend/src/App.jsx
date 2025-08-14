@@ -2074,8 +2074,8 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             isProfileView={true}
-                            onDeletePost={onDeletePost}
-                            onEditPost={onEditPost}
+                            onDeletePost={handleDeletePost}
+                            onEditPost={handleEditPost}
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                         />
@@ -3647,13 +3647,13 @@ const App = () => {
                             </a>
                         </div>
                         {/* Mobile Calendar Icon - visible only on smaller screens */}
-                        <div className="mobile-calendar-icon-container">
-                            {currentUser && ( // Only show if user is logged in
+                        {activeSection === 'events' && isLoggedIn && (
+                            <div className="mobile-calendar-icon-container">
                                 <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
                                     <CalendarIcon size={24} />
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        )}
 
                         <div className="header-search">
                             <div className="search-container">
