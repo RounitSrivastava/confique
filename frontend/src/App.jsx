@@ -24,8 +24,6 @@ import {
     Ticket,
     LogOut,
     ArrowRight,
-    Moon,
-    Sun,
     Edit3,
     Trash2,
     Mail,
@@ -657,11 +655,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     );
 };
 
-// Add Post Modal Component (for creating/editing consights and events)
+// Add Post Modal Component (for creating/editing confessions and events)
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
     // Initial form data structure
     const initialFormData = {
-        type: 'consight',
+        type: 'confession',
         title: '',
         content: '',
         author: currentUser?.name || '',
@@ -834,7 +832,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h2 className="modal-title">
-                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'consight' ? 'Consight' : 'Event'}`}
+                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Confession' : 'Event'}`}
                         </h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
@@ -851,7 +849,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     value={formData.type}
                                     onChange={handleTypeChange}
                                 >
-                                    <option value="consight">Consight</option>
+                                    <option value="confession">Confession</option>
                                     <option value="event">Event</option>
                                 </select>
                             </div>
@@ -1440,8 +1438,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-// Post Card Component - Displays a single post (consight, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
+// Post Card Component - Displays a single post (confession, event, or news)
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1463,7 +1461,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const getPostTypeLabel = (type) => {
         switch (type) {
-            case 'consight': return 'Consight';
+            case 'confession': return 'Confession';
             case 'event': return 'Event';
             case 'news': return 'News';
             default: return 'Post';
@@ -1800,14 +1798,14 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-// Consights Component - Displays only consight posts
-const ConsightsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
-    const consightPosts = posts.filter(post => post.type === 'consight');
+// Confessions Component - Displays only confession posts
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
+    const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
         <div>
             <div className="posts-container">
-                {consightPosts.map(post => (
+                {confessionPosts.map(post => (
                     <PostCard
                         key={post._id}
                         post={post}
@@ -2088,10 +2086,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             isProfileView={true}
-                            onDeletePost={handleDeletePost}
-                            onEditPost={handleEditPost}
+                            onDeletePost={onDeletePost}
+                            onEditPost={onEditPost}
                             registrationCount={registrations[post._id]}
-                            onReportPost={handleOpenReportModal}
+                            onReportPost={onReportPost}
                         />
                     ))}
                 </div>
@@ -2209,27 +2207,27 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     );
 };
 
-// Consights Right Sidebar Component - Displays recent consights
-const ConsightsRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const recentConsights = [...posts]
-        .filter(post => post.type === 'consight')
+// Confessions Right Sidebar Component - Displays recent confessions
+const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
+    const recentConfessions = [...posts]
+        .filter(post => post.type === 'confession')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3);
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
-                <h3 className="widget-title">Recent Consights</h3>
+                <h3 className="widget-title">Recent Confessions</h3>
             </div>
             <div className="widget-content">
                 <div className="widget-list">
-                    {recentConsights.map(post => (
+                    {recentConfessions.map(post => (
                         <div
                             key={post._id}
-                            className="recent-consight-item clickable"
+                            className="recent-confession-item clickable"
                             onClick={() => onOpenPostDetail(post)}
                         >
                             <p className="widget-item-title">{post.title}</p>
-                            <p className="consight-preview">
+                            <p className="confession-preview">
                                 {post.content.substring(0, 60)}...
                             </p>
                         </div>
@@ -2495,6 +2493,74 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
     );
 };
 
+// New Calendar Modal Component
+const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail }) => {
+    const [value, onChange] = useState(new Date());
+
+    if (!isOpen) return null;
+
+    // Filter events for the currently selected date in the calendar
+    const eventsOnSelectedDate = myCalendarEvents.filter(event =>
+        event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
+    );
+
+    // Function to add a dot to dates with events
+    const tileContent = ({ date, view }) => {
+        if (view === 'month') {
+            const hasEvent = myCalendarEvents.some(event =>
+                event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
+            );
+            return hasEvent ? <div className="event-dot"></div> : null;
+        }
+        return null;
+    };
+
+    return (
+        <div className="modal-overlay calendar-modal-overlay">
+            <div className="modal-content calendar-modal-content">
+                <div className="modal-header">
+                    <h2 className="modal-title">My Calendar</h2>
+                    <button className="modal-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="modal-body">
+                    {/* React Calendar component */}
+                    <Calendar
+                        onChange={onChange} // Updates the selected date
+                        value={value}
+                        tileContent={tileContent} // Renders event dots
+                        className="react-calendar"
+                        prev2Label={null} // Hide double arrow navigation
+                        next2Label={null} // Hide double arrow navigation
+                        locale="en-US"
+                    />
+                    <div className="events-for-date">
+                        <h3>Events on {value.toLocaleDateString()}</h3>
+                        {eventsOnSelectedDate.length > 0 ? (
+                            <ul className="event-list">
+                                {eventsOnSelectedDate.map(event => (
+                                    <li key={event._id} className="event-item" onClick={() => {
+                                        onOpenEventDetail(event); // Open event details on click
+                                        onClose(); // Close the calendar modal
+                                    }}>
+                                        <div className="event-info">
+                                            <strong>{event.title}</strong>
+                                            <small>{new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="no-events-message">No events planned for this day.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Main App Component
 const App = () => {
     const [activeSection, setActiveSection] = useState('home');
@@ -2517,7 +2583,9 @@ const App = () => {
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
     
-    // NOTE: Removed `theme` state, `setTheme` and `toggleTheme`.
+    // New state for the calendar modal
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
@@ -2527,7 +2595,8 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
+    // Update hasOpenModal to include the new calendar modal
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
 
     const formatPostDates = (post) => {
         return {
@@ -3405,13 +3474,12 @@ const App = () => {
                 onOpenEventDetail={handleOpenEventDetail}
             />,
         },
-        // CORRECTED: The ID for this menu item must match the object key used to render the component.
         {
-            id: 'consights', 
-            label: 'Consights',
+            id: 'confessions',
+            label: 'Confessions',
             icon: <MessageCircle className="nav-icon" />,
-            component: () => <ConsightsComponent
-                posts={filteredPosts.filter(post => post.type === 'consight')}
+            component: () => <ConfessionsComponent
+                posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3426,7 +3494,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
             />,
-            rightSidebar: () => <ConsightsRightSidebar posts={posts.filter(p => p.type === 'consight')} onOpenPostDetail={handleOpenPostDetail} />,
+            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
             id: 'notifications',
@@ -3440,7 +3508,6 @@ const App = () => {
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
-        // REMOVED: The theme toggle button is no longer needed.
         {
             id: 'add',
             label: 'Add',
@@ -3491,9 +3558,8 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
         />,
-        // CORRECTED: The object key for the Consights component was changed to 'consights'
-        consights: () => <ConsightsComponent
-            posts={filteredPosts.filter(post => post.type === 'consight')}
+        confessions: () => <ConfessionsComponent
+            posts={filteredPosts.filter(post => post.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -3541,8 +3607,7 @@ const App = () => {
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
-        // CORRECTED: The object key for the Consights sidebar was changed to 'consights'
-        consights: () => <ConsightsRightSidebar posts={posts.filter(p => p.type === 'consight')} onOpenPostDetail={handleOpenPostDetail} />,
+        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
     };
@@ -3574,6 +3639,16 @@ const App = () => {
                 />
             )}
 
+            {/* New Calendar Modal */}
+            {currentUser && (
+                <CalendarModal
+                    isOpen={showCalendarModal}
+                    onClose={() => setShowCalendarModal(false)}
+                    myCalendarEvents={myCalendarEvents}
+                    onOpenEventDetail={handleOpenEventDetail}
+                />
+            )}
+
             <header className="header">
                 <div className="header-container">
                     <div className="header-content">
@@ -3583,6 +3658,15 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
+                        {/* Mobile Calendar Icon - visible only on smaller screens */}
+                        <div className="mobile-calendar-icon-container">
+                            {currentUser && ( // Only show if user is logged in
+                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                    <CalendarIcon size={24} />
+                                </button>
+                            )}
+                        </div>
+
                         <div className="header-search">
                             <div className="search-container">
                                 <Search className="search-icon" />
