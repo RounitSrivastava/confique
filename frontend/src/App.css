@@ -1860,43 +1860,136 @@ body {
   }
 }
 
-/* CALENDAR SPECIFIC STYLES */
-.calendar-widget {
-  display: flex;
-  flex-direction: column;
+/* CALENDAR SPECIFIC STYLES - MODIFIED */
+
+/* Modal overlay to ensure full-screen on mobile */
+.calendar-modal-overlay {
+  z-index: 100;
+  justify-content: flex-end;
   align-items: center;
-  margin-bottom: 20px;
-  width: 100%;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
-  overflow: hidden;
 }
 
-.calendar-container {
+/* Modal content box for the calendar popup */
+.calendar-modal-content {
+  width: 100%;
+  max-width: 500px; /* Limits max width on larger screens */
+  background-color: var(--modal-bg);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 10px var(--shadow-color);
+  max-height: 90vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-  padding: 0;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  animation: slideUp 0.3s forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.calendar-modal-content .modal-header {
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.calendar-modal-content .modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .react-calendar {
   border: 1px solid var(--border-color);
   border-radius: 0.75rem;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  line-height: 1.125em;
+  font-family: 'Inter', sans-serif;
   width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 8px -2px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+  box-shadow: 0 4px 8px -2px var(--shadow-color);
   padding: 15px;
   background-color: var(--card-bg);
+  /* The calendar now lives inside the modal body, so we can remove the old margin styles */
+  margin: 0; 
+  flex-shrink: 0; /* Prevents the calendar from shrinking */
 }
 
+/* This section styles the list of events for the selected date */
+.events-for-date {
+  background-color: var(--bg-secondary);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: inset 0 1px 3px var(--shadow-color);
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.events-for-date h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.events-for-date .event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.events-for-date .event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.events-for-date .event-item:hover {
+  transform: translateX(2px);
+  background-color: var(--bg-hover);
+}
+
+.events-for-date .event-info strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.events-for-date .event-info small {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.events-for-date .no-events-message {
+  padding: 1rem;
+  text-align: center;
+  color: var(--placeholder-text);
+}
+
+/* Existing calendar styles are kept, but might be overridden by the new modal styles */
 .react-calendar__navigation {
   display: flex;
   justify-content: space-between;
