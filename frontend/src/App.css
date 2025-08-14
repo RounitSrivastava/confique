@@ -1286,6 +1286,7 @@ body {
   background-color: var(--input-bg);
   color: var(--text-primary);
   transition: all 0.2s ease-in-out;
+  height: 44px;
 }
 
 .comment-input:focus {
@@ -1847,6 +1848,1523 @@ body {
   background-color: var(--action-btn-hover);
 }
 
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* CALENDAR SPECIFIC STYLES - MODIFIED */
+
+/* Modal overlay to ensure full-screen on mobile */
+.calendar-modal-overlay {
+  z-index: 100;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Modal content box for the calendar popup */
+.calendar-modal-content {
+  width: 100%;
+  max-width: 500px;
+  background-color: var(--modal-bg);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 10px var(--shadow-color);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.3s ease-out;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 101;
+  animation: slideUp 0.3s forwards;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.calendar-modal-content .modal-header {
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.calendar-modal-content .modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.react-calendar {
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  font-family: 'Inter', sans-serif;
+  width: 100%;
+  box-shadow: 0 4px 8px -2px var(--shadow-color);
+  padding: 15px;
+  background-color: var(--card-bg);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* This section styles the list of events for the selected date */
+.events-for-date {
+  background-color: var(--bg-secondary);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: inset 0 1px 3px var(--shadow-color);
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.events-for-date h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.events-for-date .event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.events-for-date .event-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.events-for-date .event-item:hover {
+  transform: translateX(2px);
+  background-color: var(--bg-hover);
+}
+
+.events-for-date .event-info strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.events-for-date .event-info small {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.events-for-date .no-events-message {
+  padding: 1rem;
+  text-align: center;
+  color: var(--placeholder-text);
+}
+
+/* Existing calendar styles are kept, but might be overridden by the new modal styles */
+.react-calendar__navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.react-calendar__navigation button {
+  min-width: 44px;
+  background: none;
+  font-size: 1.2em;
+  padding: 6px 0;
+  color: var(--text-primary);
+  border-radius: 6px;
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  font-weight: 500;
+}
+
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus {
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
+}
+
+.react-calendar__navigation__label {
+  font-weight: 700;
+  font-size: 1.05em;
+  background-image: linear-gradient(to right, #7190fd, #9c77fe);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.react-calendar__navigation__arrow {
+  font-size: 1.5em;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 0.7em;
+  padding-bottom: 8px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 5px;
+}
+
+.react-calendar__month-view__days__day {
+  color: var(--text-primary);
+  font-size: 0.9em;
+}
+
+.react-calendar__month-view__days__day--weekend {
+  color: #dc2626;
+}
+
+.react-calendar__tile {
+  height: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding: 7px 0px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  font-weight: 500;
+  font-size: 0.8em;
+}
+
+.react-calendar__tile abbr {
+  font-size: 1em;
+}
+
+.react-calendar__tile--now {
+  background: #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.react-calendar__tile--now:enabled:hover,
+.react-calendar__tile--now:enabled:focus {
+  background: #93c5fd;
+}
+
+.react-calendar__tile--active {
+  background: #3b82f6 !important;
+  color: white !important;
+  font-weight: 700;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background-color: var(--action-btn-hover);
+}
+
+/* Event dot on calendar */
+.event-dot {
+  position: absolute;
+  bottom: 5px;
+  width: 6px;
+  height: 6px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-top: 2px;
+}
+
+/* Button to add event from calendar */
+.add-event-calendar-btn {
+  margin-top: 15px;
+  padding: 10px 18px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 250px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.add-event-calendar-btn:hover {
+  background-color: #2563eb;
+  box-shadow: 2px 5px rgba(59, 130, 246, 0.25);
+}
+
+/* Event Detail Sidebar Styling */
+.sidebar-event-item {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.sidebar-event-item:hover {
+  background-color: var(--action-btn-hover);
+  border-color: var(--border-color);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.sidebar-event-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.no-events-message {
+  text-align: center;
+  padding: 20px;
+  color: var(--placeholder-text);
+}
+
+.no-events-message p {
+  margin-top: 8px;
+}
+
+/* Clickable element styling */
+.clickable {
+  cursor: pointer;
+}
+
+/* My Calendar Events styles */
+.my-calendar-events {
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+}
+
+.sidebar-event-item {
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background-color: var(--bg-secondary);
+  border-left: 3px solid #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.sidebar-event-item:hover {
+  background-color: var(--action-btn-hover);
+  transform: translateX(2px);
+}
+
+.sidebar-event-title {
+  font-size: 0.9rem;
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sidebar-event-date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sidebar-event-time {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Profile Header Styles */
+.profile-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -1px var(--shadow-color);
+  margin-bottom: 2rem;
+  text-align: center;
+  width: 95%;
+  max-width: 950px;
+  margin: 0 auto 2rem auto;
+}
+
+.profile-avatar-container {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: visible;
+  border: 4px solid var(--border-color);
+  margin-bottom: 1rem;
+}
+
+.profile-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.edit-avatar-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 4px var(--shadow-color);
+  transition: all 0.2s ease;
+  z-index: 20;
+}
+
+.edit-avatar-button svg {
+  stroke: var(--icon-color);
+  width: 50px;
+  height: 50px;
+  transition: stroke 0.2s ease;
+}
+
+.edit-avatar-button:hover {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+.edit-avatar-button:hover svg {
+  stroke: var(--text-on-primary);
+}
+
+.profile-info {
+  flex-grow: 1;
+  text-align: center;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-name {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0.5rem 0 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.profile-phone {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0.25rem 0 1.5rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+/* Updated Profile Stats Styling */
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 1.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  background-color: var(--bg-secondary);
+  box-shadow: inset 0 1px 3px var(--shadow-color);
+  width: 90%;
+  max-width: 600px;
+  margin: 1.5rem auto 0 auto;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  overflow-x: hidden;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  padding: 0 1rem;
+  min-width: 0;
+  position: relative;
+}
+
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 80%;
+  background-color: var(--border-color);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.stat-label {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 0.25rem;
+}
+
+/* Profile Settings Modal */
+.profile-settings-modal {
+  max-width: 500px;
+}
+
+.profile-settings-body {
+  text-align: left;
+}
+
+.current-avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.current-avatar-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--border-color);
+  margin-top: 10px;
+}
+
+.current-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-options-container {
+  margin-bottom: 1.5rem;
+}
+
+.modal-subtitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.predefined-avatars-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.avatar-option {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  padding: 0;
+  background: none;
+}
+
+.avatar-option img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-option:hover {
+  transform: scale(1.05);
+}
+
+.avatar-option.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px #3b82f6;
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 1.5rem 0;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.or-text {
+  padding: 0 1rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.custom-upload-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.upload-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px dashed var(--border-color);
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-button:hover {
+  background-color: var(--action-btn-hover);
+  border-color: var(--text-secondary);
+}
+
+.custom-avatar-preview {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.custom-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid var(--border-color);
+}
+
+.custom-avatar-preview .remove-image-btn {
+  top: 5px;
+  right: 5px;
+}
+
+/* Notifications Styles */
+.notifications-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 1rem;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px var(--shadow-color);
+  transition: background-color 0.2s ease;
+}
+
+.notification-item:hover {
+  background-color: var(--action-btn-hover);
+}
+
+.notification-icon {
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+.notification-item.warning .notification-icon {
+  color: #f59e0b;
+}
+
+.notification-item.success .notification-icon {
+  color: #10b981;
+}
+
+.notification-content {
+  flex-grow: 1;
+}
+
+.notification-text {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.notification-timestamp {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.report-reason {
+  display: block;
+  font-size: 0.9rem;
+  color: #ef4444;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.admin-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 10px;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+/* Modal open state */
+body.modal-open {
+  overflow: hidden;
+  padding-right: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .post-text {
+    max-height: 3em;
+  }
+
+  .image-upload-preview {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+
+  .header-content {
+    flex-wrap: wrap;
+    height: auto;
+    padding-bottom: 0.5rem;
+  }
+
+  .header-left {
+    order: 1;
+    width: 30%;
+    justify-content: flex-start;
+  }
+
+  .header-search {
+    order: 2;
+    width: 100%;
+    margin: 0.75rem auto;
+    max-width: none;
+  }
+
+  .header-right {
+    order: 3;
+    width: 30%;
+    justify-content: flex-end;
+    padding-right: 0.5rem;
+  }
+  
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+
+  /* Calendar icon specifically on the Events page for mobile */
+  .mobile-calendar-icon-container {
+    position: fixed;
+    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    right: 1.5rem;
+    z-index: 55;
+  }
+
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+
+  /* Fixed Mobile Navigation Bar at the Bottom */
+  .left-sidebar {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 4rem;
+    padding: 0.5rem 1rem;
+    flex-direction: row;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -1px 3px 0 var(--shadow-color);
+    z-index: 60;
+  }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .main-layout-container {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    padding-right: 0;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 1rem;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    font-size: 0.875rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Event Detail Page Mobile Adjustments */
+  .event-detail-header {
+    height: 200px;
+  }
+
+  .event-detail-title-card {
+    margin-top: -60px;
+    padding: 15px;
+  }
+
+  .event-detail-title-card h1 {
+    font-size: 20px;
+  }
+
+  .event-detail-meta-item {
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+
+  .event-detail-price {
+    font-size: 18px;
+  }
+
+  .event-detail-book-button {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  .event-detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-about-section,
+  .event-detail-info-grid,
+  .event-detail-venue-section {
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .event-detail-about-section h2,
+  .event-detail-venue-section h2 {
+    font-size: 18px;
+  }
+
+  .venue-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Profile Header Mobile */
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    margin: 0 auto 1rem auto;
+  }
+
+  .profile-avatar-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+    overflow: visible;
+    border: 4px solid var(--border-color);
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  .profile-info {
+    text-align: center;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .stat-item {
+    align-items: center;
+    flex-basis: 50%;
+  }
+
+  .stat-item:nth-child(2)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-item:nth-child(4)::after,
+  .stat-item:nth-child(2)::after {
+    content: none;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    text-transform: capitalize;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .profile-phone {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Increased size of the edit circle and icon for mobile */
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
+  .posts-container {
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .post-card {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .comment-section {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-input-form {
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .comment-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    height: auto;
+    min-height: 40px;
+    min-width: 0;
+  }
+
+  .comment-submit-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .comment-submit-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .comments-list {
+    padding-right: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 30vh;
+    min-height: 100px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .comments-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comment-item {
+    padding: 0.75rem;
+    min-width: 0;
+  }
+
+  .comment-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .comment-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-author {
+    font-size: 0.875rem;
+  }
+
+  .comment-text {
+    font-size: 0.875rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Calendar icon for mobile (in event section) */
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 50px; /* Slightly larger for better tap area */
+    height: 50px; /* Slightly larger for better tap area */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+    position: fixed; /* Position fixed relative to the viewport */
+    bottom: 5.5rem; /* A bit above the bottom navbar */
+    right: 1.5rem;
+    z-index: 55; /* Above main content, but below modals */
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+}
+
+@media (min-width: 768px) {
+  .left-sidebar {
+    width: 14rem;
+    padding: 1.5rem;
+  }
+
+  .nav-button {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-button .nav-icon {
+    margin-bottom: 0;
+  }
+
+  .nav-button .nav-label {
+    display: block;
+  }
+
+  .main-layout-container {
+    padding-top: 4rem;
+    padding-right: 0;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .main-content {
+    padding: 2rem;
+    margin-left: 14rem;
+    margin-right: 17rem;
+    width: calc(100% - 14rem - 17rem);
+  }
+
+  .profile-page-main-content {
+    border-right: none !important;
+  }
+
+  .profile-page-main-content .content-padding {
+    max-width: 950px;
+  }
+
+  .right-sidebar {
+    padding: 2rem 1.5rem;
+    display: block;
+    width: 17rem;
+  }
+
+  .header-content {
+    height: 4rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 950px;
+    margin: 0 auto 2rem auto;
+    padding: 2rem;
+  }
+
+  .profile-avatar-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: visible;
+    border: 4px solid var(--border-color);
+    margin-bottom: 1rem;
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .edit-avatar-button {
+    width: 70px;
+    height: 70px;
+    bottom: 0;
+    right: 0;
+  }
+
+  .edit-avatar-button svg {
+    stroke: var(--icon-color);
+    width: 50px;
+    height: 50px;
+    transition: stroke 0.2s ease;
+  }
+
+  .edit-avatar-button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+  }
+
+  .edit-avatar-button:hover svg {
+    stroke: var(--text-on-primary);
+  }
+
+  .profile-info {
+    text-align: center;
+    flex-grow: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-name {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0.5rem 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .profile-phone {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 1.5rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .profile-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background-color: var(--bg-secondary);
+    box-shadow: inset 0 1px 3px var(--shadow-color);
+    width: 90%;
+    max-width: 600px;
+    margin: 1.5rem auto 0 auto;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: hidden;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    padding: 0 1rem;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stat-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .stat-label {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.25rem;
+  }
+
+  .profile-name {
+    font-size: 2.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .profile-phone {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+/* Hide scrollbars for all relevant containers */
+.main-content,
+.comments-list,
+.modal-form-container,
+.qr-code-scroll-container,
+.profile-settings-modal,
+.left-sidebar,
+.right-sidebar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.main-content::-webkit-scrollbar,
+.comments-list::-webkit-scrollbar,
+.modal-form-container::-webkit-scrollbar,
+.qr-code-scroll-container::-webkit-scrollbar,
+.profile-settings-modal::-webkit-scrollbar,
+.left-sidebar::-webkit-scrollbar,
+.right-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+
+
+/* Registration Modal Specific Styles */
+.registration-modal {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.modal-body-container {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 20px 20px;
+}
+
+.qr-payment-section {
+  margin: 20px 0;
+}
+
+.qr-code-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+  background-color: var(--bg-secondary);
+  text-align: center;
+}
+
+.payment-qr {
+  max-width: 100%;
+  max-height: 250px;
+  display: block;
+  margin: 0 auto;
+}
+
+.payment-link-section {
+  text-align: center;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 15px 0;
+  background-color: var(--bg-secondary);
+}
+
+.payment-link-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.payment-link-button:hover {
+  background-color: #2563eb;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* New CSS to center a single button in a modal */
+.modal-actions.single-button {
+  justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--action-btn-hover);
+}
+
 /* Report Modal Styles */
 .report-modal {
   max-width: 400px;
@@ -1933,7 +3451,6 @@ body {
   scrollbar-width: thin;
 }
 
-
 /* The following CSS is for the new calendar icon and its placement on mobile */
 @media (max-width: 767px) {
   /* ... (your existing mobile styles) ... */
@@ -1947,19 +3464,13 @@ body {
     padding: 0 1rem;
   }
 
-  .mobile-calendar-icon-container {
-    position: fixed;
-    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
-    right: 1.5rem;
-    z-index: 55;
-  }
-
+  /* Calendar icon specifically on the Events page for mobile */
   .mobile-calendar-icon {
     background-color: var(--primary-color-faded);
     color: var(--primary-color);
     border: none;
-    width: 60px;
-    height: 60px;
+    width: 60px; /* Increased size */
+    height: 60px; /* Increased size */
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1967,11 +3478,15 @@ body {
     cursor: pointer;
     box-shadow: 0 4px 8px var(--shadow-color);
     transition: all 0.2s ease-in-out;
+    position: fixed; /* Position fixed relative to the viewport */
+    bottom: 5.5rem; /* A bit above the bottom navbar */
+    right: 1.5rem;
+    z-index: 55; /* Above main content, but below modals */
   }
-
+  
   .mobile-calendar-icon svg {
-    width: 30px;
-    height: 30px;
+    width: 30px; /* Increased icon size */
+    height: 30px; /* Increased icon size */
     color: var(--primary-color);
     transition: color 0.2s ease-in-out;
   }
@@ -1980,7 +3495,7 @@ body {
     background-color: var(--primary-color);
     color: var(--text-on-primary);
   }
-
+  
   .mobile-calendar-icon:hover svg {
     color: var(--text-on-primary);
   }
@@ -2001,7 +3516,829 @@ body {
     box-shadow: 0 -1px 3px 0 var(--shadow-color);
     z-index: 60;
   }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+  }
 
+  .main-layout-container {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    padding-right: 0;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 1rem;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    font-size: 0.875rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Event Detail Page Mobile Adjustments */
+  .event-detail-header {
+    height: 200px;
+  }
+
+  .event-detail-title-card {
+    margin-top: -60px;
+    padding: 15px;
+  }
+
+  .event-detail-title-card h1 {
+    font-size: 20px;
+  }
+
+  .event-detail-meta-item {
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+
+  .event-detail-price {
+    font-size: 18px;
+  }
+
+  .event-detail-book-button {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  .event-detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-about-section,
+  .event-detail-info-grid,
+  .event-detail-venue-section {
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .event-detail-about-section h2,
+  .event-detail-venue-section h2 {
+    font-size: 18px;
+  }
+
+  .venue-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Profile Header Mobile */
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    margin: 0 auto 1rem auto;
+  }
+
+  .profile-avatar-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+    overflow: visible;
+    border: 4px solid var(--border-color);
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  .profile-info {
+    text-align: center;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .stat-item {
+    align-items: center;
+    flex-basis: 50%;
+  }
+
+  .stat-item:nth-child(2)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-item:nth-child(4)::after,
+  .stat-item:nth-child(2)::after {
+    content: none;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    text-transform: capitalize;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .profile-phone {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Increased size of the edit circle and icon for mobile */
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
+  .posts-container {
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .post-card {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .comment-section {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-input-form {
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .comment-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    height: auto;
+    min-height: 40px;
+    min-width: 0;
+  }
+
+  .comment-submit-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .comment-submit-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .comments-list {
+    padding-right: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 30vh;
+    min-height: 100px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .comments-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comment-item {
+    padding: 0.75rem;
+    min-width: 0;
+  }
+
+  .comment-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .comment-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-author {
+    font-size: 0.875rem;
+  }
+
+  .comment-text {
+    font-size: 0.875rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  /* Calendar icon for mobile (in event section) */
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 60px; /* Increased size */
+    height: 60px; /* Increased size */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+    position: fixed; /* Position fixed relative to the viewport */
+    bottom: 5.5rem; /* A bit above the bottom navbar */
+    right: 1.5rem;
+    z-index: 55; /* Above main content, but below modals */
+  }
+  
+  .mobile-calendar-icon svg {
+    width: 30px; /* Increased icon size */
+    height: 30px; /* Increased icon size */
+    color: var(--primary-color);
+    transition: color 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+  
+  .mobile-calendar-icon:hover svg {
+    color: var(--text-on-primary);
+  }
+}
+
+@media (min-width: 768px) {
+  .left-sidebar {
+    width: 14rem;
+    padding: 1.5rem;
+  }
+
+  .nav-button {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .nav-button .nav-icon {
+    margin-bottom: 0;
+  }
+
+  .nav-button .nav-label {
+    display: block;
+  }
+
+  .main-layout-container {
+    padding-top: 4rem;
+    padding-right: 0;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .main-content {
+    padding: 2rem;
+    margin-left: 14rem;
+    margin-right: 17rem;
+    width: calc(100% - 14rem - 17rem);
+  }
+
+  .profile-page-main-content {
+    border-right: none !important;
+  }
+
+  .profile-page-main-content .content-padding {
+    max-width: 950px;
+  }
+
+  .right-sidebar {
+    padding: 2rem 1.5rem;
+    display: block;
+    width: 17rem;
+  }
+
+  .header-content {
+    height: 4rem;
+  }
+
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    max-width: 950px;
+    margin: 0 auto 2rem auto;
+    padding: 2rem;
+  }
+
+  .profile-avatar-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: visible;
+    border: 4px solid var(--border-color);
+    margin-bottom: 1rem;
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .edit-avatar-button {
+    width: 70px;
+    height: 70px;
+    bottom: 0;
+    right: 0;
+  }
+
+  .edit-avatar-button svg {
+    stroke: var(--icon-color);
+    width: 50px;
+    height: 50px;
+    transition: stroke 0.2s ease;
+  }
+
+  .edit-avatar-button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transform: scale(1.1);
+  }
+
+  .edit-avatar-button:hover svg {
+    stroke: var(--text-on-primary);
+  }
+
+  .profile-info {
+    text-align: center;
+    flex-grow: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-name {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0.5rem 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .profile-phone {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin: 0.25rem 0 1.5rem 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+  }
+
+  .profile-stats {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 1.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    background-color: var(--bg-secondary);
+    box-shadow: inset 0 1px 3px var(--shadow-color);
+    width: 90%;
+    max-width: 600px;
+    margin: 1.5rem auto 0 auto;
+    flex-wrap: nowrap;
+    gap: 1rem;
+    overflow-x: hidden;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    padding: 0 1rem;
+    min-width: 0;
+    position: relative;
+  }
+
+  .stat-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .stat-label {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.25rem;
+  }
+
+  .profile-name {
+    font-size: 2.25rem;
+    margin-top: 0.5rem;
+  }
+
+  .profile-phone {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* ===== SCROLLBAR STYLES ===== */
+/* Hide scrollbars for all relevant containers */
+.main-content,
+.comments-list,
+.modal-form-container,
+.qr-code-scroll-container,
+.profile-settings-modal,
+.left-sidebar,
+.right-sidebar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.main-content::-webkit-scrollbar,
+.comments-list::-webkit-scrollbar,
+.modal-form-container::-webkit-scrollbar,
+.qr-code-scroll-container::-webkit-scrollbar,
+.profile-settings-modal::-webkit-scrollbar,
+.left-sidebar::-webkit-scrollbar,
+.right-sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+
+
+/* Registration Modal Specific Styles */
+.registration-modal {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
+.modal-body-container {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 20px 20px;
+}
+
+.qr-payment-section {
+  margin: 20px 0;
+}
+
+.qr-code-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+  background-color: var(--bg-secondary);
+  text-align: center;
+}
+
+.payment-qr {
+  max-width: 100%;
+  max-height: 250px;
+  display: block;
+  margin: 0 auto;
+}
+
+.payment-link-section {
+  text-align: center;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin: 15px 0;
+  background-color: var(--bg-secondary);
+}
+
+.payment-link-button {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #3b82f6;
+  color: white;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.payment-link-button:hover {
+  background-color: #2563eb;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 0;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* New CSS to center a single button in a modal */
+.modal-actions.single-button {
+  justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--action-btn-hover);
+}
+
+/* Report Modal Styles */
+.report-modal {
+  max-width: 400px;
+  width: 90%;
+}
+
+.report-form {
+  padding: 0 20px;
+  height: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.modal-reason-heading {
+  margin-bottom: 15px;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.report-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.report-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.report-option:hover {
+  background-color: var(--action-btn-hover);
+}
+
+.report-option input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* Make the icon bigger inside the report option */
+.report-option svg {
+  width: 24px;
+  height: 24px;
+  color: var(--icon-color);
+  flex-shrink: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 0;
+}
+
+/* Custom scrollbar for report-form */
+.report-form::-webkit-scrollbar {
+  width: 8px;
+}
+
+.report-form::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 10px;
+}
+
+.report-form::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 10px;
+  border: 2px solid var(--scrollbar-track);
+}
+
+.report-form::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Fallback for Firefox */
+.report-form {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+/* The following CSS is for the new calendar icon and its placement on mobile */
+@media (max-width: 767px) {
+  /* ... (your existing mobile styles) ... */
+
+  /* Events Header for mobile */
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+  
+  .mobile-calendar-icon-container {
+    position: fixed;
+    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    right: 1.5rem;
+    z-index: 55;
+  }
+
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 60px; /* Increased size */
+    height: 60px; /* Increased size */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .mobile-calendar-icon svg {
+    width: 30px; /* Increased icon size */
+    height: 30px; /* Increased icon size */
+    color: var(--primary-color);
+    transition: color 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+  
+  .mobile-calendar-icon:hover svg {
+    color: var(--text-on-primary);
+  }
+  
+  /* Fix: Correct positioning for the calendar modal on mobile to be above the bottom nav */
+  .calendar-modal-content {
+    bottom: 4rem; /* Match the height of the bottom navbar */
+    border-radius: 12px 12px 0 0;
+    max-height: calc(100vh - 4rem - 20px); /* Adjust max-height to fit above the navbar and with some padding */
+  }
+
+  /* Fixed Mobile Navigation Bar at the Bottom */
+  .left-sidebar {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 4rem;
+    padding: 0.5rem 1rem;
+    flex-direction: row;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -1px 3px 0 var(--shadow-color);
+    z-index: 60;
+  }
+  
   .sidebar-nav {
     flex-direction: row;
     width: 100%;
