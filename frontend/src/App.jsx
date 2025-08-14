@@ -24,8 +24,6 @@ import {
     Ticket,
     LogOut,
     ArrowRight,
-    Moon,
-    Sun,
     Edit3,
     Trash2,
     Mail,
@@ -1441,7 +1439,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onDeletePost, onEditPost, isProfileView, registrationCount, onReportPost }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -2495,6 +2493,74 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
     );
 };
 
+// New Calendar Modal Component
+const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail }) => {
+    const [value, onChange] = useState(new Date());
+
+    if (!isOpen) return null;
+
+    // Filter events for the currently selected date in the calendar
+    const eventsOnSelectedDate = myCalendarEvents.filter(event =>
+        event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
+    );
+
+    // Function to add a dot to dates with events
+    const tileContent = ({ date, view }) => {
+        if (view === 'month') {
+            const hasEvent = myCalendarEvents.some(event =>
+                event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
+            );
+            return hasEvent ? <div className="event-dot"></div> : null;
+        }
+        return null;
+    };
+
+    return (
+        <div className="modal-overlay calendar-modal-overlay">
+            <div className="modal-content calendar-modal-content">
+                <div className="modal-header">
+                    <h2 className="modal-title">My Calendar</h2>
+                    <button className="modal-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="modal-body">
+                    {/* React Calendar component */}
+                    <Calendar
+                        onChange={onChange} // Updates the selected date
+                        value={value}
+                        tileContent={tileContent} // Renders event dots
+                        className="react-calendar"
+                        prev2Label={null} // Hide double arrow navigation
+                        next2Label={null} // Hide double arrow navigation
+                        locale="en-US"
+                    />
+                    <div className="events-for-date">
+                        <h3>Events on {value.toLocaleDateString()}</h3>
+                        {eventsOnSelectedDate.length > 0 ? (
+                            <ul className="event-list">
+                                {eventsOnSelectedDate.map(event => (
+                                    <li key={event._id} className="event-item" onClick={() => {
+                                        onOpenEventDetail(event); // Open event details on click
+                                        onClose(); // Close the calendar modal
+                                    }}>
+                                        <div className="event-info">
+                                            <strong>{event.title}</strong>
+                                            <small>{new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="no-events-message">No events planned for this day.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Main App Component
 const App = () => {
     const [activeSection, setActiveSection] = useState('home');
@@ -2517,7 +2583,9 @@ const App = () => {
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
     
-    // NOTE: Removed `theme` state, `setTheme` and `toggleTheme`.
+    // New state for the calendar modal
+    const [showCalendarModal, setShowCalendarModal] = useState(false);
+
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
@@ -2527,7 +2595,8 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost;
+    // Update hasOpenModal to include the new calendar modal
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
 
     const formatPostDates = (post) => {
         return {
@@ -3439,7 +3508,6 @@ const App = () => {
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
-        // REMOVED: The theme toggle button is no longer needed.
         {
             id: 'add',
             label: 'Add',
@@ -3571,6 +3639,16 @@ const App = () => {
                 />
             )}
 
+            {/* New Calendar Modal */}
+            {currentUser && (
+                <CalendarModal
+                    isOpen={showCalendarModal}
+                    onClose={() => setShowCalendarModal(false)}
+                    myCalendarEvents={myCalendarEvents}
+                    onOpenEventDetail={handleOpenEventDetail}
+                />
+            )}
+
             <header className="header">
                 <div className="header-container">
                     <div className="header-content">
@@ -3580,6 +3658,15 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
+                        {/* Mobile Calendar Icon - visible only on smaller screens */}
+                        <div className="mobile-calendar-icon-container">
+                            {currentUser && ( // Only show if user is logged in
+                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                    <CalendarIcon size={24} />
+                                </button>
+                            )}
+                        </div>
+
                         <div className="header-search">
                             <div className="search-container">
                                 <Search className="search-icon" />

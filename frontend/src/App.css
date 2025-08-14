@@ -3084,7 +3084,159 @@ body.modal-open {
 .right-sidebar::-webkit-scrollbar {
   display: none;
 }
+/* ... (existing styles) */
 
+/* Mobile Calendar Icon */
+.mobile-calendar-icon-container {
+    display: none; /* Hide by default */
+    margin-left: auto;
+}
+
+@media (max-width: 768px) {
+    .mobile-calendar-icon-container {
+        display: flex;
+        align-items: center;
+    }
+    
+    .mobile-calendar-icon {
+        background: none;
+        border: none;
+        color: var(--text-color);
+        cursor: pointer;
+        padding: 8px;
+        border-radius: var(--border-radius-lg);
+        transition: background-color 0.2s ease;
+    }
+
+    .mobile-calendar-icon:hover {
+        background-color: var(--hover-color);
+    }
+}
+
+/* Calendar Modal Styles */
+.calendar-modal-overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.calendar-modal-content {
+    background: var(--background-color);
+    border-radius: var(--border-radius-xl);
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-modal-content .modal-body {
+    padding: 1rem 0;
+}
+
+.calendar-modal-content .modal-header {
+    margin-bottom: 1rem;
+}
+
+.calendar-modal-content .modal-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* React Calendar customizations */
+.react-calendar {
+    border: 1px solid var(--border-color);
+    background-color: var(--card-background-color);
+    border-radius: var(--border-radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+    width: 100%;
+}
+
+.react-calendar button {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.react-calendar__navigation button {
+    color: var(--primary-color);
+}
+
+.react-calendar__tile {
+    padding: 0.5rem;
+    position: relative;
+}
+
+.react-calendar__tile--now {
+    background-color: var(--primary-color-light);
+    border-radius: var(--border-radius-md);
+}
+
+.react-calendar__tile--active,
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+    background-color: var(--primary-color);
+    color: #fff;
+    border-radius: var(--border-radius-md);
+}
+
+.event-dot {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: var(--secondary-color);
+    border-radius: 50%;
+}
+
+.events-for-date {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+
+.events-for-date h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.event-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.event-item {
+    padding: 1rem;
+    background-color: var(--secondary-background-color);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.event-item:hover {
+    background-color: var(--hover-color);
+}
+
+.event-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.event-info strong {
+    font-weight: 700;
+}
+
+.event-info small {
+    color: var(--text-muted);
+}
 
 /* Registration Modal Specific Styles */
 .registration-modal {
@@ -3092,6 +3244,8 @@ body.modal-open {
   display: flex;
   flex-direction: column;
 }
+
+
 
 .modal-body-container {
   overflow-y: auto;
