@@ -2793,8 +2793,6 @@ const App = () => {
             }
             return [...prev, event];
         });
-        // Added this line to open the calendar modal after adding the event
-        setShowCalendarModal(true);
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
