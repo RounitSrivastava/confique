@@ -939,7 +939,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
-                                    
+                                   
                                     <div className="form-group">
                                         <label className="form-label">Duration</label>
                                         <input
@@ -2021,6 +2021,14 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         }, 0)
     };
 
+    const handleDeletePost = (postId) => {
+        onDeletePost(postId);
+    };
+
+    const handleEditPost = (post) => {
+        onEditPost(post);
+    };
+
     return (
         <div>
             <h2 className="page-title">Your Profile</h2>
@@ -2570,7 +2578,7 @@ const App = () => {
     const [myCalendarEvents, setMyCalendarEvents] = useState([]);
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-    
+   
     // New state for the calendar modal
     const [showCalendarModal, setShowCalendarModal] = useState(false);
 
@@ -3353,9 +3361,9 @@ const App = () => {
 
             if (res.ok) {
                 const { avatar: updatedAvatar } = await res.json();
-                
+               
                 const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
-                
+               
                 setCurrentUser(newCurrentUser);
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
@@ -3371,7 +3379,7 @@ const App = () => {
                             }
                             return comment;
                         });
-                        
+                       
                         return { ...updatedPost, commentData: updatedComments };
                     })
                 );
