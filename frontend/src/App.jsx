@@ -978,18 +978,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label className="form-label">Registration Open</label>
-                                        <select
-                                            className="form-select"
-                                            value={formData.registrationOpen}
-                                            onChange={(e) => setFormData(prev => ({ ...prev, registrationOpen: e.target.value === 'true' }))}
-                                            name="registrationOpen"
-                                        >
-                                            <option value="true">Yes</option>
-                                            <option value="false">No</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
                                         <label className="form-label checkbox-label">
                                             <input
                                                 type="checkbox"
