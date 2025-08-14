@@ -716,7 +716,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, init
         } else if (isOpen) {
             setFormData(prev => ({
                 ...initialFormData,
-                author: currentUser?.name || ''
+                author: currentUser?.name || '',
+                type: initialType // Use the initialType prop
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
@@ -2583,8 +2584,8 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
     
-    // New state for showing the "Add Event" floating button
-    const [showEventFab, setShowEventFab] = useState(false);
+    // New state for showing the floating calendar button on mobile
+    const [showMobileCalendar, setShowMobileCalendar] = useState(false);
 
     // Update hasOpenModal to include the new calendar modal
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
@@ -2771,10 +2772,10 @@ const App = () => {
         };
     }, [hasOpenModal]);
     
-    // Control the visibility of the FAB based on the active section
+    // Control the visibility of the mobile calendar button based on the active section
     useEffect(() => {
-        setShowEventFab(activeSection === 'events' && !selectedEvent && !selectedPost);
-    }, [activeSection, selectedEvent, selectedPost]);
+        setShowMobileCalendar(activeSection === 'events' && isLoggedIn);
+    }, [activeSection, isLoggedIn]);
 
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -3421,13 +3422,12 @@ const App = () => {
         setShowProfileSettingsModal(false);
     };
 
-    // New function to open the AddPostModal for events
     const onOpenAddEventModal = () => {
         if (!isLoggedIn) {
             setShowLoginModal(true);
             return;
         }
-        setPostToEdit(null); // Ensure no post is being edited
+        setPostToEdit(null);
         setIsModalOpen(true);
     };
 
@@ -3528,20 +3528,6 @@ const App = () => {
                     setIsModalOpen(true);
                 }
             }
-        },
-        // Adding a new entry for the Calendar Modal in the mobile nav
-        {
-            id: 'my-calendar',
-            label: 'My Calendar',
-            icon: <CalendarIcon className="nav-icon" />,
-            component: null, // No component, as it opens a modal
-            action: () => {
-                if (isLoggedIn) {
-                    setShowCalendarModal(true);
-                } else {
-                    setShowLoginModal(true);
-                }
-            },
         }
     ];
 
@@ -3677,15 +3663,7 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
-                        {/* Mobile Calendar Icon - This is now in the nav bar instead of header */}
-                        <div className="mobile-calendar-icon-container">
-                            {currentUser && (
-                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
-                                    <CalendarIcon size={24} />
-                                </button>
-                            )}
-                        </div>
-
+                        {/* Removed the mobile calendar icon from here */}
                         <div className="header-search">
                             <div className="search-container">
                                 <Search className="search-icon" />
@@ -3727,8 +3705,7 @@ const App = () => {
                 <aside className="left-sidebar">
                     <nav className="sidebar-nav">
                         {menuItems.map(item => {
-                             // Skip rendering the 'add' item in the main nav on mobile, as it will be a floating button
-                            if (item.id === 'add' && showEventFab) {
+                            if (item.id === 'add') {
                                 return null;
                             }
                             return (
@@ -3855,14 +3832,14 @@ const App = () => {
                 </aside>
             </div>
             
-            {/* FAB for adding new events on mobile for the events section */}
-            {showEventFab && (
+            {/* Conditional FAB for adding new events on mobile */}
+            {showMobileCalendar && currentUser && (
                 <button
-                    className="fab mobile-only"
-                    onClick={onOpenAddEventModal}
-                    title="Add new event"
+                    className="fab mobile-only fab-calendar"
+                    onClick={() => setShowCalendarModal(true)}
+                    title="View My Calendar"
                 >
-                    <Plus size={24} />
+                    <CalendarIcon size={24} />
                 </button>
             )}
 
@@ -3875,7 +3852,7 @@ const App = () => {
                 onSubmit={handleAddPost}
                 postToEdit={postToEdit}
                 currentUser={currentUser}
-                initialType={activeSection === 'events' ? 'event' : 'confession'} // Pass the type
+                initialType={activeSection === 'events' ? 'event' : 'confession'}
             />
 
             <HelpAndSupportModal
