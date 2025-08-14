@@ -9,7 +9,7 @@ const commentSchema = new mongoose.Schema({
 });
 
 const postSchema = new mongoose.Schema({
-    type: { type: String, enum: ['consights', 'event', 'news'], required: true },
+    type: { type: String, enum: ['confession', 'event', 'news'], required: true },
     title: { type: String, required: true },
     content: { type: String, required: true },
     images: [{ type: String }],
