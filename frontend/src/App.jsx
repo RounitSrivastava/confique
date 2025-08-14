@@ -1439,7 +1439,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -3734,6 +3734,7 @@ const App = () => {
                         {selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
+                                    key={selectedPost._id}
                                     post={selectedPost}
                                     onLike={handleLikePost}
                                     onShare={handleShareClick}
