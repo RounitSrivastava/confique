@@ -3405,8 +3405,9 @@ const App = () => {
                 onOpenEventDetail={handleOpenEventDetail}
             />,
         },
+        // CORRECTED: The ID for this menu item must match the object key used to render the component.
         {
-            id: 'consights',
+            id: 'consights', 
             label: 'Consights',
             icon: <MessageCircle className="nav-icon" />,
             component: () => <ConsightsComponent
@@ -3490,6 +3491,7 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
         />,
+        // CORRECTED: The object key for the Consights component was changed to 'consights'
         consights: () => <ConsightsComponent
             posts={filteredPosts.filter(post => post.type === 'consight')}
             onLike={handleLikePost}
@@ -3539,6 +3541,7 @@ const App = () => {
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
+        // CORRECTED: The object key for the Consights sidebar was changed to 'consights'
         consights: () => <ConsightsRightSidebar posts={posts.filter(p => p.type === 'consight')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
