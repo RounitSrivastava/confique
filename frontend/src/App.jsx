@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API_URL from './api';
+import confiquelogo from './assets/confiquelogo.jpg';
 import {
     Home,
     Calendar as CalendarIcon,
@@ -3706,7 +3707,7 @@ const App = () => {
                     <div className="header-content">
                         <div className="header-left">
                             <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-message-circle-code"><path d="M7.9 20A10 10 0 1 0 4 16.1L2 22Z" /><path d="m10 8-2 2 2 2" /><path d="m14 8 2 2-2 2" /></svg>
+                        <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
