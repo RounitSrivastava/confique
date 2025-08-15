@@ -27,7 +27,8 @@ import {
     Edit3,
     Trash2,
     Mail,
-    Flag
+    Flag,
+    Check
 } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -1475,7 +1476,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const handleAddToCalendarClick = () => {
         if (post.type === 'event' && post.eventStartDate) {
-            onAddToCalendar(post);
+            onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
         }
     };
@@ -2491,13 +2492,13 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
         event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
     );
 
-    // Function to add a dot to dates with events
+    // Function to add a tick mark to dates with events
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
             const hasEvent = myCalendarEvents.some(event =>
                 event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
-            return hasEvent ? <div className="event-dot"></div> : null;
+            return hasEvent ? <Check size={16} className="event-tick" /> : null;
         }
         return null;
     };
@@ -2516,7 +2517,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                     <Calendar
                         onChange={onChange} // Updates the selected date
                         value={value}
-                        tileContent={tileContent} // Renders event dots
+                        tileContent={tileContent} // Renders event ticks
                         className="react-calendar"
                         prev2Label={null} // Hide double arrow navigation
                         next2Label={null} // Hide double arrow navigation
@@ -2527,10 +2528,14 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                         {eventsOnSelectedDate.length > 0 ? (
                             <ul className="event-list">
                                 {eventsOnSelectedDate.map(event => (
-                                    <li key={event._id} className="event-item" onClick={() => {
-                                        onOpenEventDetail(event); // Open event details on click
-                                        onClose(); // Close the calendar modal
-                                    }}>
+                                    <li 
+                                        key={event._id} 
+                                        className="event-item clickable" 
+                                        onClick={() => {
+                                            onOpenEventDetail(event); // Open event details on click
+                                            onClose(); // Close the calendar modal
+                                        }}
+                                    >
                                         <div className="event-info">
                                             <strong>{event.title}</strong>
                                             <small>{new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
