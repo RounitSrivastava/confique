@@ -1140,10 +1140,10 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
     
-    const hasMoreContent = event?.content?.length > 200;
+    const hasMoreContent = event.content.length > 200;
 
     const formatDateRange = () => {
-        if (!event?.eventStartDate) return "N/A";
+        if (!event.eventStartDate) return "N/A";
 
         const start = new Date(event.eventStartDate);
         const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
@@ -1219,7 +1219,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             onRequireLogin();
             return;
         }
-        if (event?.eventStartDate) {
+        if (event.eventStartDate) {
             onAddToCalendar(event); // This saves the event
             onShowCalendarAlert();
         }
@@ -1234,22 +1234,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
-
-    if (!event) {
-        return (
-            <div className="event-detail-page-container">
-                <div className="event-detail-header">
-                    <button onClick={onClose} className="event-detail-back-button">
-                        <ArrowLeft size={24} />
-                    </button>
-                </div>
-                <div className="placeholder-card">
-                    <p className="placeholder-text">Event details not found.</p>
-                </div>
-            </div>
-        );
-    }
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
 
     return (
         <ErrorBoundary>
@@ -2141,7 +2125,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 };
 
 // Events Right Sidebar Component - Displays calendar and user's upcoming events
-const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
+const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail, onShowEventDetailsAndCloseCalendar }) => {
     const [value, onChange] = useState(new Date());
 
     const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
@@ -2152,7 +2136,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                 post.eventStartDate &&
                 new Date(post.eventStartDate).toDateString() === date.toDateString()
             );
-            return hasEvent ? <Check size={16} className="event-tick" /> : null;
+            return hasEvent ? <div className="event-dot"></div> : null;
         }
         return null;
     };
@@ -2189,7 +2173,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                                 <div
                                     key={event._id}
                                     className="sidebar-event-item clickable"
-                                    onClick={() => onOpenEventDetail(event)}
+                                    onClick={() => onShowEventDetailsAndCloseCalendar(event)}
                                 >
                                     <h4 className="sidebar-event-title">{event.title}</h4>
                                     <div className="sidebar-event-date">
@@ -2514,7 +2498,6 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
             const hasEvent = myCalendarEvents.some(event =>
                 event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
-            // Replaced the dot with a checkmark icon
             return hasEvent ? <Check size={16} className="event-tick" /> : null;
         }
         return null;
@@ -2566,7 +2549,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                     </div>
                 </div>
             </div>
-        </ErrorBoundary>
+        </div>
     );
 };
 
@@ -2606,7 +2589,6 @@ const App = () => {
     
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
-    const [showShareAlert, setShowShareAlert] = useState(false);
 
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
@@ -2617,7 +2599,7 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert || showShareAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
         return {
@@ -3472,6 +3454,12 @@ const App = () => {
         }
         setShowProfileSettingsModal(false);
     };
+    
+    // New function to handle redirecting from the calendar modal
+    const handleShowEventDetailsAndCloseCalendar = (event) => {
+        handleOpenEventDetail(event);
+        setShowCalendarModal(false);
+    };
 
     const menuItems = [
         {
@@ -3522,6 +3510,7 @@ const App = () => {
                 posts={posts.filter(p => p.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
                 onOpenEventDetail={handleOpenEventDetail}
+                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
             />,
         },
         {
@@ -3661,6 +3650,7 @@ const App = () => {
             posts={posts.filter(p => p.type === 'event')}
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
+            onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
         />,
         confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
@@ -3874,6 +3864,7 @@ const App = () => {
                                 events={posts}
                                 currentEvent={selectedEvent}
                                 onOpenEventDetail={handleOpenEventDetail}
+                                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
                             />
                         ) : (
                             <CurrentRightSidebar
@@ -3883,6 +3874,7 @@ const App = () => {
                                 currentUser={currentUser}
                                 registrations={registrations}
                                 onShowHelpModal={() => setShowHelpModal(true)}
+                                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
                             />
                         )}
                     </div>
