@@ -1644,9 +1644,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span>{registrationCount || 0}</span>
                             </div>
                         )}
-                        <button className="action-btn" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                        {/* Modified share button to only show the icon on small screens */}
+                        <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
                             <Share2 size={20} />
-                            <span>Share</span>
+                            <span className="share-text">Share</span>
                         </button>
                     </div>
 
