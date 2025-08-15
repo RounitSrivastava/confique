@@ -1139,17 +1139,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
     
-    // We now have a single, universal state in App.js for this alert
-    const [calendarMessage, setCalendarMessage] = useState('');
-
-    if (!event) return null;
-
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
+    // We'll let the parent component manage the alert state
+    
     const hasMoreContent = event.content.length > 200;
-
-    const isEventPast = new Date() > (event.eventEndDate || event.eventStartDate);
-    const isRegistrationOpen = event.registrationOpen && !isEventPast;
-    const hasRegistrationMethod = event.registrationLink || event.enableRegistrationForm;
 
     const formatDateRange = () => {
         if (!event.eventStartDate) return "N/A";
@@ -1198,7 +1190,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 );
             }, (error) => {
                 setGeolocationError('Could not get your location. Please enable location services and try again.');
-                // We'll use a local alert for this specific error
                 setShowGeolocationAlert(true);
             });
         } else {
@@ -1430,8 +1421,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-    const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
-
+    
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -1487,7 +1477,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleAddToCalendarClick = () => {
         if (post.type === 'event' && post.eventStartDate) {
             onAddToCalendar(post);
-            setShowAddedToCalendarAlert(true);
         }
     };
 
@@ -1672,13 +1661,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 message="The link has been copied to your clipboard."
                 showConfirm={false}
             />
-             <CustomMessageModal
-                isOpen={showAddedToCalendarAlert}
-                onClose={() => setShowAddedToCalendarAlert(false)}
-                title="Event Added to Calendar"
-                message="Your event has been saved. You can view it by opening the calendar."
-                showConfirm={false}
-            />
+            
         </>
     );
 
@@ -2596,6 +2579,7 @@ const App = () => {
     const [showLoginModal, setShowLoginModal] = useState(false);
     
     const [showCalendarModal, setShowCalendarModal] = useState(false);
+    const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
 
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
@@ -2606,7 +2590,7 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
         return {
@@ -2818,17 +2802,21 @@ const App = () => {
             if (prev.some(e => e._id === event._id)) {
                 return prev;
             }
-            return [...prev, event];
+            // Create a new event object with a unique ID and the current timestamp
+            const newEvent = { ...event, _id: `cal-${Date.now()}` }; 
+            return [...prev, newEvent];
         });
         setNotifications(prev => [
             {
-                _id: Date.now().toString(),
+                _id: `notif-${Date.now()}`,
                 message: `Event "${event.title}" has been added to your calendar.`,
                 timestamp: new Date(),
                 type: 'success'
             },
             ...prev
         ]);
+        // Show the alert right after the event is added
+        setShowAddedToCalendarAlert(true);
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
@@ -3314,8 +3302,8 @@ const App = () => {
                     ...prev
                 ]);
             }
-        } catch (err) {
-            console.error('Error reporting post:', err);
+        } catch (error) {
+            console.error('Error reporting post:', error);
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
