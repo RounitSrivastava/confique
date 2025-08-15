@@ -1140,10 +1140,10 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
     
-    const hasMoreContent = event?.content?.length > 200;
+    const hasMoreContent = event.content.length > 200;
 
     const formatDateRange = () => {
-        if (!event?.eventStartDate) return "N/A";
+        if (!event.eventStartDate) return "N/A";
 
         const start = new Date(event.eventStartDate);
         const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
@@ -1219,7 +1219,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             onRequireLogin();
             return;
         }
-        if (event?.eventStartDate) {
+        if (event.eventStartDate) {
             onAddToCalendar(event); // This saves the event
             onShowCalendarAlert();
         }
@@ -1234,22 +1234,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
-
-    if (!event) {
-        return (
-            <div className="event-detail-page-container">
-                <div className="event-detail-header">
-                    <button onClick={onClose} className="event-detail-back-button">
-                        <ArrowLeft size={24} />
-                    </button>
-                </div>
-                <div className="placeholder-card">
-                    <p className="placeholder-text">Event details not found.</p>
-                </div>
-            </div>
-        );
-    }
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + '...';
 
     return (
         <ErrorBoundary>
@@ -1741,7 +1725,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2152,7 +2136,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                 post.eventStartDate &&
                 new Date(post.eventStartDate).toDateString() === date.toDateString()
             );
-            return hasEvent ? <Check size={16} className="event-tick" /> : null;
+            return hasEvent ? <div className="event-dot"></div> : null;
         }
         return null;
     };
@@ -2514,7 +2498,6 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
             const hasEvent = myCalendarEvents.some(event =>
                 event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
-            // Replaced the dot with a checkmark icon
             return hasEvent ? <Check size={16} className="event-tick" /> : null;
         }
         return null;
@@ -2566,7 +2549,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                     </div>
                 </div>
             </div>
-        </ErrorBoundary>
+        </div>
     );
 };
 
