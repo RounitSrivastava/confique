@@ -939,7 +939,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
-
+                                    
                                     <div className="form-group">
                                         <label className="form-label">Duration</label>
                                         <input
@@ -2583,11 +2583,21 @@ const App = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedPost, setSelectedPost] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [myCalendarEvents, setMyCalendarEvents] = useState([]);
+    const [myCalendarEvents, setMyCalendarEvents] = useState(() => {
+        const savedEvents = JSON.parse(localStorage.getItem('myCalendarEvents'));
+        if (savedEvents) {
+            // Re-format timestamps from strings to Date objects
+            return savedEvents.map(event => ({
+                ...event,
+                eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
+                eventEndDate: event.eventEndDate ? new Date(event.eventEndDate) : null,
+            }));
+        }
+        return [];
+    });
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-
-    // New state for the calendar modal
+    
     const [showCalendarModal, setShowCalendarModal] = useState(false);
 
     const [postToEdit, setPostToEdit] = useState(null);
@@ -2598,9 +2608,9 @@ const App = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+    const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
 
-    // Update hasOpenModal to include the new calendar modal
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
         return {
@@ -2614,6 +2624,11 @@ const App = () => {
             })) : [],
         };
     };
+
+    // New useEffect to save myCalendarEvents to local storage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('myCalendarEvents', JSON.stringify(myCalendarEvents));
+    }, [myCalendarEvents]);
 
     const fetchPosts = async () => {
         try {
@@ -2796,11 +2811,20 @@ const App = () => {
             return;
         }
         setMyCalendarEvents(prev => {
+            // Check for duplicates before adding
             if (prev.some(e => e._id === event._id)) {
                 return prev;
             }
             return [...prev, event];
         });
+        setPosts(prevPosts =>
+            prevPosts.map(p =>
+                p._id === event._id ? {
+                    ...p,
+                    myCalendarAdded: true,
+                } : p
+            )
+        );
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
@@ -3848,6 +3872,13 @@ const App = () => {
             <HelpAndSupportModal
                 isOpen={showHelpModal}
                 onClose={() => setShowHelpModal(false)}
+            />
+             <CustomMessageModal
+                isOpen={showAddedToCalendarAlert}
+                onClose={() => setShowAddedToCalendarAlert(false)}
+                title="Event Added to Calendar"
+                message="Your event has been saved. You can view it by opening the calendar."
+                showConfirm={false}
             />
         </div>
     );
