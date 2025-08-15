@@ -1257,7 +1257,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     )}
                     <div className="event-detail-header-overlay">
                         <button onClick={onClose} className="event-detail-back-button">
-                            <ArrowLeft size={15} />
+                            <ArrowLeft size={24} />
                         </button>
                     </div>
                 </div>
