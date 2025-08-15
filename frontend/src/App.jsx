@@ -1139,13 +1139,13 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [showRegistrationForm, setShowRegistrationForm] = useState(false);
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
-    
+
     const hasMoreContent = event.content.length > 200;
     const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
     const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
     const isRegistrationOpen = event.registrationOpen;
     const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
-    
+
     const formatDateRange = () => {
         if (!event.eventStartDate) return "N/A";
 
@@ -1217,7 +1217,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             window.open(event.registrationLink, '_blank');
         }
     };
-    
+
     const handleAddToCalendarClick = () => {
         if (!isLoggedIn) {
             onRequireLogin();
@@ -2130,7 +2130,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 };
 
 // Events Right Sidebar Component - Displays calendar and user's upcoming events
-const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail, onShowEventDetailsAndCloseCalendar }) => {
+const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
     const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
@@ -2178,7 +2178,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail, onShow
                                 <div
                                     key={event._id}
                                     className="sidebar-event-item clickable"
-                                    onClick={() => onShowEventDetailsAndCloseCalendar(event)}
+                                    onClick={() => onOpenEventDetail(event)}
                                 >
                                     <h4 className="sidebar-event-title">{event.title}</h4>
                                     <div className="sidebar-event-date">
@@ -3235,14 +3235,14 @@ const App = () => {
 
     const handleOpenEventDetail = (event) => {
         setSelectedEvent(event);
-        setOpenCommentPostId(null);
         setSelectedPost(null);
+        setOpenCommentPostId(null);
     };
 
     const handleOpenPostDetail = (post) => {
         setSelectedPost(post);
-        setOpenCommentPostId(null);
         setSelectedEvent(null);
+        setOpenCommentPostId(null);
     };
 
     const handleCloseEventDetail = () => {
@@ -3460,7 +3460,7 @@ const App = () => {
         setShowProfileSettingsModal(false);
     };
     
-    // New function to handle redirecting from the calendar modal
+    // Function to handle opening event details from the calendar modal and closing the modal
     const handleShowEventDetailsAndCloseCalendar = (event) => {
         handleOpenEventDetail(event);
         setShowCalendarModal(false);
@@ -3515,7 +3515,6 @@ const App = () => {
                 posts={posts.filter(p => p.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
                 onOpenEventDetail={handleOpenEventDetail}
-                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
             />,
         },
         {
@@ -3655,7 +3654,6 @@ const App = () => {
             posts={posts.filter(p => p.type === 'event')}
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
-            onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
         />,
         confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
@@ -3872,7 +3870,6 @@ const App = () => {
                                 events={posts}
                                 currentEvent={selectedEvent}
                                 onOpenEventDetail={handleOpenEventDetail}
-                                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
                             />
                         ) : (
                             <CurrentRightSidebar
@@ -3882,7 +3879,6 @@ const App = () => {
                                 currentUser={currentUser}
                                 registrations={registrations}
                                 onShowHelpModal={() => setShowHelpModal(true)}
-                                onShowEventDetailsAndCloseCalendar={handleShowEventDetailsAndCloseCalendar}
                             />
                         )}
                     </div>
