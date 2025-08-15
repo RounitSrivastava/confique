@@ -939,7 +939,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
-                                    
+
                                     <div className="form-group">
                                         <label className="form-label">Duration</label>
                                         <input
@@ -1284,6 +1284,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         <div className="event-detail-meta-item">
                             <MapPin size={18} />
                             <span>{event.venueAddress}</span>
+                        </div>
+                        <div className="event-detail-action-buttons-top">
+                            {event.eventStartDate && (
+                                <button className="action-btn" onClick={handleAddToCalendarClick}>
+                                    <CalendarPlus size={20} />
+                                    <span>Add to Calendar</span>
+                                </button>
+                            )}
                         </div>
 
                         <div className="event-detail-price-book">
@@ -1799,7 +1807,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2578,10 +2586,9 @@ const App = () => {
     const [myCalendarEvents, setMyCalendarEvents] = useState([]);
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-    
+
     // New state for the calendar modal
     const [showCalendarModal, setShowCalendarModal] = useState(false);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
@@ -2777,14 +2784,6 @@ const App = () => {
         };
     }, [hasOpenModal]);
 
-    useEffect(() => {
-        const handleResize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -2800,22 +2799,8 @@ const App = () => {
             if (prev.some(e => e._id === event._id)) {
                 return prev;
             }
-            // Add a notification that the event was added
-            setNotifications(notifs => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Event "${event.title}" was added to your calendar.`,
-                    timestamp: new Date(),
-                    type: 'info'
-                },
-                ...notifs
-            ]);
             return [...prev, event];
         });
-        
-        if (isMobile) {
-            setShowCalendarModal(true);
-        }
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
