@@ -4633,3 +4633,17 @@ body.modal-open {
     overflow-wrap: break-word;
   }
 }
+/* In App.css */
+
+@media (max-width: 768px) {
+    .post-actions .action-btn.share-only-icon .share-text {
+        display: none;
+    }
+    .post-actions .action-btn.share-only-icon {
+        width: 40px; /* Adjust button size as needed */
+        height: 40px;
+        padding: 0;
+        justify-content: center;
+        align-items: center;
+    }
+}
