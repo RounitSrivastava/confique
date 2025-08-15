@@ -1322,8 +1322,9 @@ body {
 }
 
 .comment-submit-btn svg {
-  width: 90px;
-  height: 90px;
+  font-size: 28px;
+  width: 44px;
+  height: 44px;
   color: var(--text-on-primary);
 }
 
