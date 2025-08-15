@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API_URL from './api';
-// import confiquelogo from './assets/confiquelogo.jpg';
+import confiquelogo from './assets/confiquelogo.jpg';
 import {
     Home,
     Calendar as CalendarIcon,
@@ -3708,7 +3708,7 @@ const App = () => {
                     <div className="header-content">
                         <div className="header-left">
                             <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                        {/* <img src={confiquelogo} width="24" height="24" alt="Confique Logo" /> */}
+                        <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>

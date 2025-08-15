@@ -431,6 +431,7 @@ body {
   color: var(--primary-color);
 }
 
+
 .nav-button:hover:not(.active) {
   background-color: var(--action-btn-hover);
   color: var(--text-primary);
@@ -563,8 +564,6 @@ body {
   gap: 1.5rem;
   min-width: 0;
   overflow-x: hidden;
-  max-width: 100%;
-  margin: 0 auto;
 }
 
 .placeholder-card {
@@ -594,7 +593,6 @@ body {
   position: relative;
   max-width: 100%;
   min-width: 0;
-  width: 100%;
 }
 
 .post-card:hover {
@@ -940,8 +938,8 @@ body {
   color: var(--text-primary);
   border: none;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1466,6 +1464,7 @@ body {
   background-clip: text;
   color: transparent;
 }
+
 
 .widget-content {
   padding: 1rem;
@@ -2732,28 +2731,15 @@ body.modal-open {
     flex-direction: column;
   }
 
-  /* Mobile-optimized post cards */
-  .posts-container {
-    padding: 0 1rem;
-    width: 100%;
+  .main-content {
+    flex: 1;
     min-width: 0;
+    padding: 1rem;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
     overflow-x: hidden;
-    max-width: 100%;
-    margin: 0 auto;
-  }
-
-  .post-card {
-    max-width: 600px;
-    margin: 0 auto;
-    width: 100%;
-    min-width: 0;
-    flex-shrink: 0;
-  }
-
-  /* Ensure images in posts don't overflow */
-  .post-images img {
-    max-width: 100%;
-    height: auto;
   }
 
   .right-sidebar {
@@ -2935,6 +2921,19 @@ body.modal-open {
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
+  .posts-container {
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .post-card {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
   .comment-section {
     padding: 1rem;
     display: flex;
@@ -3044,18 +3043,6 @@ body.modal-open {
   
   .mobile-calendar-icon:hover svg {
     color: var(--text-on-primary);
-  }
-
-  /* Hide share text on mobile for action buttons */
-  .post-actions .action-btn .share-text {
-    display: none;
-  }
-  .post-actions .action-btn.share-only-icon {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    justify-content: center;
-    align-items: center;
   }
 }
 
@@ -3261,11 +3248,6 @@ body.modal-open {
   .profile-phone {
     margin-bottom: 1.5rem;
   }
-
-  /* Show share text on desktop */
-  .post-actions .action-btn.share-only-icon .share-text {
-    display: inline;
-  }
 }
 
 /* ===== SCROLLBAR STYLES ===== */
@@ -3291,12 +3273,16 @@ body.modal-open {
   display: none;
 }
 
+
+
 /* Registration Modal Specific Styles */
 .registration-modal {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
 }
+
+
 
 .modal-body-container {
   overflow-y: auto;
@@ -3474,4 +3460,412 @@ body.modal-open {
 .report-form {
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   scrollbar-width: thin;
+}
+
+/* The following CSS is for the new calendar icon and its placement on mobile */
+@media (max-width: 767px) {
+  /* ... (your existing mobile styles) ... */
+
+  /* Events Header for mobile */
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0 1rem;
+  }
+  
+  .mobile-calendar-icon-container {
+    position: fixed;
+    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    right: 1.5rem;
+    z-index: 55;
+  }
+
+  .mobile-calendar-icon {
+    background-color: var(--primary-color-faded);
+    color: var(--primary-color);
+    border: none;
+    width: 60px; /* Increased size */
+    height: 60px; /* Increased size */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .mobile-calendar-icon svg {
+    width: 30px; /* Increased icon size */
+    height: 30px; /* Increased icon size */
+    color: var(--primary-color);
+    transition: color 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon:hover {
+    background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+  
+  .mobile-calendar-icon:hover svg {
+    color: var(--text-on-primary);
+  }
+  
+  /* Fix: Correct positioning for the calendar modal on mobile to be above the bottom nav */
+  .calendar-modal-content {
+    bottom: 4rem; /* Match the height of the bottom navbar */
+    border-radius: 12px 12px 0 0;
+    max-height: calc(100vh - 4rem - 20px); /* Adjust max-height to fit above the navbar and with some padding */
+  }
+
+  /* Fixed Mobile Navigation Bar at the Bottom */
+  .left-sidebar {
+    position: fixed;
+    bottom: 0;
+    top: auto;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 4rem;
+    padding: 0.5rem 1rem;
+    flex-direction: row;
+    justify-content: space-around;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -1px 3px 0 var(--shadow-color);
+    z-index: 60;
+  }
+  
+  .sidebar-nav {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .main-layout-container {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    padding-right: 0;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    padding: 1rem;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: 1rem;
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+  }
+
+  .form-input,
+  .form-textarea,
+  .form-select {
+    font-size: 0.875rem;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Event Detail Page Mobile Adjustments */
+  .event-detail-header {
+    height: 200px;
+  }
+
+  .event-detail-title-card {
+    margin-top: -60px;
+    padding: 15px;
+  }
+
+  .event-detail-title-card h1 {
+    font-size: 20px;
+  }
+
+  .event-detail-meta-item {
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+
+  .event-detail-price {
+    font-size: 18px;
+  }
+
+  .event-detail-book-button {
+    padding: 8px 15px;
+    font-size: 14px;
+  }
+
+  .event-detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail-about-section,
+  .event-detail-info-grid,
+  .event-detail-venue-section {
+    padding: 15px;
+    margin-top: 15px;
+  }
+
+  .event-detail-about-section h2,
+  .event-detail-venue-section h2 {
+    font-size: 18px;
+  }
+
+  .venue-info {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Profile Header Mobile */
+  .profile-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    margin: 0 auto 1rem auto;
+  }
+
+  .profile-avatar-container {
+    width: 100px;
+    height: 100px;
+    margin-bottom: 1rem;
+    overflow: visible;
+    border: 4px solid var(--border-color);
+  }
+
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  .profile-info {
+    text-align: center;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .stat-item {
+    align-items: center;
+    flex-basis: 50%;
+  }
+
+  .stat-item:nth-child(2)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 80%;
+    background-color: var(--border-color);
+  }
+
+  .stat-item:nth-child(4)::after,
+  .stat-item:nth-child(2)::after {
+    content: none;
+  }
+
+  .stat-number {
+    font-size: 1.5rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    text-transform: capitalize;
+  }
+
+  .profile-name {
+    font-size: 1.5rem;
+  }
+
+  .profile-phone {
+    margin-bottom: 1.5rem;
+  }
+
+  /* Increased size of the edit circle and icon for mobile */
+  .edit-avatar-button {
+    width: 65px;
+    height: 65px;
+    bottom: 5px;
+    right: 5px;
+  }
+
+  .edit-avatar-button svg {
+    width: 55px;
+    height: 55px;
+  }
+
+  /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
+  .posts-container {
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .post-card {
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  .comment-section {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-input-form {
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .comment-input {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    height: auto;
+    min-height: 40px;
+    min-width: 0;
+  }
+
+  .comment-submit-btn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .comment-submit-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .comments-list {
+    padding-right: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+    max-height: 30vh;
+    min-height: 100px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .comments-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .comment-item {
+    padding: 0.75rem;
+    min-width: 0;
+  }
+
+  .comment-avatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .comment-content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .comment-author {
+    font-size: 0.875rem;
+  }
+
+  .comment-text {
+    font-size: 0.875rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+/* In App.css */
+
+@media (max-width: 767px) {
+  .post-actions .action-btn .share-text {
+    display: none;
+  }
+  .post-actions .action-btn.share-only-icon {
+    width: 40px; /* Adjust button size as needed */
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* Centering the post cards on small screens */
+  .posts-container {
+    max-width: 100%;
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    margin: 0 auto; /* Add this line */
+  }
+
+  .post-card {
+    max-width: 600px; /* Adjust to a reasonable max-width */
+    margin: 0 auto; /* Add this line */
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 768px) {
+    .post-actions .action-btn.share-only-icon .share-text {
+      display: inline;
+    }
 }
