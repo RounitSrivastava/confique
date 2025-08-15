@@ -1133,13 +1133,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 };
 
 // Event Detail Page Component - Displays detailed information about an event
-const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered }) => {
+const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered, onShowCalendarAlert }) => {
     const [showFullContent, setShowFullContent] = useState(false);
     const [showRegistrationForm, setShowRegistrationForm] = useState(false);
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
-    
-    // We'll let the parent component manage the alert state
     
     const hasMoreContent = event.content.length > 200;
 
@@ -1222,6 +1220,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
         }
         if (event.eventStartDate) {
             onAddToCalendar(event); // This saves the event
+            onShowCalendarAlert();
         }
     };
 
@@ -1415,7 +1414,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1477,6 +1476,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleAddToCalendarClick = () => {
         if (post.type === 'event' && post.eventStartDate) {
             onAddToCalendar(post);
+            onShowCalendarAlert();
         }
     };
 
@@ -1661,7 +1661,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 message="The link has been copied to your clipboard."
                 showConfirm={false}
             />
-            
         </>
     );
 
@@ -1681,7 +1680,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 };
 
 // Home Component - Displays a feed of posts
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -1710,6 +1709,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onReportPost={onReportPost}
                                 onDeletePost={onDeletePost}
                                 onEditPost={onEditPost}
+                                onShowCalendarAlert={onShowCalendarAlert}
                             />
                         ))}
                     </div>
@@ -1724,7 +1724,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -1736,6 +1736,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
+                        onShowCalendarAlert={onShowCalendarAlert}
                     />
                 ))}
             </div>
@@ -1744,7 +1745,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 };
 
 // Events Component - Displays only event posts
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -1768,6 +1769,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
+                        onShowCalendarAlert={onShowCalendarAlert}
                     />
                 ))}
             </div>
@@ -1776,7 +1778,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 };
 
 // Confessions Component - Displays only confession posts
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -1788,7 +1790,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -1800,6 +1802,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
+                        onShowCalendarAlert={onShowCalendarAlert}
                     />
                 ))}
             </div>
@@ -1985,7 +1988,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert }) => {
     if (!currentUser) {
         return (
             <div>
@@ -2075,6 +2078,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onEditPost={handleEditPost}
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
+                            onShowCalendarAlert={onShowCalendarAlert}
                         />
                     ))}
                 </div>
@@ -2792,6 +2796,10 @@ const App = () => {
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const handleShowCalendarAlert = () => {
+        setShowAddedToCalendarAlert(true);
+    };
+
     const handleAddToCalendar = (event) => {
         if (!isLoggedIn) {
             setShowLoginModal(true);
@@ -2802,9 +2810,7 @@ const App = () => {
             if (prev.some(e => e._id === event._id)) {
                 return prev;
             }
-            // Create a new event object with a unique ID and the current timestamp
-            const newEvent = { ...event, _id: `cal-${Date.now()}` }; 
-            return [...prev, newEvent];
+            return [...prev, event];
         });
         setNotifications(prev => [
             {
@@ -2815,8 +2821,7 @@ const App = () => {
             },
             ...prev
         ]);
-        // Show the alert right after the event is added
-        setShowAddedToCalendarAlert(true);
+        handleShowCalendarAlert();
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
@@ -3465,6 +3470,7 @@ const App = () => {
                 onReportPost={handleOpenReportModal}
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
+                onShowCalendarAlert={handleShowCalendarAlert}
             />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
@@ -3487,6 +3493,7 @@ const App = () => {
                 onReportPost={handleOpenReportModal}
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
+                onShowCalendarAlert={handleShowCalendarAlert}
             />,
             rightSidebar: () => <EventsRightSidebar
                 posts={posts.filter(p => p.type === 'event')}
@@ -3513,6 +3520,7 @@ const App = () => {
                 onReportPost={handleOpenReportModal}
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
+                onShowCalendarAlert={handleShowCalendarAlert}
             />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
@@ -3561,6 +3569,7 @@ const App = () => {
             onReportPost={handleOpenReportModal}
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
+            onShowCalendarAlert={handleShowCalendarAlert}
         />,
         events: () => <EventsComponent
             posts={filteredPosts.filter(post => post.type === 'event')}
@@ -3577,6 +3586,7 @@ const App = () => {
             onReportPost={handleOpenReportModal}
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
+            onShowCalendarAlert={handleShowCalendarAlert}
         />,
         confessions: () => <ConfessionsComponent
             posts={filteredPosts.filter(post => post.type === 'confession')}
@@ -3593,6 +3603,7 @@ const App = () => {
             onReportPost={handleOpenReportModal}
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
+            onShowCalendarAlert={handleShowCalendarAlert}
         />,
         notifications: () => <NotificationsComponent
             notifications={notifications}
@@ -3617,6 +3628,7 @@ const App = () => {
             registrations={registrations}
             onReportPost={handleOpenReportModal}
             onEditProfile={() => setShowProfileSettingsModal(true)}
+            onShowCalendarAlert={handleShowCalendarAlert}
         />,
     };
 
@@ -3770,6 +3782,7 @@ const App = () => {
                                     isProfileView={selectedPost.userId === currentUser?._id}
                                     registrationCount={registrations[selectedPost._id]}
                                     onReportPost={handleOpenReportModal}
+                                    onShowCalendarAlert={handleShowCalendarAlert}
                                 />
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
@@ -3794,6 +3807,7 @@ const App = () => {
                                                 onReportPost={handleOpenReportModal}
                                                 onDeletePost={handleDeletePost}
                                                 onEditPost={handleEditPost}
+                                                onShowCalendarAlert={handleShowCalendarAlert}
                                             />
                                         ))}
                                 </div>
@@ -3807,6 +3821,7 @@ const App = () => {
                                 onAddToCalendar={handleAddToCalendar}
                                 onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
                                 isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                                onShowCalendarAlert={handleShowCalendarAlert}
                             />
                         ) : (
                             <CurrentComponent
@@ -3824,6 +3839,7 @@ const App = () => {
                                 onEditPost={handleEditPost}
                                 registrations={registrations}
                                 onReportPost={handleOpenReportModal}
+                                onShowCalendarAlert={handleShowCalendarAlert}
                             />
                         )}
                     </div>
