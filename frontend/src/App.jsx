@@ -1141,7 +1141,11 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [geolocationError, setGeolocationError] = useState('');
     
     const hasMoreContent = event.content.length > 200;
-
+    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
+    const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
+    const isRegistrationOpen = event.registrationOpen;
+    const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
+    
     const formatDateRange = () => {
         if (!event.eventStartDate) return "N/A";
 
@@ -1421,7 +1425,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-    
+    const displayContent = showFullContent ? post.content : post.content.substring(0, 200);
+
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2528,9 +2533,9 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                         {eventsOnSelectedDate.length > 0 ? (
                             <ul className="event-list">
                                 {eventsOnSelectedDate.map(event => (
-                                    <li 
-                                        key={event._id} 
-                                        className="event-item clickable" 
+                                    <li
+                                        key={event._id}
+                                        className="event-item clickable"
                                         onClick={() => {
                                             onOpenEventDetail(event); // Open event details on click
                                             onClose(); // Close the calendar modal
@@ -3573,8 +3578,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
@@ -3590,8 +3595,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
@@ -3607,8 +3612,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
@@ -3631,8 +3636,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             setIsModalOpen={setIsModalOpen}
             onDeletePost={handleDeletePost}
@@ -3690,7 +3695,10 @@ const App = () => {
                     isOpen={showCalendarModal}
                     onClose={() => setShowCalendarModal(false)}
                     myCalendarEvents={myCalendarEvents}
-                    onOpenEventDetail={handleOpenEventDetail}
+                    onOpenEventDetail={(event) => {
+                        handleOpenEventDetail(event);
+                        setShowCalendarModal(false);
+                    }}
                 />
             )}
 
