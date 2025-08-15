@@ -1322,9 +1322,8 @@ body {
 }
 
 .comment-submit-btn svg {
-  font-size: 28px;
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   color: var(--text-on-primary);
 }
 
@@ -3780,15 +3779,15 @@ body.modal-open {
   }
 
   .comment-submit-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .comment-submit-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
   }
 
   .comments-list {
