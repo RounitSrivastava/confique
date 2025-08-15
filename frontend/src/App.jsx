@@ -939,7 +939,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
-                                    
+                                   
                                     <div className="form-group">
                                         <label className="form-label">Duration</label>
                                         <input
@@ -2578,7 +2578,7 @@ const App = () => {
     const [myCalendarEvents, setMyCalendarEvents] = useState([]);
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-    
+   
     // New state for the calendar modal
     const [showCalendarModal, setShowCalendarModal] = useState(false);
 
@@ -3361,9 +3361,9 @@ const App = () => {
 
             if (res.ok) {
                 const { avatar: updatedAvatar } = await res.json();
-                
+               
                 const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
-                
+               
                 setCurrentUser(newCurrentUser);
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
@@ -3379,7 +3379,7 @@ const App = () => {
                             }
                             return comment;
                         });
-                        
+                       
                         return { ...updatedPost, commentData: updatedComments };
                     })
                 );
@@ -3654,14 +3654,15 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
-                        {/* Mobile Calendar Icon - now only rendered when on Events section and logged in */}
-                        {isLoggedIn && (
+                        {/* Mobile Calendar Icon - visible only on smaller screens */}
+                        {activeSection === 'events' && isLoggedIn && (
                             <div className="mobile-calendar-icon-container">
                                 <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
                                     <CalendarIcon size={24} />
                                 </button>
                             </div>
                         )}
+
                         <div className="header-search">
                             <div className="search-container">
                                 <Search className="search-icon" />
