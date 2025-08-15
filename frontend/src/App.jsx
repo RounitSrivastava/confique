@@ -1403,10 +1403,9 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 </div>
                                 <div className="sidebar-event-time">
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 ) : (
                     <div className="no-events-message">
