@@ -1922,9 +1922,13 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         <div className="modal-overlay">
             <div className="modal-content profile-settings-modal">
                 <div className="modal-header">
-                    <h2 className="modal-title">Edit Profil Image</h2>
-                    <button className="modal-close modal-close-enhanced" onClick={onClose}>
-                        <X size={28} />
+                    <h2 className="modal-title">Edit Profile Image</h2>
+                    <button 
+                        className="modal-close-large" 
+                        onClick={onClose}
+                        aria-label="Close modal"
+                    >
+                        <X size={36} strokeWidth={2.5} />
                     </button>
                 </div>
                 <div className="modal-body profile-settings-body">
@@ -1960,8 +1964,12 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                                 {customAvatar ? (
                                     <div className="custom-avatar-preview">
                                         <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
-                                        <button className="remove-image-btn remove-image-btn-enhanced" onClick={() => setCustomAvatar('')}>
-                                            <X size={16} />
+                                        <button 
+                                            className="remove-image-btn-large" 
+                                            onClick={() => setCustomAvatar('')}
+                                            aria-label="Remove image"
+                                        >
+                                            <X size={20} strokeWidth={2.5} />
                                         </button>
                                     </div>
                                 ) : (
@@ -1994,6 +2002,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         </div>
     );
 };
+
 
 
 
