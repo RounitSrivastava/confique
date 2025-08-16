@@ -3248,6 +3248,11 @@ body.modal-open {
   .profile-phone {
     margin-bottom: 1.5rem;
   }
+
+  /* **New: Hide the calendar icon on desktop** */
+  .mobile-calendar-icon-container {
+    display: none;
+  }
 }
 
 /* ===== SCROLLBAR STYLES ===== */
