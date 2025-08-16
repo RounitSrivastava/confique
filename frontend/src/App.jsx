@@ -1930,8 +1930,29 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                 <div className="modal-body profile-settings-body">
                     <div className="current-avatar-container">
                         <h4 className="modal-subtitle">Current Profile Image</h4>
-                        <div className="current-avatar-preview">
+                        <div className="current-avatar-preview" style={{ position: 'relative' }}>
                             <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                            <button 
+                                className="edit-avatar-btn"
+                                onClick={() => fileInputRef.current.click()}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '4px',
+                                    right: '4px',
+                                    background: '#007bff',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '28px',
+                                    height: '28px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                }}
+                            >
+                                <Edit size={14} color="white" />
+                            </button>
                         </div>
                     </div>
                     <div className="avatar-options-container">

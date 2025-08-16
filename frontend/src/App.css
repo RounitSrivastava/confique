@@ -2342,9 +2342,10 @@ body {
 }
 
 .edit-avatar-button svg {
-  stroke: var(--icon-color);
-  width: 20px;
-  height: 20px;
+  stroke: var(--icon-color) !important;
+  width: 20px !important;
+  height: 20px !important;
+  stroke-width: 2 !important;
   transition: stroke 0.2s ease;
 }
 
