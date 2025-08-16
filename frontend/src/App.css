@@ -2917,17 +2917,18 @@ body.modal-open {
     border-radius: 50%;
     object-fit: cover;
   }
-
+  
+  /* Make the profile edit button smaller on mobile, but keep it visible */
   .edit-avatar-button {
-    width: 65px;
-    height: 65px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
+    width: 18px;
+    height: 18px;
   }
 
   .profile-info {
@@ -2983,19 +2984,6 @@ body.modal-open {
 
   .profile-phone {
     margin-bottom: 1.5rem;
-  }
-
-  /* Increased size of the edit circle and icon for mobile */
-  .edit-avatar-button {
-    width: 65px;
-    height: 65px;
-    bottom: 5px;
-    right: 5px;
-  }
-
-  .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
@@ -3719,15 +3707,15 @@ body.modal-open {
   }
 
   .edit-avatar-button {
-    width: 65px;
-    height: 65px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
+    width: 18px;
+    height: 18px;
   }
 
   .profile-info {
@@ -3783,19 +3771,6 @@ body.modal-open {
 
   .profile-phone {
     margin-bottom: 1.5rem;
-  }
-
-  /* Increased size of the edit circle and icon for mobile */
-  .edit-avatar-button {
-    width: 65px;
-    height: 65px;
-    bottom: 5px;
-    right: 5px;
-  }
-
-  .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
