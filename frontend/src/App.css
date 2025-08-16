@@ -799,6 +799,8 @@ body {
   gap: 10px;
 }
 
+/* --- THE MAIN FIX FOR THE TWO BUTTONS --- */
+/* This rule will make all the like, comment, share, and other buttons rounded */
 .action-btn {
   display: flex;
   align-items: center;
@@ -809,7 +811,7 @@ body {
   color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
-  border-radius: 9999px;
+  border-radius: 9999px; /* THIS IS THE FIX */
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: fit-content;
@@ -852,7 +854,117 @@ body {
   background-color: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 0px;
+  border-radius: 9999px; /* THIS IS THE FIX for the Add to Calendar button */
+}
+
+.event-action-buttons-top .action-btn:hover {
+  background-color: var(--action-btn-hover);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+/* --- ADDING A STYLED "DETAIL" BUTTON --- */
+/* This is a new class you can use for your detail button on the post card */
+.detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 1.25rem;
+  background-color: var(--primary-color);
+  color: var(--text-on-primary);
+  border: none;
+  border-radius: 9999px; /* THIS IS THE FIX for the Detail button */
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.detail-btn:hover {
+  background-color: #2563eb;
+}
+
+/* --- IF YOUR DETAIL BUTTON IS A DROPDOWN ITEM, THIS WILL FIX IT --- */
+.post-option-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  border-radius: 9999px; /* THIS IS THE FIX if it's a dropdown option */
+}
+
+
+/* --- THE OTHER MAIN FIX (LOGIN/REGISTRATION BUTTONS) --- */
+/* This will make the primary and secondary modal buttons rounded */
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px; /* THIS IS THE FIX */
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-secondary {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--action-btn-hover);
+}
+
+/* ... (Rest of the CSS code follows below, unchanged) ... */
+
+.action-btn.liked svg {
+  color: #ef4444;
+  fill: #ef4444;
+}
+
+.action-btn svg {
+  color: var(--text-primary);
+  transition: color 0.2s ease, fill 0.2s ease;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.action-btn:hover svg {
+  color: var(--text-secondary);
+}
+
+/* Event specific action buttons above the main post actions */
+.event-action-buttons-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.event-action-buttons-top .action-btn {
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  background-color: transparent;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 9999px;
 }
 
 .event-action-buttons-top .action-btn:hover {
@@ -1010,7 +1122,7 @@ body {
   color: #fff;
   border: none;
   padding: 10px 20px;
-  border-radius: 9999px;
+  border-radius: 9999px; /* THIS IS THE FIX for the book button on the detail page */
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -1185,7 +1297,7 @@ body {
   background-color: #5a67d8;
   color: white;
   padding: 10px 20px;
-  border-radius: 5px;
+  border-radius: 9999px; /* This is the fix for the general primary button */
   text-decoration: none;
   font-weight: 500;
   transition: background-color 0.2s ease-in-out;
@@ -1762,7 +1874,7 @@ body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px dashed var(--border-color);
-  border-radius: 9999px;
+  border-radius: 0.75rem;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -1772,16 +1884,6 @@ body {
 .upload-btn:hover {
   background-color: var(--action-btn-hover);
   border-color: var(--text-secondary);
-}
-
-.upload-btn input[type="file"] {
-  position: absolute;
-  left: 0;
-  top: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
 }
 
 /* Payment QR Preview */
@@ -1823,30 +1925,6 @@ body {
   justify-content: center;
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-primary:hover {
-  background-color: #4338ca;
-}
-
-.btn-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover {
-  background-color: var(--action-btn-hover);
-}
 
 /* Animations */
 @keyframes fadeIn {
@@ -2105,7 +2183,7 @@ body {
   background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 9999px; /* THIS IS THE FIX for the button in the calendar modal */
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
@@ -2886,7 +2964,7 @@ body.modal-open {
   }
 
   .stat-item:nth-child(4)::after,
-  .stat-item:nth-child(2)::after {
+  .stat-item:nth-child(2):'::after {
     content: none;
   }
 
@@ -2957,15 +3035,15 @@ body.modal-open {
   }
 
   .comment-submit-btn {
-    width: 40px;
-    height: 40px;
-    min-width: 40px;
-    min-height: 40px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .comment-submit-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
   }
 
   .comments-list {
@@ -3008,41 +3086,37 @@ body.modal-open {
     word-break: break-word;
     overflow-wrap: break-word;
   }
-  
-  /* Calendar icon for mobile (in event section) */
-  .mobile-calendar-icon {
-    background-color: var(--primary-color-faded);
-    color: var(--primary-color);
-    border: none;
-    width: 60px; /* Increased size */
-    height: 60px; /* Increased size */
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
+}
+
+/* In App.css */
+@media (max-width: 767px) {
+  .post-actions .action-btn .share-text {
+    display: none;
+  }
+  .post-actions .action-btn.share-only-icon {
+    width: 40px; /* Adjust button size as needed */
+    height: 40px;
+    padding: 0;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 8px var(--shadow-color);
-    transition: all 0.2s ease-in-out;
-    position: fixed; /* Position fixed relative to the viewport */
-    bottom: 5.5rem; /* A bit above the bottom navbar */
-    right: 1.5rem;
-    z-index: 55; /* Above main content, but below modals */
+    align-items: center;
   }
   
-  .mobile-calendar-icon svg {
-    width: 30px; /* Increased icon size */
-    height: 30px; /* Increased icon size */
-    color: var(--primary-color);
-    transition: color 0.2s ease-in-out;
+  /* Centering the post cards on small screens */
+  .posts-container {
+    max-width: 100%;
+    padding: 0 1rem;
+    width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    margin: 0 auto; /* Add this line */
   }
 
-  .mobile-calendar-icon:hover {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
-  }
-  
-  .mobile-calendar-icon:hover svg {
-    color: var(--text-on-primary);
+  .post-card {
+    max-width: 600px; /* Adjust to a reasonable max-width */
+    margin: 0 auto; /* Add this line */
+    width: 100%;
+    min-width: 0;
+    flex-shrink: 0;
   }
 }
 
@@ -3356,30 +3430,6 @@ body.modal-open {
   justify-content: center;
 }
 
-.btn-primary,
-.btn-secondary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.btn-primary:hover {
-  background-color: #4338ca;
-}
-
-.btn-secondary {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-}
-
-.btn-secondary:hover {
-  background-color: var(--action-btn-hover);
-}
 
 /* Report Modal Styles */
 .report-modal {
@@ -3836,8 +3886,8 @@ body.modal-open {
     overflow-wrap: break-word;
   }
 }
-/* In App.css */
 
+/* In App.css */
 @media (max-width: 767px) {
   .post-actions .action-btn .share-text {
     display: none;
@@ -3870,7 +3920,7 @@ body.modal-open {
 }
 
 @media (min-width: 768px) {
-    .post-actions .action-btn.share-only-icon .share-text {
-      display: inline;
-    }
+  .post-actions .action-btn.share-only-icon .share-text {
+    display: inline;
+  }
 }
