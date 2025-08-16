@@ -809,7 +809,7 @@ body {
   color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
-  border-radius: 0.5rem;
+  border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: fit-content;
@@ -1010,7 +1010,7 @@ body {
   color: #fff;
   border: none;
   padding: 10px 20px;
-  border-radius: 6px;
+  border-radius: 9999px;
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -1762,7 +1762,7 @@ body {
   background-color: var(--bg-secondary);
   color: var(--text-primary);
   border: 1px dashed var(--border-color);
-  border-radius: 0.75rem;
+  border-radius: 9999px;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
