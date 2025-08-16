@@ -1922,7 +1922,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         <div className="modal-overlay">
             <div className="modal-content profile-settings-modal">
                 <div className="modal-header">
-                    <h2 className="modal-title">Edit Profile Image</h2>
+                    <h2 className="modal-title">Edit Profil Image</h2>
                     <button className="modal-close modal-close-enhanced" onClick={onClose}>
                         <X size={28} />
                     </button>
