@@ -811,7 +811,7 @@ body {
   color: var(--text-secondary);
   font-size: 0.9rem;
   font-weight: 500;
-  border-radius: 9999px; /* THIS IS THE FIX */
+  border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
   min-width: fit-content;
@@ -854,7 +854,7 @@ body {
   background-color: transparent;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
-  border-radius: 9999px; /* THIS IS THE FIX for the Add to Calendar button */
+  border-radius: 9999px;
 }
 
 .event-action-buttons-top .action-btn:hover {
@@ -873,7 +873,7 @@ body {
   background-color: var(--primary-color);
   color: var(--text-on-primary);
   border: none;
-  border-radius: 9999px; /* THIS IS THE FIX for the Detail button */
+  border-radius: 9999px;
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
@@ -899,7 +899,7 @@ body {
   color: var(--text-primary);
   font-size: 0.9rem;
   transition: background-color 0.2s ease;
-  border-radius: 9999px; /* THIS IS THE FIX if it's a dropdown option */
+  border-radius: 9999px;
 }
 
 
@@ -908,7 +908,7 @@ body {
 .btn-primary,
 .btn-secondary {
   padding: 0.75rem 1.5rem;
-  border-radius: 9999px; /* THIS IS THE FIX */
+  border-radius: 9999px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -929,8 +929,6 @@ body {
 .btn-secondary:hover {
   background-color: var(--action-btn-hover);
 }
-
-/* ... (Rest of the CSS code follows below, unchanged) ... */
 
 .action-btn.liked svg {
   color: #ef4444;
@@ -1122,7 +1120,7 @@ body {
   color: #fff;
   border: none;
   padding: 10px 20px;
-  border-radius: 9999px; /* THIS IS THE FIX for the book button on the detail page */
+  border-radius: 9999px;
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -1297,7 +1295,7 @@ body {
   background-color: #5a67d8;
   color: white;
   padding: 10px 20px;
-  border-radius: 9999px; /* This is the fix for the general primary button */
+  border-radius: 9999px;
   text-decoration: none;
   font-weight: 500;
   transition: background-color 0.2s ease-in-out;
@@ -1498,6 +1496,7 @@ body {
 .comment-timestamp {
   font-size: 0.75rem;
   color: var(--text-secondary);
+  margin: 0;
 }
 
 .comment-text {
@@ -2183,7 +2182,7 @@ body {
   background-color: #3b82f6;
   color: white;
   border: none;
-  border-radius: 9999px; /* THIS IS THE FIX for the button in the calendar modal */
+  border-radius: 9999px;
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 600;
@@ -2751,7 +2750,7 @@ body.modal-open {
   /* Calendar icon specifically on the Events page for mobile */
   .mobile-calendar-icon-container {
     position: fixed;
-    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    bottom: 5.5rem;
     right: 1.5rem;
     z-index: 55;
   }
@@ -2760,19 +2759,30 @@ body.modal-open {
     background-color: var(--primary-color-faded);
     color: var(--primary-color);
     border: none;
-    width: 45px;
-    height: 45px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 4px var(--shadow-color);
+    box-shadow: 0 4px 8px var(--shadow-color);
     transition: all 0.2s ease-in-out;
+  }
+
+  .mobile-calendar-icon svg {
+    width: 30px;
+    height: 30px;
+    color: var(--primary-color);
+    transition: color 0.2s ease-in-out;
   }
 
   .mobile-calendar-icon:hover {
     background-color: var(--primary-color);
+    color: var(--text-on-primary);
+  }
+  
+  .mobile-calendar-icon:hover svg {
     color: var(--text-on-primary);
   }
 
@@ -2917,17 +2927,17 @@ body.modal-open {
     border-radius: 50%;
     object-fit: cover;
   }
-
+  
   .edit-avatar-button {
-    width: 65px;
-    height: 65px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
+    width: 18px;
+    height: 18px;
   }
 
   .profile-info {
@@ -2983,19 +2993,6 @@ body.modal-open {
 
   .profile-phone {
     margin-bottom: 1.5rem;
-  }
-
-  /* Increased size of the edit circle and icon for mobile */
-  .edit-avatar-button {
-    width: 65px;
-    height: 65px;
-    bottom: 5px;
-    right: 5px;
-  }
-
-  .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
@@ -3094,7 +3091,7 @@ body.modal-open {
     display: none;
   }
   .post-actions .action-btn.share-only-icon {
-    width: 40px; /* Adjust button size as needed */
+    width: 40px;
     height: 40px;
     padding: 0;
     justify-content: center;
@@ -3108,12 +3105,12 @@ body.modal-open {
     width: 100%;
     min-width: 0;
     overflow-x: hidden;
-    margin: 0 auto; /* Add this line */
+    margin: 0 auto;
   }
 
   .post-card {
-    max-width: 600px; /* Adjust to a reasonable max-width */
-    margin: 0 auto; /* Add this line */
+    max-width: 600px;
+    margin: 0 auto;
     width: 100%;
     min-width: 0;
     flex-shrink: 0;
@@ -3201,18 +3198,18 @@ body.modal-open {
     object-fit: cover;
   }
   
-  /* Make the profile edit button smaller on desktop */
   .edit-avatar-button {
-    width: 35px;
-    height: 35px;
-    bottom: 0;
-    right: 0;
+    width: 45px;
+    height: 45px;
+    bottom: 5px;
+    right: 5px;
+    z-index: 20;
   }
 
   .edit-avatar-button svg {
     stroke: var(--icon-color);
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     transition: stroke 0.2s ease;
   }
 
@@ -3324,7 +3321,6 @@ body.modal-open {
     margin-bottom: 1.5rem;
   }
 
-  /* **New: Hide the calendar icon on desktop** */
   .mobile-calendar-icon-container {
     display: none;
   }
@@ -3533,7 +3529,7 @@ body.modal-open {
   
   .mobile-calendar-icon-container {
     position: fixed;
-    bottom: 5.5rem; /* Adjust this value to position it above the navbar */
+    bottom: 5.5rem;
     right: 1.5rem;
     z-index: 55;
   }
@@ -3542,8 +3538,8 @@ body.modal-open {
     background-color: var(--primary-color-faded);
     color: var(--primary-color);
     border: none;
-    width: 60px; /* Increased size */
-    height: 60px; /* Increased size */
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -3554,8 +3550,8 @@ body.modal-open {
   }
   
   .mobile-calendar-icon svg {
-    width: 30px; /* Increased icon size */
-    height: 30px; /* Increased icon size */
+    width: 30px;
+    height: 30px;
     color: var(--primary-color);
     transition: color 0.2s ease-in-out;
   }
@@ -3571,9 +3567,9 @@ body.modal-open {
   
   /* Fix: Correct positioning for the calendar modal on mobile to be above the bottom nav */
   .calendar-modal-content {
-    bottom: 4rem; /* Match the height of the bottom navbar */
+    bottom: 4rem;
     border-radius: 12px 12px 0 0;
-    max-height: calc(100vh - 4rem - 20px); /* Adjust max-height to fit above the navbar and with some padding */
+    max-height: calc(100vh - 4rem - 20px);
   }
 
   /* Fixed Mobile Navigation Bar at the Bottom */
@@ -3719,15 +3715,15 @@ body.modal-open {
   }
 
   .edit-avatar-button {
-    width: 65px;
-    height: 65px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
+    width: 18px;
+    height: 18px;
   }
 
   .profile-info {
@@ -3783,19 +3779,6 @@ body.modal-open {
 
   .profile-phone {
     margin-bottom: 1.5rem;
-  }
-
-  /* Increased size of the edit circle and icon for mobile */
-  .edit-avatar-button {
-    width: 65px;
-    height: 65px;
-    bottom: 5px;
-    right: 5px;
-  }
-
-  .edit-avatar-button svg {
-    width: 55px;
-    height: 55px;
   }
 
   /* ---- FIXES FOR COMMENT SECTION OVERFLOW ON MOBILE ---- */
@@ -3894,7 +3877,7 @@ body.modal-open {
     display: none;
   }
   .post-actions .action-btn.share-only-icon {
-    width: 40px; /* Adjust button size as needed */
+    width: 40px;
     height: 40px;
     padding: 0;
     justify-content: center;
@@ -3908,12 +3891,12 @@ body.modal-open {
     width: 100%;
     min-width: 0;
     overflow-x: hidden;
-    margin: 0 auto; /* Add this line */
+    margin: 0 auto;
   }
 
   .post-card {
-    max-width: 600px; /* Adjust to a reasonable max-width */
-    margin: 0 auto; /* Add this line */
+    max-width: 600px;
+    margin: 0 auto;
     width: 100%;
     min-width: 0;
     flex-shrink: 0;
