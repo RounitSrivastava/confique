@@ -2343,8 +2343,8 @@ body {
 
 .edit-avatar-button svg {
   stroke: var(--icon-color);
-  width: 20px;
-  height: 20px;
+  width: 50%;
+  height: 50%;
   transition: stroke 0.2s ease;
 }
 
@@ -2929,15 +2929,15 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 505px;
-    height: 505px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
 
   .edit-avatar-button svg {
-    width: 18px;
-    height: 18px;
+    width: 50%;
+    height: 50%;
   }
 
   .profile-info {
@@ -3208,8 +3208,8 @@ body.modal-open {
 
   .edit-avatar-button svg {
     stroke: var(--icon-color);
-    width: 20px;
-    height: 20px;
+    width: 50%;
+    height: 50%;
     transition: stroke 0.2s ease;
   }
 
@@ -3722,8 +3722,8 @@ body.modal-open {
   }
 
   .edit-avatar-button svg {
-    width: 18px;
-    height: 18px;
+    width: 50%;
+    height: 50%;
   }
 
   .profile-info {
