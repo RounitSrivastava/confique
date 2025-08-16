@@ -1929,7 +1929,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                 </div>
                 <div className="modal-body profile-settings-body">
                     <div className="current-avatar-container">
-                        <h4 className="modal-subtitle">Current Profileee Image</h4>
+                        <h4 className="modal-subtitle">Current Profile Image</h4>
                         <div className="current-avatar-preview" style={{ position: 'relative' }}>
                             <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
                             <button 
