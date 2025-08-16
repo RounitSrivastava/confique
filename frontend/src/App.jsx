@@ -1923,8 +1923,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
             <div className="modal-content profile-settings-modal">
                 <div className="modal-header">
                     <h2 className="modal-title">Edit Profile Image</h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <X size={24} />
+                    <button className="modal-close modal-close-enhanced" onClick={onClose}>
+                        <X size={28} />
                     </button>
                 </div>
                 <div className="modal-body profile-settings-body">
@@ -1960,8 +1960,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                                 {customAvatar ? (
                                     <div className="custom-avatar-preview">
                                         <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
-                                        <button className="remove-image-btn" onClick={() => setCustomAvatar('')}>
-                                            <X size={14} />
+                                        <button className="remove-image-btn remove-image-btn-enhanced" onClick={() => setCustomAvatar('')}>
+                                            <X size={16} />
                                         </button>
                                     </div>
                                 ) : (
@@ -1994,6 +1994,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         </div>
     );
 };
+
 
 
 // Users Component - Displays user's profile and their posts
