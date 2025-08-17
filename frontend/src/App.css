@@ -2330,8 +2330,8 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  width: 100px; /* Increased size */
-  height: 100px; /* Increased size */
+  width: 150px; /* Increased size */
+  height: 150px; /* Increased size */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2930,8 +2930,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 55px;
-    height: 55px;
+    width: 105px;
+    height: 105px;
     bottom: 5px;
     right: 5px;
   }
@@ -3201,8 +3201,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 55px;
-    height: 55px;
+    width: 105px;
+    height: 105px;
     bottom: 5px;
     right: 5px;
     z-index: 20;
@@ -3718,8 +3718,8 @@ body.modal-open {
   }
 
   .edit-avatar-button {
-    width: 55px;
-    height: 55px;
+    width: 105px;
+    height: 105px;
     bottom: 5px;
     right: 5px;
   }
