@@ -2930,8 +2930,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 55px;
-    height: 55px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
@@ -3201,8 +3201,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 105px;
-    height: 105px;
+    width: 45px;
+    height: 45px;
     bottom: 5px;
     right: 5px;
     z-index: 20;
@@ -3718,8 +3718,8 @@ body.modal-open {
   }
 
   .edit-avatar-button {
-    width: 105px;
-    height: 105px;
+    width: 35px;
+    height: 35px;
     bottom: 5px;
     right: 5px;
   }
