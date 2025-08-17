@@ -2343,8 +2343,8 @@ body {
 
 .edit-avatar-button svg {
   stroke: var(--icon-color);
-  width: 60%; /* Increased icon size */
-  height: 60%; /* Increased icon size */
+  width: 100%; /* Increased icon size */
+  height: 100%; /* Increased icon size */
   transition: stroke 0.2s ease;
 }
 
@@ -2930,8 +2930,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 35px;
-    height: 35px;
+    width: 55px;
+    height: 55px;
     bottom: 5px;
     right: 5px;
   }
@@ -3201,8 +3201,8 @@ body.modal-open {
   }
   
   .edit-avatar-button {
-    width: 45px;
-    height: 45px;
+    width: 55px;
+    height: 55px;
     bottom: 5px;
     right: 5px;
     z-index: 20;
@@ -3718,8 +3718,8 @@ body.modal-open {
   }
 
   .edit-avatar-button {
-    width: 35px;
-    height: 35px;
+    width: 55px;
+    height: 55px;
     bottom: 5px;
     right: 5px;
   }
