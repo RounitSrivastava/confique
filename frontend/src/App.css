@@ -2330,8 +2330,8 @@ body {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  width: 150px; /* Increased size */
-  height: 150px; /* Increased size */
+  width: 100px; /* Increased size */
+  height: 100px; /* Increased size */
   display: flex;
   align-items: center;
   justify-content: center;
