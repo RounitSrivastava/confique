@@ -1337,9 +1337,7 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  /* display: none; */
-  display: inline-block; /* Always show the title on small screens */
-   margin-left: 0; /* No margin when logo is hidden */
+  display: none;
 }
 
 /* Adjusted for PostDetailComponent placeholder */
@@ -3146,19 +3144,12 @@ body.modal-open {
 }
 
 @media (min-width: 768px) {
-  /* .app-title {
-    display: inline-block;
-  } */
-
-  .app-logo {
-    display: inline-block; /* Show the logo on larger screens */
+  .app-logo-link img {
+    display: block;
   }
-
   .app-title {
-    display: inline-block; /* Show the title on larger screens */
-    margin-left: 0.5rem; /* Add margin to separate from the logo */
+    display: inline-block;
   }
-
   .left-sidebar {
     width: 14rem;
     padding: 1.5rem;
@@ -3915,6 +3906,14 @@ body.modal-open {
 
 /* In App.css */
 @media (max-width: 767px) {
+.app-logo-link img {
+    display: none;
+  }
+  
+  .app-title {
+    display: inline-block;
+  }
+
   .post-actions .action-btn .share-text {
     display: none;
   }
