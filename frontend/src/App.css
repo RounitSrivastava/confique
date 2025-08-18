@@ -1367,6 +1367,12 @@ body {
   flex-direction: column;
   min-width: 0;
 }
+
+/* In App.css */
+.action-btn.liked .lucide-heart {
+    fill: #ef4444 !important; /* Red color */
+    stroke: #ef4444 !important; /* Red stroke, if applicable */
+}
 @media (max-width: 767px) {
   .comment-section {
     padding: 4px !important;

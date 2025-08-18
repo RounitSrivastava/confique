@@ -1635,8 +1635,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            {/* Re-added inline fill/stroke for direct control of icon color */}
-                            <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
+                            {/* Explicitly setting fill and stroke based on isLiked state */}
+                            <Heart size={20} fill={isLiked ? '#ef4444' : 'currentColor'} stroke={isLiked ? '#ef4444' : 'currentColor'} />
                             <span>{post.likes}</span>
                         </button>
                         <button className="action-btn" onClick={handleCommentIconClick}>
