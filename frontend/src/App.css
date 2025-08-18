@@ -1369,7 +1369,7 @@ body {
 }
 @media (max-width: 767px) {
   .comment-section {
-    padding: 8px !important;
+    padding: 4px !important;
   }
 }
 
