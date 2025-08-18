@@ -1367,6 +1367,11 @@ body {
   flex-direction: column;
   min-width: 0;
 }
+@media (max-width: 767px) {
+  .comment-section {
+    padding: 8px !important;
+  }
+}
 
 .comment-section-header {
   display: flex;
