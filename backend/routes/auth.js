@@ -19,9 +19,9 @@ const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// @desc    Register a new user with email and password
-// @route   POST /api/auth/register
-// @access  Public
+// @desc    Register a new user with email and password
+// @route   POST /api/auth/register
+// @access  Public
 router.post('/register', asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
     
@@ -55,9 +55,9 @@ router.post('/register', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Authenticate user with email and password & get token
-// @route   POST /api/auth/login
-// @access  Public
+// @desc    Authenticate user with email and password & get token
+// @route   POST /api/auth/login
+// @access  Public
 router.post('/login', asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
@@ -77,16 +77,16 @@ router.post('/login', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Initiate Google OAuth login
-// @route   GET /api/auth/google
-// @access  Public
+// @desc    Initiate Google OAuth login
+// @route   GET /api/auth/google
+// @access  Public
 router.get('/google', passport.authenticate('google', {
     scope: ['profile', 'email']
 }));
 
-// @desc    Google OAuth callback after successful authentication
-// @route   GET /api/auth/google/callback
-// @access  Public
+// @desc    Google OAuth callback after successful authentication
+// @route   GET /api/auth/google/callback
+// @access  Public
 router.get('/google/callback', passport.authenticate('google', {
     failureRedirect: process.env.FRONTEND_URL + '/login?error=google_failed',
     session: true
