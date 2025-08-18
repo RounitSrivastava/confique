@@ -657,7 +657,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     );
 };
 
-// Add Post Modal Component (for creating/editing Consights and events)
+// Add Post Modal Component (for creating/editing confessions and events)
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
     // Initial form data structure
     const initialFormData = {
@@ -834,7 +834,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h2 className="modal-title">
-                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'Consights' ? 'Consights' : 'Event'}`}
+                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Confession' : 'Event'}`}
                         </h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
@@ -851,9 +851,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     value={formData.type}
                                     onChange={handleTypeChange}
                                 >
+                                    <option value="confession">Consights</option>
                                     <option value="event">Event</option>
-                                    <option value="Consights">Consights</option>
-                                    
                                 </select>
                             </div>
 
@@ -1421,7 +1420,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-// Post Card Component - Displays a single post (Consights, event, or news)
+// Post Card Component - Displays a single post (confession, event, or news)
 const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
@@ -1445,7 +1444,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const getPostTypeLabel = (type) => {
         switch (type) {
-            case 'Consights': return 'Consights';
+            case 'confession': return 'Confession';
             case 'event': return 'Event';
             case 'news': return 'News';
             default: return 'Post';
@@ -1787,14 +1786,14 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-// Confessions Component - Displays only Consights posts
+// Confessions Component - Displays only confession posts
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
-    const ConsightsPosts = posts.filter(post => post.type === 'Consights');
+    const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
         <div>
             <div className="posts-container">
-                {ConsightsPosts.map(post => (
+                {confessionPosts.map(post => (
                     <PostCard
                         key={post._id}
                         post={post}
@@ -2215,10 +2214,10 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     );
 };
 
-// Confessions Right Sidebar Component - Displays recent Consights
+// Confessions Right Sidebar Component - Displays recent confessions
 const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
     const recentConfessions = [...posts]
-        .filter(post => post.type === 'Consights')
+        .filter(post => post.type === 'confession')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3);
     return (
@@ -2231,11 +2230,11 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
                     {recentConfessions.map(post => (
                         <div
                             key={post._id}
-                            className="recent-Consights-item clickable"
+                            className="recent-confession-item clickable"
                             onClick={() => onOpenPostDetail(post)}
                         >
                             <p className="widget-item-title">{post.title}</p>
-                            <p className="Consights-preview">
+                            <p className="confession-preview">
                                 {post.content.substring(0, 60)}...
                             </p>
                         </div>
@@ -3533,11 +3532,11 @@ const App = () => {
             />,
         },
         {
-            id: 'Consights',
+            id: 'confessions',
             label: 'Consights',
             icon: <MessageCircle className="nav-icon" />,
             component: () => <ConfessionsComponent
-                posts={filteredPosts.filter(post => post.type === 'Consights')}
+                posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3553,7 +3552,7 @@ const App = () => {
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
             />,
-            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'Consights')} onOpenPostDetail={handleOpenPostDetail} />,
+            rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
             id: 'notifications',
@@ -3619,8 +3618,8 @@ const App = () => {
             onEditPost={handleEditPost}
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
-        Consights: () => <ConfessionsComponent
-            posts={filteredPosts.filter(post => post.type === 'Consights')}
+        confessions: () => <ConfessionsComponent
+            posts={filteredPosts.filter(post => post.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -3670,7 +3669,7 @@ const App = () => {
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
-        Consights: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'Consights')} onOpenPostDetail={handleOpenPostDetail} />,
+        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
     };
