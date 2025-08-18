@@ -1425,8 +1425,8 @@ body {
   color: var(--text-on-primary);
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1447,8 +1447,8 @@ body {
 }
 
 .comment-submit-btn svg {
-  width: 28px;
-  height: 28px;
+  width: 85%;
+  height: 85%;
   color: var(--text-on-primary);
 }
 
@@ -1456,7 +1456,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
   padding-right: 5px;
   min-width: 0;
@@ -1735,7 +1735,7 @@ body {
   padding: 0 1.5rem 1.5rem;
   overflow-y: auto;
   overflow-x: hidden;
-  max-height: 70vh;
+  max-height: 90vh;
 }
 
 .modal-form {
@@ -3058,15 +3058,15 @@ body.modal-open {
   }
 
   .comment-submit-btn {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    min-height: 54px;
   }
 
   .comment-submit-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 70px;
+    height: 70px;
   }
 
   .comments-list {
@@ -3848,15 +3848,15 @@ body.modal-open {
   }
 
   .comment-submit-btn {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    min-height: 54px;
   }
 
   .comment-submit-btn svg {
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
   }
 
   .comments-list {
