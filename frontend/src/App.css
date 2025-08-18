@@ -600,6 +600,7 @@ body {
   position: relative;
   max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
 }
 
 @media (max-width: 767px) {
