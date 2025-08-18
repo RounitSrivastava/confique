@@ -1337,6 +1337,7 @@ body {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  display: none;
 }
 
 /* Adjusted for PostDetailComponent placeholder */
@@ -3143,6 +3144,9 @@ body.modal-open {
 }
 
 @media (min-width: 768px) {
+  .app-title {
+    display: inline-block;
+  }
   .left-sidebar {
     width: 14rem;
     padding: 1.5rem;
