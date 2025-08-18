@@ -1454,6 +1454,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
+    const isLiked = likedPosts?.has(post._id); // Calculate isLiked here
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
@@ -1633,8 +1634,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     )}
 
                     <div className="post-actions">
-                        <button className={`action-btn ${likedPosts?.has(post._id) ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            <Heart size={20} fill={likedPosts?.has(post._id) ? '#ef4444' : 'none'} stroke={likedPosts?.has(post._id) ? '#ef4444' : '#9ca3af'} />
+                        <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                            {/* Removed inline fill/stroke to rely on CSS for color */}
+                            <Heart size={20} />
                             <span>{post.likes}</span>
                         </button>
                         <button className="action-btn" onClick={handleCommentIconClick}>
