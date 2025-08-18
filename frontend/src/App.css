@@ -3903,7 +3903,15 @@ body.modal-open {
 
 /* In App.css */
 @media (max-width: 767px) {
+/* .app-logo-link img { 
+
+    display: none;
+  }
   
+  .app-title {
+    display: inline-block;
+  } */
+
   .post-actions .action-btn .share-text {
     display: none;
   }
