@@ -834,7 +834,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h2 className="modal-title">
-                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Confession' : 'Event'}`}
+                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Consights' : 'Event'}`}
                         </h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
@@ -1444,7 +1444,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const getPostTypeLabel = (type) => {
         switch (type) {
-            case 'confession': return 'Confession';
+            case 'confession': return 'Consights';
             case 'event': return 'Event';
             case 'news': return 'News';
             default: return 'Post';
@@ -2223,7 +2223,7 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
-                <h3 className="widget-title">Recent Confessions</h3>
+                <h3 className="widget-title">Recent Consights</h3>
             </div>
             <div className="widget-content">
                 <div className="widget-list">
