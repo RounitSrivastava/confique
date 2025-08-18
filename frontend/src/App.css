@@ -1484,7 +1484,10 @@ body {
   overflow: hidden;
   flex-shrink: 0;
 }
-
+img {
+  max-width: 100%;
+  height: auto;
+}
 .comment-avatar img {
   width: 100%;
   height: 100%;
@@ -3909,11 +3912,11 @@ body.modal-open {
 /* .app-logo-link img { 
 
     display: none;
-  }
+  } */
   
   .app-title {
     display: inline-block;
-  } */
+  }
 
   .post-actions .action-btn .share-text {
     display: none;
