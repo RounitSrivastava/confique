@@ -38,6 +38,7 @@ import './App.css';
 // Import predefined avatars
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
+
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
@@ -661,7 +662,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
     // Initial form data structure
     const initialFormData = {
-        type: 'Consights',
+        type: 'confession', // Changed default to 'confession' for 'Consights'
         title: '',
         content: '',
         author: currentUser?.name || '',
@@ -2584,7 +2585,11 @@ const App = () => {
     });
     const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
-    const [likedPosts, setLikedPosts] = useState(new Set());
+    // Initialize likedPosts from localStorage
+    const [likedPosts, setLikedPosts] = useState(() => {
+        const savedLikes = localStorage.getItem('likedPosts');
+        return savedLikes ? new Set(JSON.parse(savedLikes)) : new Set();
+    });
 
     const [openCommentPostId, setOpenCommentPostId] = useState(null);
     const [selectedEvent, setSelectedEvent] = useState(null);
@@ -2644,6 +2649,11 @@ const App = () => {
         }));
         localStorage.setItem('myCalendarEvents', JSON.stringify(eventsToSave));
     }, [myCalendarEvents]);
+
+    // New useEffect to save likedPosts to local storage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
+    }, [likedPosts]);
 
     const fetchPosts = async () => {
         try {
@@ -3057,7 +3067,6 @@ const App = () => {
             setActiveSection('profile');
         }
     };
-
 
     const handleLikePost = async (postId) => {
         if (!isLoggedIn || !currentUser || !currentUser.token) {
