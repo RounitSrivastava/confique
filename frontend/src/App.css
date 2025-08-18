@@ -3150,6 +3150,7 @@ body.modal-open {
 }
 
 @media (min-width: 768px) {
+ 
   .app-title {
     display: inline-block;
   }
@@ -3909,10 +3910,10 @@ body.modal-open {
 
 /* In App.css */
 @media (max-width: 767px) {
-/* .app-logo-link img { 
+.app-logo-link img { 
 
     display: none;
-  } */
+  }
   
   .app-title {
     display: inline-block;
