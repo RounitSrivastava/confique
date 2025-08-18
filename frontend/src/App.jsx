@@ -1454,7 +1454,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
-    const isLiked = likedPosts?.has(post._id); // Calculate isLiked here
+    const isLiked = likedPosts?.has(post._id); // Correctly get liked status from persisted state
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
@@ -1635,8 +1635,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            {/* Removed inline fill/stroke to rely on CSS for color */}
-                            <Heart size={20} />
+                            {/* Re-added inline fill/stroke for direct control of icon color */}
+                            <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
                             <span>{post.likes}</span>
                         </button>
                         <button className="action-btn" onClick={handleCommentIconClick}>
@@ -3146,7 +3146,8 @@ const App = () => {
                     newLiked.delete(postId);
                 }
                 return newLiked;
-            });
+            }
+            );
             setPosts(prevPosts =>
                 prevPosts.map(post =>
                     post._id === postId
