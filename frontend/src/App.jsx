@@ -941,7 +941,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             name="eventEndDate"
                                         />
                                     </div>
-                                    
+
                                     <div className="form-group">
                                         <label className="form-label">Duration</label>
                                         <input
@@ -1257,7 +1257,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     )}
                     <div className="event-detail-header-overlay">
                         <button onClick={onClose} className="event-detail-back-button">
-                            
+
                             <ArrowLeft size={24} />
                         </button>
                     </div>
@@ -1923,8 +1923,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
             <div className="modal-content profile-settings-modal">
                 <div className="modal-header">
                     <h2 className="modal-title">Edit Profile Image</h2>
-                    <button 
-                        className="modal-close-large" 
+                    <button
+                        className="modal-close-large"
                         onClick={onClose}
                         aria-label="Close modal"
                     >
@@ -1964,8 +1964,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                                 {customAvatar ? (
                                     <div className="custom-avatar-preview">
                                         <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
-                                        <button 
-                                            className="remove-image-btn-large" 
+                                        <button
+                                            className="remove-image-btn-large"
                                             onClick={() => setCustomAvatar('')}
                                             aria-label="Remove image"
                                         >
@@ -2047,8 +2047,9 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
             <div className="profile-header">
                 <div className="profile-avatar-container">
                     <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
-                    <button className="edit-avatar-button" onClick={onEditProfile}>
+                    <button className="edit-avatar-btn" onClick={onEditProfile}>
                         <Edit3 size={16} />
+
                     </button>
                 </div>
                 <div className="profile-info">
@@ -2604,7 +2605,7 @@ const App = () => {
     });
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
-    
+
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
 
@@ -2715,7 +2716,7 @@ const App = () => {
             const res = await fetch(`${API_URL}/users/admin/reported-posts`, {
                 headers: { 'Authorization': `Bearer ${currentUser.token}` }
             });
-            if(res.ok) {
+            if (res.ok) {
                 const data = await res.json();
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
@@ -3413,9 +3414,9 @@ const App = () => {
 
             if (res.ok) {
                 const { avatar: updatedAvatar } = await res.json();
-                
+
                 const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
-                
+
                 setCurrentUser(newCurrentUser);
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
@@ -3431,7 +3432,7 @@ const App = () => {
                             }
                             return comment;
                         });
-                        
+
                         return { ...updatedPost, commentData: updatedComments };
                     })
                 );
@@ -3472,7 +3473,7 @@ const App = () => {
         }
         setShowProfileSettingsModal(false);
     };
-    
+
     // Function to handle opening event details from the calendar modal and closing the modal
     const handleShowEventDetailsAndCloseCalendar = (event) => {
         handleOpenEventDetail(event);
@@ -3718,7 +3719,7 @@ const App = () => {
                     <div className="header-content">
                         <div className="header-left">
                             <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                        <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
+                                <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
