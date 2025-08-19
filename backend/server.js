@@ -37,7 +37,7 @@ app.use(express.urlencoded({ extended: true })); // For parsing application/x-ww
 // CORS Configuration
 app.use(cors({
   // The origin array now includes your Vercel deployment URL
-  origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://confique.vercel.app'], 
+  origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://www.confique.com'], 
   credentials: true, // Allow cookies to be sent
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allowed HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
