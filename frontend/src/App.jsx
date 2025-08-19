@@ -268,8 +268,8 @@ const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
     );
 };
 
-// Post Options Component (e.g., for edit, delete, report, and export)
-const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentUser, onExportRegistrations }) => {
+// Post Options Component (e.g., for edit, delete, report)
+const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentUser }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -300,12 +300,6 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
     const handleReport = (e) => {
         e.stopPropagation();
         onReport(post);
-        setIsOpen(false);
-    };
-
-    const handleExport = (e) => {
-        e.stopPropagation();
-        onExportRegistrations(post._id, post.title);
         setIsOpen(false);
     };
 
@@ -341,12 +335,6 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
                         <button className="post-option-item delete" onClick={handleDelete}>
                             <Trash2 size={16} />
                             <span>Delete</span>
-                        </button>
-                    )}
-                    {isAuthorOrAdmin && post.type === 'event' && (
-                        <button className="post-option-item" onClick={handleExport}>
-                            <Mail size={16} />
-                            <span>Export Data</span>
                         </button>
                     )}
                     {!isAuthorOrAdmin && (
@@ -1436,7 +1424,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportRegistrations }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1581,7 +1569,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         isProfilePage={isProfileView}
                         currentUser={currentUser}
                         onReport={onReportPost}
-                        onExportRegistrations={onExportRegistrations} // Pass the new prop
                     />
                 </div>
             </div>
@@ -1716,7 +1703,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 };
 
 // Home Component - Displays a feed of posts
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportRegistrations }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -1746,7 +1733,6 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onEditPost={onEditPost}
                                 onShowCalendarAlert={onShowCalendarAlert}
                                 isLoggedIn={!!currentUser}
-                                onExportRegistrations={onExportRegistrations}
                             />
                         ))}
                     </div>
@@ -1775,7 +1761,6 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportRegistrations={onExportRegistrations}
                     />
                 ))}
             </div>
@@ -1784,7 +1769,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 };
 
 // Events Component - Displays only event posts
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportRegistrations }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -1810,7 +1795,6 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportRegistrations={onExportRegistrations}
                     />
                 ))}
             </div>
@@ -1819,7 +1803,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 };
 
 // Confessions Component - Displays only confession posts
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportRegistrations }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -1845,7 +1829,6 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportRegistrations={onExportRegistrations}
                     />
                 ))}
             </div>
@@ -2041,7 +2024,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportRegistrations }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert }) => {
     if (!currentUser) {
         return (
             <div>
@@ -2134,7 +2117,6 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
-                            onExportRegistrations={onExportRegistrations}
                         />
                     ))}
                 </div>
@@ -2648,7 +2630,6 @@ const App = () => {
 
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
-    const [showExportSuccessAlert, setShowExportSuccessAlert] = useState(false); // New state for export success
 
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
@@ -2659,7 +2640,7 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert || showExportSuccessAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
         return {
@@ -2767,7 +2748,6 @@ const App = () => {
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
-                setAdminNotifications({});
             }
         } catch (error) {
             console.error('Failed to fetch admin notifications (reported posts):', error);
@@ -3531,62 +3511,6 @@ const App = () => {
         setShowCalendarModal(false);
     };
 
-    // New function to handle exporting event registrations
-    const handleExportRegistrations = async (eventId) => {
-        if (!currentUser || !currentUser.token) {
-            setShowLoginModal(true);
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_URL}/events/${eventId}/export-registrations`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-                body: JSON.stringify({ email: currentUser.email }),
-            });
-
-            if (res.ok) {
-                setShowExportSuccessAlert(true);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: "Registration data is being prepared and will be sent to your email shortly.",
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to export registrations:', errorData);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to export registrations: ${errorData.message || 'An unknown error occurred.'}`,
-                        timestamp: new Date(),
-                        type: 'error'
-                    },
-                    ...prev
-                ]);
-            }
-        } catch (error) {
-            console.error('Network error while exporting registrations:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: "Network error: Could not export registrations.",
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
-
-
     const menuItems = [
         {
             id: 'home',
@@ -3608,7 +3532,6 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
-                onExportRegistrations={handleExportRegistrations} // Pass the new prop
             />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
@@ -3632,7 +3555,6 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
-                onExportRegistrations={handleExportRegistrations} // Pass the new prop
             />,
             rightSidebar: () => <EventsRightSidebar
                 posts={posts.filter(p => p.type === 'event')}
@@ -3660,7 +3582,6 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
-                onExportRegistrations={handleExportRegistrations} // Pass the new prop
             />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
@@ -3710,7 +3631,6 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
             onShowCalendarAlert={handleShowCalendarAlert}
-            onExportRegistrations={handleExportRegistrations} // Pass the new prop
         />,
         events: () => <EventsComponent
             posts={filteredPosts.filter(post => post.type === 'event')}
@@ -3728,7 +3648,6 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
             onShowCalendarAlert={handleShowCalendarAlert}
-            onExportRegistrations={handleExportRegistrations} // Pass the new prop
         />,
         confessions: () => <ConfessionsComponent
             posts={filteredPosts.filter(post => post.type === 'confession')}
@@ -3746,7 +3665,6 @@ const App = () => {
             onDeletePost={handleDeletePost}
             onEditPost={handleEditPost}
             onShowCalendarAlert={handleShowCalendarAlert}
-            onExportRegistrations={handleExportRegistrations} // Pass the new prop
         />,
         notifications: () => <NotificationsComponent
             notifications={notifications}
@@ -3772,7 +3690,6 @@ const App = () => {
             onReportPost={handleOpenReportModal}
             onEditProfile={() => setShowProfileSettingsModal(true)}
             onShowCalendarAlert={handleShowCalendarAlert}
-            onExportRegistrations={handleExportRegistrations} // Pass the new prop
         />,
     };
 
@@ -3931,7 +3848,6 @@ const App = () => {
                                     onReportPost={handleOpenReportModal}
                                     onShowCalendarAlert={handleShowCalendarAlert}
                                     isLoggedIn={isLoggedIn}
-                                    onExportRegistrations={handleExportRegistrations} // Pass the new prop
                                 />
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
@@ -3958,7 +3874,6 @@ const App = () => {
                                                 onEditPost={handleEditPost}
                                                 onShowCalendarAlert={handleShowCalendarAlert}
                                                 isLoggedIn={isLoggedIn}
-                                                onExportRegistrations={handleExportRegistrations} // Pass the new prop
                                             />
                                         ))}
                                 </div>
@@ -3991,7 +3906,6 @@ const App = () => {
                                 registrations={registrations}
                                 onReportPost={handleOpenReportModal}
                                 onShowCalendarAlert={handleShowCalendarAlert}
-                                onExportRegistrations={handleExportRegistrations} // Pass the new prop
                             />
                         )}
                     </div>
@@ -4038,14 +3952,6 @@ const App = () => {
                 onClose={() => setShowAddedToCalendarAlert(false)}
                 title="Event Added to Calendar"
                 message="Your event has been saved. You can view it by opening the calendar."
-                showConfirm={false}
-            />
-            {/* New CustomMessageModal for export success */}
-            <CustomMessageModal
-                isOpen={showExportSuccessAlert}
-                onClose={() => setShowExportSuccessAlert(false)}
-                title="Export Successful"
-                message="The registration data is being prepared and will be sent to your email shortly."
                 showConfirm={false}
             />
         </div>
