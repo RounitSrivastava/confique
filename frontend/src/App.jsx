@@ -305,6 +305,8 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
     const isAuthorOrAdmin = currentUser && (post.userId === currentUser._id || currentUser.isAdmin);
 
+    if (!currentUser) return null; // Hide the options button if the user is not logged in
+
     return (
         <div className="post-options-container" ref={dropdownRef}>
             <button
@@ -1422,7 +1424,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1454,11 +1456,16 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
-    const isLiked = likedPosts?.has(post._id); // Correctly get liked status from persisted state
+    const isLiked = likedPosts?.has(post._id);
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
-        setOpenCommentPostId(isCommentsOpen ? null : post._id);
+        if (isLoggedIn) {
+            setOpenCommentPostId(isCommentsOpen ? null : post._id);
+        } else {
+            // Show a login prompt if not logged in
+            alert("Please log in to comment.");
+        }
     };
 
     const handleBackArrowClick = (e) => {
@@ -1484,8 +1491,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
+        if (!isLoggedIn) {
+            alert("Please log in to add events to your calendar.");
+            return;
+        }
         if (post.type === 'event' && post.eventStartDate) {
-            onAddToCalendar(post); // This saves the event
+            onAddToCalendar(post);
             onShowCalendarAlert();
         }
     };
@@ -1716,12 +1727,12 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onOpenEventDetail={onOpenEventDetail}
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
-                                isProfileView={false}
-                                registrationCount={registrations[post._id]}
+                                registrations={registrations}
                                 onReportPost={onReportPost}
                                 onDeletePost={onDeletePost}
                                 onEditPost={onEditPost}
                                 onShowCalendarAlert={onShowCalendarAlert}
+                                isLoggedIn={!!currentUser}
                             />
                         ))}
                     </div>
@@ -1749,6 +1760,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
+                        isLoggedIn={!!currentUser}
                     />
                 ))}
             </div>
@@ -1782,6 +1794,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
+                        isLoggedIn={!!currentUser}
                     />
                 ))}
             </div>
@@ -1815,6 +1828,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onDeletePost={onDeletePost}
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
+                        isLoggedIn={!!currentUser}
                     />
                 ))}
             </div>
@@ -1947,7 +1961,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                             {predefinedAvatars.map((av, index) => (
                                 <div
                                     key={index}
-                                    className={`avatar-option ${selectedAvatar === av.src ? 'selected' : ''}`}
+                                    className={`avatar-option selected ${selectedAvatar === av.src ? 'selected' : ''}`}
                                     onClick={() => {
                                         setSelectedAvatar(av.src);
                                         setCustomAvatar('');
@@ -2102,6 +2116,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
+                            isLoggedIn={!!currentUser}
                         />
                     ))}
                 </div>
@@ -3828,6 +3843,7 @@ const App = () => {
                                     registrationCount={registrations[selectedPost._id]}
                                     onReportPost={handleOpenReportModal}
                                     onShowCalendarAlert={handleShowCalendarAlert}
+                                    isLoggedIn={isLoggedIn}
                                 />
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
@@ -3853,6 +3869,7 @@ const App = () => {
                                                 onDeletePost={handleDeletePost}
                                                 onEditPost={handleEditPost}
                                                 onShowCalendarAlert={handleShowCalendarAlert}
+                                                isLoggedIn={isLoggedIn}
                                             />
                                         ))}
                                 </div>
