@@ -2806,7 +2806,10 @@ const App = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            // Always fetch public posts first
             await fetchPosts();
+
+            // Then, fetch user-specific data only if logged in
             if (isLoggedIn && currentUser) {
                 await fetchLikedPosts(currentUser);
                 fetchRegistrations();
@@ -2816,6 +2819,7 @@ const App = () => {
                     fetchAdminNotifications();
                 }
             } else {
+                // Clear user-specific state when not logged in
                 setLikedPosts(new Set());
                 setMyRegisteredEvents(new Set());
                 setRegistrations({});
