@@ -23,7 +23,7 @@ passport.use(
     // options for google strategy
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://www.confique.com/api/auth/google/callback', // This must match your Google Cloud Console redirect URI
+    callbackURL: 'https://confique.onrender.com/api/auth/google/callback', // This must match your Google Cloud Console redirect URI
   }, async (accessToken, refreshToken, profile, done) => {
     // passport callback function
     try {
