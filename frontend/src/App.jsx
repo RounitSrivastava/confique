@@ -840,7 +840,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         
         let submissionData = { ...formData };
         if (!hasRegistration) {
-             submissionData = {
+            submissionData = {
                 ...submissionData,
                 registrationLink: '',
                 enableRegistrationForm: false,
@@ -860,7 +860,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             };
         }
         else if (registrationMethod === 'form') {
-             submissionData = {
+            submissionData = {
                 ...submissionData,
                 registrationLink: '',
             };
