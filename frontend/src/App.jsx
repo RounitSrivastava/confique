@@ -664,7 +664,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
     // Initial form data structure
     const initialFormData = {
-        type: 'confession', // Changed default to 'confession' for 'Consights'
+        type: 'confession',
         title: '',
         content: '',
         author: currentUser?.name || '',
@@ -714,7 +714,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
                 enableRegistrationForm: postToEdit.enableRegistrationForm || false,
                 registrationFields: postToEdit.registrationFields || '',
-                paymentMethod: postToEdit.paymentMethod || 'link',
+                paymentMethod: postTo-doEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
                 paymentQRCode: postToEdit.paymentQRCode || ''
             });
@@ -731,6 +731,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 setRegistrationMethod('');
             }
         } else if (isOpen) {
+            // Reset to a completely clean state for new posts
             setFormData(prev => ({
                 ...initialFormData,
                 author: currentUser?.name || '',
@@ -1046,7 +1047,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             <button
                                                 type="button"
                                                 className={`btn-toggle ${hasRegistration ? 'active' : ''}`}
-                                                onClick={() => setHasRegistration(!hasRegistration)}
+                                                onClick={() => {
+                                                    const newHasRegistration = !hasRegistration;
+                                                    setHasRegistration(newHasRegistration);
+                                                    if (newHasRegistration) {
+                                                        // Default to 'link' when toggling 'Yes'
+                                                        setRegistrationMethod('link');
+                                                    } else {
+                                                        setRegistrationMethod('');
+                                                    }
+                                                }}
                                             >
                                                 {hasRegistration ? 'Yes' : 'No'}
                                             </button>
