@@ -714,7 +714,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
                 enableRegistrationForm: postToEdit.enableRegistrationForm || false,
                 registrationFields: postToEdit.registrationFields || '',
-                paymentMethod: postTo-doEdit.paymentMethod || 'link',
+                paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
                 paymentQRCode: postToEdit.paymentQRCode || ''
             });
@@ -722,7 +722,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
 
             // Set registration states based on existing post data
-            setHasRegistration(!!postToEdit.registrationLink || postToEdit.enableRegistrationForm);
+            const requiresRegistration = !!postToEdit.registrationLink || postToEdit.enableRegistrationForm;
+            setHasRegistration(requiresRegistration);
             if (postToEdit.registrationLink) {
                 setRegistrationMethod('link');
             } else if (postToEdit.enableRegistrationForm) {
@@ -762,11 +763,30 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         setRegistrationMethod('');
     };
 
-    const handleRegistrationOptionChange = (method) => {
+    const handleRegistrationToggle = () => {
+        const newHasRegistration = !hasRegistration;
+        setHasRegistration(newHasRegistration);
+        if (newHasRegistration) {
+            setRegistrationMethod('link'); // Default to link when toggling 'Yes'
+        } else {
+            setRegistrationMethod('');
+            setFormData(prev => ({
+                ...prev,
+                registrationLink: '',
+                enableRegistrationForm: false,
+                registrationFields: '',
+                paymentMethod: 'link',
+                paymentLink: '',
+                paymentQRCode: ''
+            }));
+        }
+    };
+
+    const handleRegistrationMethodChange = (method) => {
         setRegistrationMethod(method);
         setFormData(prev => ({
             ...prev,
-            registrationLink: '',
+            registrationLink: method === 'link' ? prev.registrationLink : '',
             enableRegistrationForm: method === 'form',
         }));
     };
@@ -808,10 +828,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }
         }
         
-        // Reset registration fields if no registration is needed
         let submissionData = { ...formData };
         if (!hasRegistration) {
-            submissionData = {
+             submissionData = {
                 ...submissionData,
                 registrationLink: '',
                 enableRegistrationForm: false,
@@ -830,6 +849,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentQRCode: ''
             };
         }
+        else if (registrationMethod === 'form') {
+             submissionData = {
+                ...submissionData,
+                registrationLink: '',
+            };
+        }
+
 
         submissionData = {
             ...submissionData,
@@ -1047,16 +1073,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             <button
                                                 type="button"
                                                 className={`btn-toggle ${hasRegistration ? 'active' : ''}`}
-                                                onClick={() => {
-                                                    const newHasRegistration = !hasRegistration;
-                                                    setHasRegistration(newHasRegistration);
-                                                    if (newHasRegistration) {
-                                                        // Default to 'link' when toggling 'Yes'
-                                                        setRegistrationMethod('link');
-                                                    } else {
-                                                        setRegistrationMethod('');
-                                                    }
-                                                }}
+                                                onClick={handleRegistrationToggle}
                                             >
                                                 {hasRegistration ? 'Yes' : 'No'}
                                             </button>
@@ -1074,7 +1091,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             name="registrationMethod"
                                                             value="link"
                                                             checked={registrationMethod === 'link'}
-                                                            onChange={() => handleRegistrationOptionChange('link')}
+                                                            onChange={() => handleRegistrationMethodChange('link')}
                                                         />
                                                         <span>External Link</span>
                                                     </label>
@@ -1084,7 +1101,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             name="registrationMethod"
                                                             value="form"
                                                             checked={registrationMethod === 'form'}
-                                                            onChange={() => handleRegistrationOptionChange('form')}
+                                                            onChange={() => handleRegistrationMethodChange('form')}
                                                         />
                                                         <span>In-App Form</span>
                                                     </label>
