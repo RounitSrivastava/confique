@@ -721,7 +721,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
 
-            // Set registration states based on existing post data
             const requiresRegistration = !!postToEdit.registrationLink || postToEdit.enableRegistrationForm;
             setHasRegistration(requiresRegistration);
             if (postToEdit.registrationLink) {
@@ -732,7 +731,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 setRegistrationMethod('');
             }
         } else if (isOpen) {
-            // Reset to a completely clean state for new posts
             setFormData(prev => ({
                 ...initialFormData,
                 author: currentUser?.name || '',
@@ -766,9 +764,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const handleRegistrationToggle = () => {
         const newHasRegistration = !hasRegistration;
         setHasRegistration(newHasRegistration);
-        if (newHasRegistration) {
-            setRegistrationMethod('link'); // Default to link when toggling 'Yes'
-        } else {
+        if (!newHasRegistration) {
             setRegistrationMethod('');
             setFormData(prev => ({
                 ...prev,
@@ -778,6 +774,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentMethod: 'link',
                 paymentLink: '',
                 paymentQRCode: ''
+            }));
+        } else {
+            // Reset method choice when toggling back to 'Yes'
+            setRegistrationMethod('');
+            setFormData(prev => ({
+                ...prev,
+                registrationLink: '',
+                enableRegistrationForm: false,
             }));
         }
     };
@@ -807,6 +811,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }
 
         if (formData.type === 'event' && hasRegistration) {
+            if (!registrationMethod) {
+                setUploadAlertMessage("Please select a registration method.");
+                setShowUploadAlert(true);
+                return;
+            }
+
             if (registrationMethod === 'link' && !formData.registrationLink) {
                 setUploadAlertMessage("Please provide a Registration Link.");
                 setShowUploadAlert(true);
@@ -1066,7 +1076,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         />
                                     </div>
                                     
-                                    {/* New Registration Options Section */}
+                                    {/* Corrected Registration Options Section */}
                                     <div className="form-group">
                                         <label className="form-label">Registration Required?</label>
                                         <div className="registration-toggle">
