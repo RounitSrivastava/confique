@@ -693,7 +693,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
     // MODIFIED: Initial state of hasRegistration is now true
-    const [hasRegistration, setHasRegistration] = useState(false);
+    const [hasRegistration, setHasRegistration] = useState(true);
     const [registrationMethod, setRegistrationMethod] = useState('');
 
     useEffect(() => {
@@ -1963,7 +1963,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
