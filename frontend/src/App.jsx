@@ -674,7 +674,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         price: 0,
         language: 'English',
         duration: '',
-        ticketsNeeded: '',
+        // Removed 'ticketsNeeded' from initialFormData
         registrationLink: '',
         registrationOpen: true,
         enableRegistrationForm: false,
@@ -708,7 +708,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 price: postToEdit.price || 0,
                 language: postToEdit.language || 'English',
                 duration: postToEdit.duration || '',
-                ticketsNeeded: postToEdit.ticketsNeeded || '',
+                // Removed 'ticketsNeeded' from postToEdit mapping
                 venueAddress: postToEdit.venueAddress || '',
                 registrationLink: postToEdit.registrationLink || '',
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
@@ -805,8 +805,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
-        if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration || !formData.ticketsNeeded)) {
-            setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration, Tickets Needed).");
+        // Removed 'ticketsNeeded' from validation
+        if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration)) {
+            setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration).");
             setShowUploadAlert(true);
             return;
         }
@@ -1053,7 +1054,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-                                    <div className="form-group">
+                                    {/* Removed "Tickets Needed For" section */}
+                                    {/* <div className="form-group">
                                         <label className="form-label">Tickets Needed For</label>
                                         <input
                                             type="text"
@@ -1064,7 +1066,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             placeholder="e.g., Individual, Group, Family"
                                             required
                                         />
-                                    </div>
+                                    </div> */}
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
                                         <input
@@ -1485,13 +1487,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 <p>{event.duration || 'N/A'}</p>
                             </div>
                         </div>
-                        <div className="info-grid-item">
+                        {/* Removed "Tickets Needed For" from Event Detail Page */}
+                        {/* <div className="info-grid-item">
                             <Ticket size={20} />
                             <div>
                                 <strong>Tickets Needed For</strong>
                                 <p>{event.ticketsNeeded || 'N/A'}</p>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
 
                     <div className="event-detail-venue-section">
