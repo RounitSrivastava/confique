@@ -601,7 +601,7 @@ body {
   gap: 1rem;
   border: 1px solid var(--border-color);
   /* transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; */
-  transition: box-shadow 0.2s ease-in-out;
+  /* transition: box-shadow 0.2s ease-in-out; */
   position: relative;
   max-width: 100%;
   min-width: 0;
@@ -799,7 +799,7 @@ body {
   max-height: 250px;
   object-fit: cover;
   border-radius: 0.5rem;
-  transition: transform 0.2s ease;
+  /* transition: transform 0.2s ease; */
 }
 
 .post-image:hover {
@@ -2077,7 +2077,7 @@ img {
   border-radius: 0.5rem;
   border-left: 4px solid var(--primary-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
 }
 
 .events-for-date .event-item:hover {
@@ -2245,7 +2245,7 @@ img {
   border-radius: 8px;
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
-  transition: all 0.2s ease;
+  /* transition: all 0.2s ease; */
   margin-bottom: 8px;
   cursor: pointer;
 }
