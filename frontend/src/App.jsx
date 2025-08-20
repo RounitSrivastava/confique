@@ -692,6 +692,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const [uploadAlertMessage, setUploadAlertMessage] = useState('');
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
+    const [hasRegistration, setHasRegistration] = useState(false);
+    const [registrationMethod, setRegistrationMethod] = useState('');
 
     useEffect(() => {
         if (isOpen && postToEdit) {
@@ -718,6 +720,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
+
+            // Set registration states based on existing post data
+            setHasRegistration(!!postToEdit.registrationLink || postToEdit.enableRegistrationForm);
+            if (postToEdit.registrationLink) {
+                setRegistrationMethod('link');
+            } else if (postToEdit.enableRegistrationForm) {
+                setRegistrationMethod('form');
+            } else {
+                setRegistrationMethod('');
+            }
         } else if (isOpen) {
             setFormData(prev => ({
                 ...initialFormData,
@@ -725,6 +737,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
+            setHasRegistration(false);
+            setRegistrationMethod('');
         }
     }, [postToEdit, currentUser, isOpen]);
 
@@ -743,6 +757,17 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             type: newType,
             author: currentUser?.name || ''
         }));
+        setHasRegistration(false);
+        setRegistrationMethod('');
+    };
+
+    const handleRegistrationOptionChange = (method) => {
+        setRegistrationMethod(method);
+        setFormData(prev => ({
+            ...prev,
+            registrationLink: '',
+            enableRegistrationForm: method === 'form',
+        }));
     };
 
     const handleSubmit = (e) => {
@@ -760,23 +785,55 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
-        if (formData.type === 'event' && formData.price > 0 && formData.enableRegistrationForm) {
-            if (formData.paymentMethod === 'link' && !formData.paymentLink) {
-                setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment.");
+        if (formData.type === 'event' && hasRegistration) {
+            if (registrationMethod === 'link' && !formData.registrationLink) {
+                setUploadAlertMessage("Please provide a Registration Link.");
                 setShowUploadAlert(true);
                 return;
             }
-            if (formData.paymentMethod === 'qr' && !paymentQRPreview) {
-                setUploadAlertMessage("Please upload a QR Code image for payment.");
-                setShowUploadAlert(true);
-                return;
+            if (registrationMethod === 'form') {
+                if (formData.price > 0) {
+                    if (formData.paymentMethod === 'link' && !formData.paymentLink) {
+                        setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment.");
+                        setShowUploadAlert(true);
+                        return;
+                    }
+                    if (formData.paymentMethod === 'qr' && !paymentQRPreview) {
+                        setUploadAlertMessage("Please upload a QR Code image for payment.");
+                        setShowUploadAlert(true);
+                        return;
+                    }
+                }
             }
         }
+        
+        // Reset registration fields if no registration is needed
+        let submissionData = { ...formData };
+        if (!hasRegistration) {
+            submissionData = {
+                ...submissionData,
+                registrationLink: '',
+                enableRegistrationForm: false,
+                registrationFields: '',
+                paymentMethod: 'link',
+                paymentLink: '',
+                paymentQRCode: ''
+            };
+        } else if (registrationMethod === 'link') {
+            submissionData = {
+                ...submissionData,
+                enableRegistrationForm: false,
+                registrationFields: '',
+                paymentMethod: 'link',
+                paymentLink: '',
+                paymentQRCode: ''
+            };
+        }
 
-        const submissionData = {
-            ...formData,
-            price: parseFloat(formData.price) || 0,
-            registrationOpen: formData.registrationOpen === 'true' || formData.registrationOpen === true,
+        submissionData = {
+            ...submissionData,
+            price: parseFloat(submissionData.price) || 0,
+            registrationOpen: submissionData.registrationOpen === 'true' || submissionData.registrationOpen === true,
             images: imagePreviews,
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
@@ -969,7 +1026,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
                                         <input
@@ -982,94 +1038,145 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
+                                    
+                                    {/* New Registration Options Section */}
                                     <div className="form-group">
-                                        <label className="form-label checkbox-label">
-                                            <input
-                                                type="checkbox"
-                                                checked={formData.enableRegistrationForm}
-                                                onChange={handleFormChange}
-                                                name="enableRegistrationForm"
-                                            />
-                                            Enable Registration Form
-                                        </label>
-                                    </div>
-                                    {formData.enableRegistrationForm && (
-                                        <div className="form-group">
-                                            <label className="form-label">Custom Registration Fields (comma-separated)</label>
-                                            <input
-                                                type="text"
-                                                className="form-input"
-                                                value={formData.registrationFields}
-                                                onChange={handleFormChange}
-                                                name="registrationFields"
-                                                placeholder="e.g., Roll Number, Branch, Semester"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {formData.price > 0 && formData.enableRegistrationForm && (
-                                        <div className="form-group">
-                                            <label className="form-label">Payment Method</label>
-                                            <select
-                                                className="form-select"
-                                                value={formData.paymentMethod}
-                                                onChange={handleFormChange}
-                                                name="paymentMethod"
+                                        <label className="form-label">Registration Required?</label>
+                                        <div className="registration-toggle">
+                                            <button
+                                                type="button"
+                                                className={`btn-toggle ${hasRegistration ? 'active' : ''}`}
+                                                onClick={() => setHasRegistration(!hasRegistration)}
                                             >
-                                                <option value="link">Payment Link</option>
-                                                <option value="qr">QR Code</option>
-                                            </select>
+                                                {hasRegistration ? 'Yes' : 'No'}
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                            {formData.paymentMethod === 'link' && (
+                                    {hasRegistration && (
+                                        <div className="registration-options">
+                                            <div className="form-group">
+                                                <label className="form-label">Registration Method</label>
+                                                <div className="registration-method-options">
+                                                    <label className="radio-option">
+                                                        <input
+                                                            type="radio"
+                                                            name="registrationMethod"
+                                                            value="link"
+                                                            checked={registrationMethod === 'link'}
+                                                            onChange={() => handleRegistrationOptionChange('link')}
+                                                        />
+                                                        <span>External Link</span>
+                                                    </label>
+                                                    <label className="radio-option">
+                                                        <input
+                                                            type="radio"
+                                                            name="registrationMethod"
+                                                            value="form"
+                                                            checked={registrationMethod === 'form'}
+                                                            onChange={() => handleRegistrationOptionChange('form')}
+                                                        />
+                                                        <span>In-App Form</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            {registrationMethod === 'link' && (
                                                 <div className="form-group">
-                                                    <label className="form-label">Payment Link</label>
+                                                    <label className="form-label">Registration Link</label>
                                                     <input
                                                         type="url"
                                                         className="form-input"
-                                                        value={formData.paymentLink}
+                                                        value={formData.registrationLink}
                                                         onChange={handleFormChange}
-                                                        name="paymentLink"
-                                                        placeholder="https://example.com/payment"
+                                                        name="registrationLink"
+                                                        placeholder="https://example.com/register"
                                                         required
                                                     />
                                                 </div>
                                             )}
 
-                                            {formData.paymentMethod === 'qr' && (
-                                                <div className="form-group">
-                                                    <label className="form-label">QR Code Image</label>
-                                                    <div className="image-upload-container">
-                                                        {paymentQRPreview ? (
-                                                            <div className="payment-qr-preview">
-                                                                <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                <button
-                                                                    type="button"
-                                                                    className="remove-image-btn"
-                                                                    onClick={removeQRImage}
-                                                                >
-                                                                    <X size={14} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <>
-                                                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                    <div className="upload-btn">
-                                                                        <ImageIcon size={16} />
-                                                                        <span>Upload QR Code</span>
-                                                                    </div>
-                                                                </label>
-                                                                <input
-                                                                    id="qr-file-input"
-                                                                    ref={qrFileInputRef}
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    onChange={handlePaymentQRUpload}
-                                                                    style={{ display: 'none' }}
-                                                                />
-                                                            </>
-                                                        )}
+                                            {registrationMethod === 'form' && (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-input"
+                                                            value={formData.registrationFields}
+                                                            onChange={handleFormChange}
+                                                            name="registrationFields"
+                                                            placeholder="e.g., Roll Number, Branch, Semester"
+                                                        />
                                                     </div>
-                                                </div>
+                                                    
+                                                    {formData.price > 0 && (
+                                                        <div className="form-group">
+                                                            <label className="form-label">Payment Method</label>
+                                                            <select
+                                                                className="form-select"
+                                                                value={formData.paymentMethod}
+                                                                onChange={handleFormChange}
+                                                                name="paymentMethod"
+                                                            >
+                                                                <option value="link">Payment Link</option>
+                                                                <option value="qr">QR Code</option>
+                                                            </select>
+
+                                                            {formData.paymentMethod === 'link' && (
+                                                                <div className="form-group">
+                                                                    <label className="form-label">Payment Link</label>
+                                                                    <input
+                                                                        type="url"
+                                                                        className="form-input"
+                                                                        value={formData.paymentLink}
+                                                                        onChange={handleFormChange}
+                                                                        name="paymentLink"
+                                                                        placeholder="https://example.com/payment"
+                                                                        required
+                                                                    />
+                                                                </div>
+                                                            )}
+
+                                                            {formData.paymentMethod === 'qr' && (
+                                                                <div className="form-group">
+                                                                    <label className="form-label">QR Code Image</label>
+                                                                    <div className="image-upload-container">
+                                                                        {paymentQRPreview ? (
+                                                                            <div className="payment-qr-preview">
+                                                                                <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                <button
+                                                                                    type="button"
+                                                                                    className="remove-image-btn"
+                                                                                    onClick={removeQRImage}
+                                                                                >
+                                                                                    <X size={14} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <>
+                                                                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                                    <div className="upload-btn">
+                                                                                        <ImageIcon size={16} />
+                                                                                        <span>Upload QR Code</span>
+                                                                                    </div>
+                                                                                </label>
+                                                                                <input
+                                                                                    id="qr-file-input"
+                                                                                    ref={qrFileInputRef}
+                                                                                    type="file"
+                                                                                    accept="image/*"
+                                                                                    onChange={handlePaymentQRUpload}
+                                                                                    style={{ display: 'none' }}
+                                                                                />
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </>
                                             )}
                                         </div>
                                     )}
