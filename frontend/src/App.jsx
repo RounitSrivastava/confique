@@ -1083,6 +1083,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     <div className="form-group">
                                         <label className="form-label">Registration Required?</label>
                                         <div className="registration-toggle">
+                                            {/* Button text is now "Yes" by default */}
                                             <button
                                                 type="button"
                                                 className={`btn-toggle ${hasRegistration ? 'active' : ''}`}
@@ -1093,7 +1094,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         </div>
                                     </div>
 
-                                    {/* MODIFIED: This section now appears only when hasRegistration is true */}
+                                    {/* This entire section is conditionally rendered based on the state */}
                                     {hasRegistration && (
                                         <div className="registration-options">
                                             <div className="form-group">
