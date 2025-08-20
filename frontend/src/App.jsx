@@ -675,7 +675,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         language: 'English',
         duration: '',
         ticketsNeeded: '',
-        venueAddress: '',
         registrationLink: '',
         registrationOpen: true,
         enableRegistrationForm: false,
@@ -692,8 +691,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const [uploadAlertMessage, setUploadAlertMessage] = useState('');
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
-    // MODIFIED: Initial state of hasRegistration is now true
-    const [hasRegistration, setHasRegistration] = useState(true);
+    // State for registration toggle and method
+    const [hasRegistration, setHasRegistration] = useState(false);
     const [registrationMethod, setRegistrationMethod] = useState('');
 
     useEffect(() => {
@@ -722,6 +721,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
 
+            // Set registration state based on post data
             const requiresRegistration = !!postToEdit.registrationLink || postToEdit.enableRegistrationForm;
             setHasRegistration(requiresRegistration);
             if (postToEdit.registrationLink) {
@@ -738,8 +738,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
-            // MODIFIED: Initial state for new posts is now true
-            setHasRegistration(true);
+            // Initial state for new posts is now false for registration
+            setHasRegistration(false);
             setRegistrationMethod('');
         }
     }, [postToEdit, currentUser, isOpen]);
@@ -759,11 +759,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             type: newType,
             author: currentUser?.name || ''
         }));
-        // MODIFIED: Set hasRegistration to true when switching to an event
-        setHasRegistration(newType === 'event');
+        // Reset registration state when switching post types
+        setHasRegistration(false);
         setRegistrationMethod('');
     };
 
+    // Handle the registration toggle
     const handleRegistrationToggle = () => {
         const newHasRegistration = !hasRegistration;
         setHasRegistration(newHasRegistration);
@@ -778,23 +779,20 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentLink: '',
                 paymentQRCode: ''
             }));
-        } else {
-            // Reset method choice when toggling back to 'Yes'
-            setRegistrationMethod('');
-            setFormData(prev => ({
-                ...prev,
-                registrationLink: '',
-                enableRegistrationForm: false,
-            }));
         }
     };
 
+    // Handle the registration method selection
     const handleRegistrationMethodChange = (method) => {
         setRegistrationMethod(method);
         setFormData(prev => ({
             ...prev,
             registrationLink: method === 'link' ? prev.registrationLink : '',
             enableRegistrationForm: method === 'form',
+            registrationFields: method === 'form' ? prev.registrationFields : '',
+            paymentMethod: 'link',
+            paymentLink: '',
+            paymentQRCode: ''
         }));
     };
 
@@ -813,6 +811,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
+        // Validate registration fields based on user selection
         if (formData.type === 'event' && hasRegistration) {
             if (!registrationMethod) {
                 setUploadAlertMessage("Please select a registration method.");
@@ -842,6 +841,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }
         
         let submissionData = { ...formData };
+        // Clear registration data if registration is not required
         if (!hasRegistration) {
             submissionData = {
                 ...submissionData,
@@ -868,7 +868,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: '',
             };
         }
-
 
         submissionData = {
             ...submissionData,
@@ -1082,20 +1081,27 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     {/* Registration Options Section */}
                                     <div className="form-group">
                                         <label className="form-label">Registration Required?</label>
-                                        <div className="registration-toggle">
+                                        <div className="registration-toggle-group">
                                             <button
                                                 type="button"
-                                                className={`btn-toggle ${hasRegistration ? 'active' : ''}`}
-                                                onClick={handleRegistrationToggle}
+                                                className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
+                                                onClick={() => setHasRegistration(false)}
                                             >
-                                                {hasRegistration ? 'Yes' : 'No'}
+                                                No
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
+                                                onClick={() => setHasRegistration(true)}
+                                            >
+                                                Yes
                                             </button>
                                         </div>
                                     </div>
 
-                                    {/* MODIFIED: This section now appears only when hasRegistration is true */}
+                                    {/* Registration Method option, appears only if registration is required */}
                                     {hasRegistration && (
-                                        <div className="registration-options">
+                                        <>
                                             <div className="form-group">
                                                 <label className="form-label">Registration Method</label>
                                                 <div className="registration-method-options">
@@ -1219,7 +1225,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                     )}
                                                 </>
                                             )}
-                                        </div>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -1963,7 +1969,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
