@@ -692,8 +692,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const [uploadAlertMessage, setUploadAlertMessage] = useState('');
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
-    // MODIFIED: This is the key change. Initial state is set to false.
-    const [hasRegistration, setHasRegistration] = useState(false);
+    // MODIFIED: Initial state of hasRegistration is now true
+    const [hasRegistration, setHasRegistration] = useState(true);
     const [registrationMethod, setRegistrationMethod] = useState('');
 
     useEffect(() => {
@@ -738,7 +738,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
-            setHasRegistration(false); // New posts start with registration off
+            // MODIFIED: Initial state for new posts is now true
+            setHasRegistration(true);
             setRegistrationMethod('');
         }
     }, [postToEdit, currentUser, isOpen]);
@@ -758,11 +759,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             type: newType,
             author: currentUser?.name || ''
         }));
-        setHasRegistration(false); // Reset to off when changing type
+        // MODIFIED: Set hasRegistration to true when switching to an event
+        setHasRegistration(newType === 'event');
         setRegistrationMethod('');
     };
 
-    // Corrected logic for the toggle button
     const handleRegistrationToggle = () => {
         const newHasRegistration = !hasRegistration;
         setHasRegistration(newHasRegistration);
@@ -778,7 +779,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentQRCode: ''
             }));
         } else {
-            // When toggling to "Yes", reset method and related fields
+            // Reset method choice when toggling back to 'Yes'
             setRegistrationMethod('');
             setFormData(prev => ({
                 ...prev,
@@ -1092,7 +1093,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         </div>
                                     </div>
 
-                                    {/* This entire section is conditionally rendered based on the state */}
+                                    {/* MODIFIED: This section now appears only when hasRegistration is true */}
                                     {hasRegistration && (
                                         <div className="registration-options">
                                             <div className="form-group">
@@ -1946,6 +1947,436 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                 ))}
             </div>
         </div>
+    );
+};
+
+// Confessions Component - Displays only confession posts
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
+    const confessionPosts = posts.filter(post => post.type === 'confession');
+
+    return (
+        <div>
+            <div className="posts-container">
+                {confessionPosts.map(post => (
+                    <PostCard
+                        key={post._id}
+                        post={post}
+                        onLike={onLike}
+                        onShare={onShare}
+                        onAddComment={handleAddComment}
+                        likedPosts={likedPosts}
+                        isCommentsOpen={openCommentPostId === post._id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={onOpenEventDetail}
+                        onAddToCalendar={onAddToCalendar}
+                        currentUser={currentUser}
+                        isProfileView={false}
+                        registrationCount={registrations[post._id]}
+                        onReportPost={onReportPost}
+                        onDeletePost={onDeletePost}
+                        onEditPost={onEditPost}
+                        onShowCalendarAlert={onShowCalendarAlert}
+                        isLoggedIn={!!currentUser}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// Notifications Component - Displays user notifications or admin reported posts
+const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+    const isAdmin = currentUser?.isAdmin;
+    const displayNotifications = isAdmin ? adminNotifications : notifications;
+
+    return (
+        <div>
+            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+            <div className="notifications-container">
+                {displayNotifications.length > 0 ? (
+                    <div className="notifications-list">
+                        {displayNotifications.map((notification) => (
+                            <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
+                                <Bell size={20} className="notification-icon" />
+                                <div className="notification-content">
+                                    <p className="notification-text">
+                                        {notification.message}
+                                        {isAdmin && notification.reportReason && (
+                                            <span className="report-reason">
+                                                Report Reason: {notification.reportReason}
+                                            </span>
+                                        )}
+                                    </p>
+                                    <span className="notification-timestamp">
+                                        {new Date(notification.timestamp).toLocaleDateString()}
+                                    </span>
+                                    {isAdmin && notification.postId && (
+                                        <div className="admin-actions">
+                                            <button
+                                                className="btn-danger"
+                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                            >
+                                                <Trash2 size={16} /> Delete Post
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">
+                            {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// Profile Settings Modal Component - Allows user to change their avatar
+const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
+    const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
+    const [customAvatar, setCustomAvatar] = useState('');
+    const [avatarError, setAvatarError] = useState('');
+    const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedAvatar(currentUser?.avatar || '');
+            setCustomAvatar('');
+            setAvatarError('');
+        }
+    }, [isOpen, currentUser]);
+
+    const predefinedAvatars = [
+        { src: avatar1, alt: 'Anime style avatar' },
+        { src: avatar2, alt: 'ChatGPT avatar' }
+    ];
+
+    const handleCustomImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                setAvatarError('Image size cannot exceed 2MB.');
+                return;
+            }
+            compressImage(file, (compressedDataUrl) => {
+                setCustomAvatar(compressedDataUrl);
+                setSelectedAvatar(null);
+                setAvatarError('');
+            });
+        }
+    };
+
+    const handleSave = () => {
+        if (!selectedAvatar && !customAvatar) {
+            setAvatarError('Please select or upload an avatar.');
+            return;
+        }
+        const newAvatar = customAvatar || selectedAvatar;
+        onSave(newAvatar);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content profile-settings-modal">
+                <div className="modal-header">
+                    <h2 className="modal-title">Edit Profile Image</h2>
+                    <button
+                        className="modal-close-large"
+                        onClick={onClose}
+                        aria-label="Close modal"
+                    >
+                        <X size={36} strokeWidth={2.5} />
+                    </button>
+                </div>
+                <div className="modal-body profile-settings-body">
+                    <div className="current-avatar-container">
+                        <h4 className="modal-subtitle">Current Profile Image</h4>
+                        <div className="current-avatar-preview">
+                            <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                        </div>
+                    </div>
+                    <div className="avatar-options-container">
+                        <h4 className="modal-subtitle">Choose a new avatar</h4>
+                        <div className="predefined-avatars-grid">
+                            {predefinedAvatars.map((av, index) => (
+                                <div
+                                    key={index}
+                                    className={`avatar-option selected ${selectedAvatar === av.src ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedAvatar(av.src);
+                                        setCustomAvatar('');
+                                        setAvatarError('');
+                                    }}
+                                >
+                                    <img src={av.src} alt={av.alt} loading="lazy" decoding="async" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="or-divider">
+                            <span className="or-text">OR</span>
+                        </div>
+                        <div className="custom-avatar-upload-section">
+                            <h4 className="modal-subtitle">Upload your own</h4>
+                            <div className="custom-upload-container">
+                                {customAvatar ? (
+                                    <div className="custom-avatar-preview">
+                                        <img src={customAvatar} alt="Custom Avatar" loading="lazy" decoding="async" />
+                                        <button
+                                            className="remove-image-btn-large"
+                                            onClick={() => setCustomAvatar('')}
+                                            aria-label="Remove image"
+                                        >
+                                            <X size={20} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button className="upload-button" onClick={() => fileInputRef.current.click()}>
+                                        <ImageIcon size={20} />
+                                        <span>Upload Image</span>
+                                    </button>
+                                )}
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    accept="image/*"
+                                    onChange={handleCustomImageUpload}
+                                    style={{ display: 'none' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {avatarError && <p className="error-message">{avatarError}</p>}
+                </div>
+                <div className="modal-actions">
+                    <button className="btn-secondary" onClick={onClose}>
+                        Cancel
+                    </button>
+                    <button className="btn-primary" onClick={handleSave}>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+
+
+// Users Component - Displays user's profile and their posts
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert }) => {
+    if (!currentUser) {
+        return (
+            <div>
+                <h2 className="page-title">Profile</h2>
+                <div className="placeholder-card">
+                    <p className="placeholder-text">Please log in to view your profile.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const userPosts = posts.filter(post =>
+        post.userId === currentUser._id
+    );
+
+    const userStats = {
+        posts: userPosts.length,
+        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+        commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
+        registrationsReceived: userPosts.reduce((sum, post) => {
+            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+        }, 0)
+    };
+
+    const handleDeletePost = (postId) => {
+        onDeletePost(postId);
+    };
+
+    const handleEditPost = (post) => {
+        onEditPost(post);
+    };
+
+    return (
+        <div>
+            <h2 className="page-title">Your Profile</h2>
+
+            <div className="profile-header">
+                <div className="profile-avatar-container">
+                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                    <button className="edit-avatar-btn" onClick={onEditProfile}>
+                        <Edit3 size={16} />
+
+                    </button>
+                </div>
+                <div className="profile-info">
+                    <h3 className="profile-name">{currentUser.name}</h3>
+                    <p className="profile-email">{currentUser.email}</p>
+                    <div className="profile-stats">
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.posts}</span>
+                            <span className="stat-label">Posts</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.likesReceived}</span>
+                            <span className="stat-label">Likes</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.commentsReceived}</span>
+                            <span className="stat-label">Comments</span>
+                        </div>
+                        <div className="stat-item">
+                            <span className="stat-number">{userStats.registrationsReceived}</span>
+                            <span className="stat-label">Registrations</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 className="section-subtitle">Your Posts</h3>
+
+            {userPosts.length > 0 ? (
+                <div className="posts-container">
+                    {userPosts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            isProfileView={true}
+                            onDeletePost={handleDeletePost}
+                            onEditPost={handleEditPost}
+                            registrationCount={registrations[post._id]}
+                            onReportPost={onReportPost}
+                            onShowCalendarAlert={onShowCalendarAlert}
+                            isLoggedIn={!!currentUser}
+                        />
+                    ))}
+                </div>
+            ) : (
+                <div className="placeholder-card">
+                    <p className="placeholder-text">You haven't created any posts yet.</p>
+                    <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+                        <Plus size={16} /> Create Your First Post
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Home Right Sidebar Component - Displays popular posts
+const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
+    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+    return (
+        <div className="sidebar-widget">
+            <div className="widget-header">
+                <h3 className="widget-title">Popular Posts</h3>
+            </div>
+            <div className="widget-content">
+                <div className="widget-list">
+                    {popularPosts.map(post => (
+                        <div
+                            key={post._id}
+                            className="popular-post-item clickable"
+                            onClick={() => onOpenPostDetail(post)}
+                        >
+                            <p className="widget-item-title">{post.title}</p>
+                            <div className="popular-post-stats">
+                                <span className="popular-stat">{post.likes} likes</span>
+                                <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Events Right Sidebar Component - Displays calendar and user's upcoming events
+const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
+    const [value, onChange] = useState(new Date());
+
+    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+
+    const tileContent = ({ date, view }) => {
+        if (view === 'month') {
+            const hasEvent = allEvents.some(post =>
+                post.eventStartDate &&
+                new Date(post.eventStartDate).toDateString() === date.toDateString()
+            );
+            return hasEvent ? <div className="event-dot"></div> : null;
+        }
+        return null;
+    };
+
+    const upcomingCalendarEvents = myCalendarEvents
+        .filter(e => new Date(e.eventStartDate) > new Date())
+        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+        .slice(0, 3);
+
+    return (
+        <>
+            <div className="calendar-widget">
+                <div className="widget-content calendar-container">
+                    <Calendar
+                        onChange={onChange}
+                        value={value}
+                        tileContent={tileContent}
+                        className="react-calendar"
+                        prev2Label={null}
+                        next2Label={null}
+                        locale="en-US"
+                    />
+                </div>
+            </div>
+
+            {upcomingCalendarEvents.length > 0 && (
+                <div className="sidebar-widget my-calendar-events">
+                    <div className="widget-header">
+                        <h3 className="widget-title">My Calendar Events</h3>
+                    </div>
+                    <div className="widget-content">
+                        <div className="widget-list">
+                            {upcomingCalendarEvents.map(event => (
+                                <div
+                                    key={event._id}
+                                    className="sidebar-event-item clickable"
+                                    onClick={() => onOpenEventDetail(event)}
+                                >
+                                    <h4 className="sidebar-event-title">{event.title}</h4>
+                                    <div className="sidebar-event-date">
+                                        {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric'
+                                        })}
+                                    </div>
+                                    <div className="sidebar-event-time">
+                                        {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 
