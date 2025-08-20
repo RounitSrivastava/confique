@@ -803,7 +803,7 @@ body {
 }
 
 .post-image:hover {
-  transform: scale(1.02);
+  /* transform: scale(1.02); */
 }
 
 /* Post Actions Styles */
@@ -1458,7 +1458,7 @@ body {
 
 .comment-submit-btn:hover {
   background-color: #2563eb;
-  transform: scale(1.1);
+  /* transform: scale(1.1); */
 }
 
 .comment-submit-btn:active {
@@ -2081,7 +2081,7 @@ img {
 }
 
 .events-for-date .event-item:hover {
-  transform: translateX(2px);
+  /* transform: translateX(2px); */
   background-color: var(--bg-hover);
 }
 
@@ -2253,7 +2253,7 @@ img {
 .sidebar-event-item:hover {
   background-color: var(--action-btn-hover);
   border-color: var(--border-color);
-  transform: translateY(-2px);
+  /* transform: translateY(-2px); */
   box-shadow: 0 2px 8px var(--shadow-color);
 }
 
@@ -2297,7 +2297,7 @@ img {
 
 .sidebar-event-item:hover {
   background-color: var(--action-btn-hover);
-  transform: translateX(2px);
+  /* transform: translateX(2px); */
 }
 
 .sidebar-event-title {
