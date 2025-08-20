@@ -692,6 +692,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const [uploadAlertMessage, setUploadAlertMessage] = useState('');
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
+    // MODIFIED: Initial state of hasRegistration is now true
     const [hasRegistration, setHasRegistration] = useState(false);
     const [registrationMethod, setRegistrationMethod] = useState('');
 
@@ -737,7 +738,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
-            setHasRegistration(false);
+            // MODIFIED: Initial state for new posts is now true
+            setHasRegistration(true);
             setRegistrationMethod('');
         }
     }, [postToEdit, currentUser, isOpen]);
@@ -757,7 +759,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             type: newType,
             author: currentUser?.name || ''
         }));
-        setHasRegistration(false);
+        // MODIFIED: Set hasRegistration to true when switching to an event
+        setHasRegistration(newType === 'event');
         setRegistrationMethod('');
     };
 
@@ -1076,7 +1079,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         />
                                     </div>
                                     
-                                    {/* Corrected Registration Options Section */}
+                                    {/* Registration Options Section */}
                                     <div className="form-group">
                                         <label className="form-label">Registration Required?</label>
                                         <div className="registration-toggle">
@@ -1090,6 +1093,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         </div>
                                     </div>
 
+                                    {/* MODIFIED: This section now appears only when hasRegistration is true */}
                                     {hasRegistration && (
                                         <div className="registration-options">
                                             <div className="form-group">
