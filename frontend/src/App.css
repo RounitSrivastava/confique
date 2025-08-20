@@ -799,12 +799,12 @@ body {
   max-height: 250px;
   object-fit: cover;
   border-radius: 0.5rem;
-  /* transition: transform 0.2s ease; */
+  transition: transform 0.2s ease;
 }
 
-/* .post-image:hover {
+.post-image:hover {
   /* transform: scale(1.02); */
-} */
+}
 
 /* Post Actions Styles */
 .post-actions {
@@ -1450,7 +1450,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  /* transition: background-color 0.2s ease, transform 0.2s ease; */
+  transition: background-color 0.2s ease, transform 0.2s ease;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
   outline: none;
