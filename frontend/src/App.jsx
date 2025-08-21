@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import API_URL from './api'; // Assuming this file defines your API base URL
-import confiquelogo from './assets/confiquelogo.jpg'; // Assuming this path is correct
+import API_URL from './api';
+import confiquelogo from './assets/confiquelogo.jpg';
 import {
     Home,
     Calendar as CalendarIcon,
@@ -33,14 +33,12 @@ import {
 } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import './App.css'; // Assuming your CSS file is here
+import './App.css';
 
 // Import predefined avatars
-// Assuming these paths are correct and images exist
 import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
-// Placeholder avatar for users without a custom avatar
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
 // Utility function to compress image files before upload
@@ -57,7 +55,6 @@ const compressImage = (file, callback) => {
             let width = img.width;
             let height = img.height;
 
-            // Maintain aspect ratio while resizing
             if (width > height) {
                 if (width > maxWidth) {
                     height = height * (maxWidth / width);
@@ -73,10 +70,9 @@ const compressImage = (file, callback) => {
             canvas.width = width;
             canvas.height = height;
 
-            // Draw image to canvas and compress
             ctx.drawImage(img, 0, 0, width, height);
 
-            const quality = 0.8; // JPEG quality
+            const quality = 0.8;
             const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
             callback(compressedDataUrl);
         };
@@ -93,18 +89,15 @@ class ErrorBoundary extends React.Component {
     }
 
     static getDerivedStateFromError(error) {
-        // Update state so the next render will show the fallback UI.
         return { hasError: true };
     }
 
     componentDidCatch(error, errorInfo) {
-        // You can also log the error to an error reporting service
         console.error("Error caught by ErrorBoundary:", error, errorInfo);
     }
 
     render() {
         if (this.state.hasError) {
-            // You can render any custom fallback UI
             return <div className="error-fallback">Something went wrong. Please try again.</div>;
         }
         return this.props.children;
@@ -155,8 +148,8 @@ const HelpAndSupportModal = ({ isOpen, onClose }) => {
                 </div>
                 <div className="modal-body">
                     <p className="modal-message">For any support or questions, please email us at:</p>
-                    <a href="mailto:support@confique.com" className="email-link">
-                        <Mail size={16} /> support@confique.com
+                    <a href="mailto:confique01@gmail.com" className="email-link">
+                        <Mail size={16} /> confique01@gmail.com
                     </a>
                 </div>
             </div>
@@ -681,15 +674,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         price: 0,
         language: 'English',
         duration: '',
+        // Removed 'ticketsNeeded' from initialFormData
         registrationLink: '',
         registrationOpen: true,
         enableRegistrationForm: false,
         registrationFields: '',
         paymentMethod: 'link',
         paymentLink: '',
-        paymentQRCode: '',
-        source: '', // Add the new source field here
-        status: 'pending' // Default status for a new post
+        paymentQRCode: ''
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -716,6 +708,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 price: postToEdit.price || 0,
                 language: postToEdit.language || 'English',
                 duration: postToEdit.duration || '',
+                // Removed 'ticketsNeeded' from postToEdit mapping
                 venueAddress: postToEdit.venueAddress || '',
                 registrationLink: postToEdit.registrationLink || '',
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
@@ -723,9 +716,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationFields: postToEdit.registrationFields || '',
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
-                paymentQRCode: postToEdit.paymentQRCode || '',
-                source: postToEdit.source || '', // Map the source from the post
-                status: postToEdit.status || 'pending' // Map the status from the post
+                paymentQRCode: postToEdit.paymentQRCode || ''
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
@@ -814,15 +805,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
+        // Removed 'ticketsNeeded' from validation
         if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration)) {
             setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration).");
-            setShowUploadAlert(true);
-            return;
-        }
-        
-        // New validation for source field
-        if (formData.type === 'event' && !formData.source) {
-            setUploadAlertMessage("Please provide a source for the event.");
             setShowUploadAlert(true);
             return;
         }
@@ -893,9 +878,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            // Set initial status to 'pending' for new event posts, otherwise keep existing status
-            status: formData.type === 'event' && !postToEdit ? 'pending' : (postToEdit?.status || 'approved')
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
         };
 
         onSubmit(submissionData);
@@ -1013,19 +996,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                             {/* Event-specific fields */}
                             {formData.type === 'event' && (
                                 <div className="event-form-section">
-                                    {/* New Source Field */}
-                                    <div className="form-group">
-                                        <label className="form-label">Source</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={formData.source}
-                                            onChange={handleFormChange}
-                                            name="source"
-                                            placeholder="e.g., Confique, Google Developer"
-                                            required
-                                        />
-                                    </div>
                                     <div className="form-group">
                                         <label className="form-label">Location</label>
                                         <input
@@ -1084,6 +1054,19 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
+                                    {/* Removed "Tickets Needed For" section */}
+                                    {/* <div className="form-group">
+                                        <label className="form-label">Tickets Needed For</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.ticketsNeeded}
+                                            onChange={handleFormChange}
+                                            name="ticketsNeeded"
+                                            placeholder="e.g., Individual, Group, Family"
+                                            required
+                                        />
+                                    </div> */}
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
                                         <input
@@ -1442,12 +1425,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 <div className="event-detail-content-section">
                     <div className="event-detail-title-card">
                         <h1>{event.title}</h1>
-                        {event.source && (
-                            <div className="event-detail-meta-item">
-                                <Info size={18} />
-                                <span>Source: {event.source}</span>
-                            </div>
-                        )}
                         <div className="event-detail-meta-item">
                             <Landmark size={18} />
                             <span>{event.location}</span>
@@ -1510,6 +1487,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 <p>{event.duration || 'N/A'}</p>
                             </div>
                         </div>
+                        {/* Removed "Tickets Needed For" from Event Detail Page */}
+                        {/* <div className="info-grid-item">
+                            <Ticket size={20} />
+                            <div>
+                                <strong>Tickets Needed For</strong>
+                                <p>{event.ticketsNeeded || 'N/A'}</p>
+                            </div>
+                        </div> */}
                     </div>
 
                     <div className="event-detail-venue-section">
@@ -1554,8 +1539,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     const upcomingEvents = events.filter(e =>
         e.type === 'event' &&
         e._id !== currentEvent?._id &&
-        new Date(e.eventStartDate) > new Date() &&
-        e.status === 'approved' // Only show approved events
+        new Date(e.eventStartDate) > new Date()
     ).slice(0, 3);
 
     return (
@@ -1624,15 +1608,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             case 'event': return 'Event';
             case 'news': return 'News';
             default: return 'Post';
-        }
-    };
-    
-    // New function to get a status badge
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'approved': return <span className="post-status-badge approved">Approved</span>;
-            case 'pending': return <span className="post-status-badge pending">Pending</span>;
-            default: return null;
         }
     };
 
@@ -1744,7 +1719,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <span className={`post-type-badge ${post.type}`}>
                         {getPostTypeLabel(post.type)}
                     </span>
-                    {post.type === 'event' && getStatusBadge(post.status)} {/* Display status badge for events */}
                     <PostOptions
                         post={post}
                         onDelete={onDeletePost}
@@ -1777,12 +1751,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                 {post.type === 'event' && (
                     <div className="event-details">
-                        {post.source && ( // Display the source field
-                            <div className="event-detail">
-                                <Info size={16} />
-                                <span>Source: {post.source}</span>
-                            </div>
-                        )}
                         {post.location && (
                             <div className="event-detail">
                                 <MapPin size={16} />
@@ -2077,64 +2045,6 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
     );
 };
 
-// Admin Panel Component for approving posts
-const AdminPanelComponent = ({ posts, currentUser, onApprovePost, onDeletePost }) => {
-    if (!currentUser || !currentUser.isAdmin) {
-        return (
-            <div className="placeholder-card">
-                <p className="placeholder-text">You do not have administrative access to view this page.</p>
-            </div>
-        );
-    }
-
-    // Filter for events that are pending approval
-    const pendingPosts = posts.filter(post => post.status === 'pending' && post.type === 'event');
-
-    return (
-        <div>
-            <h2 className="page-title">Admin Panel</h2>
-            <h3 className="section-subtitle">Pending Event Approvals</h3>
-
-            {pendingPosts.length > 0 ? (
-                <div className="posts-container">
-                    {pendingPosts.map(post => (
-                        <div key={post._id} className="post-card">
-                            <div className="post-header">
-                                <div className="post-info">
-                                    <h3 className="post-author">{post.author}</h3>
-                                    <p className="post-timestamp">
-                                        {new Date(post.timestamp).toLocaleDateString()}
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="post-content">
-                                <h2 className="post-title">{post.title}</h2>
-                                <p className="post-text">{post.content}</p>
-                                {post.images && post.images.length > 0 && (
-                                    <img src={post.images[0]} alt="Post" className="post-image" />
-                                )}
-                            </div>
-                            <div className="admin-post-actions">
-                                <button className="btn-primary" onClick={() => onApprovePost(post._id)}>
-                                    <Check size={16} /> Approve
-                                </button>
-                                <button className="btn-danger" onClick={() => onDeletePost(post._id)}>
-                                    <X size={16} /> Reject
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="placeholder-card">
-                    <p className="placeholder-text">No new events awaiting approval.</p>
-                </div>
-            )}
-        </div>
-    );
-};
-
-
 // Profile Settings Modal Component - Allows user to change their avatar
 const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     const [selectedAvatar, setSelectedAvatar] = useState(currentUser?.avatar || '');
@@ -2158,13 +2068,13 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     const handleCustomImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            if (file.size > 2 * 1024 * 1024) {
                 setAvatarError('Image size cannot exceed 2MB.');
                 return;
             }
             compressImage(file, (compressedDataUrl) => {
                 setCustomAvatar(compressedDataUrl);
-                setSelectedAvatar(null); // Deselect predefined avatar
+                setSelectedAvatar(null);
                 setAvatarError('');
             });
         }
@@ -2381,8 +2291,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
 // Home Right Sidebar Component - Displays popular posts
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    // Filter out pending events from popular posts
-    const popularPosts = [...posts].filter(p => p.status === 'approved' || p.type !== 'event').sort((a, b) => b.likes - a.likes).slice(0, 3);
+    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -2413,7 +2322,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
-    const allEvents = [...posts.filter(p => p.type === 'event' && p.status === 'approved'), ...myCalendarEvents];
+    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -2924,9 +2833,7 @@ const App = () => {
         try {
             const res = await fetch(`${API_URL}/posts`);
             const data = await res.json();
-            // Filter posts to show only 'approved' events and all other post types.
-            const filteredData = data.filter(post => post.status === 'approved' || post.type !== 'event');
-            setPosts(filteredData.map(formatPostDates));
+            setPosts(data.map(formatPostDates));
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
@@ -3003,34 +2910,6 @@ const App = () => {
             console.error('Failed to fetch admin notifications (reported posts):', error);
         }
     };
-    
-    // New function to fetch pending events for the admin view
-    const fetchPendingEvents = async () => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
-        try {
-            const res = await fetch(`${API_URL}/posts/pending-events`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                // Merge pending events with existing posts, ensuring no duplicates and proper formatting
-                setPosts(prev => {
-                    const existingApprovedPosts = prev.filter(p => p.status === 'approved' || p.type !== 'event');
-                    const newPendingEvents = data.map(formatPostDates);
-                    // Filter out any pending events that might already be in existingApprovedPosts (shouldn't happen but for safety)
-                    const uniqueNewPendingEvents = newPendingEvents.filter(
-                        np => !existingApprovedPosts.some(ap => ap._id === np._id)
-                    );
-                    return [...existingApprovedPosts, ...uniqueNewPendingEvents];
-                });
-            } else {
-                console.error('Failed to fetch pending events:', await res.text());
-            }
-        } catch (error) {
-            console.error('Error fetching pending events:', error);
-        }
-    };
-
 
     const fetchLikedPosts = async (user) => {
         if (!user || !user.token) {
@@ -3084,12 +2963,8 @@ const App = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            // If admin and on admin panel, fetch pending events, otherwise fetch approved/non-event posts
-            if (isLoggedIn && currentUser && currentUser.isAdmin && activeSection === 'admin') {
-                await fetchPendingEvents();
-            } else {
-                await fetchPosts();
-            }
+            // Always fetch public posts first
+            await fetchPosts();
 
             // Then, fetch user-specific data only if logged in
             if (isLoggedIn && currentUser) {
@@ -3111,12 +2986,12 @@ const App = () => {
 
         fetchData();
 
-    }, [isLoggedIn, currentUser, activeSection]); // Re-fetch data when login status or active section changes
+    }, [isLoggedIn, currentUser]);
 
     useEffect(() => {
         if (hasOpenModal) {
             document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = '15px'; // Adjust for scrollbar if present
+            document.body.style.paddingRight = '15px';
         } else {
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
@@ -3253,31 +3128,29 @@ const App = () => {
 
                 setPostToEdit(null);
 
-                // If the post is an event and is pending, it won't be added to the main feed immediately.
-                // It will be added to the admin's pending list.
-                if (formattedResponsePost.type !== 'event' || formattedResponsePost.status === 'approved') {
-                    if (method === 'POST') {
-                        setPosts(prev => [formattedResponsePost, ...prev]);
-                    } else {
-                        setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
-                    }
-                } else if (formattedResponsePost.type === 'event' && formattedResponsePost.status === 'pending') {
-                    // If it's a new pending event, add it to the admin notifications if current user is admin
-                    if (currentUser.isAdmin) {
-                        setPosts(prev => [...prev, formattedResponsePost]); // Add to local posts state for admin view
-                    }
+                if (method === 'POST') {
+                    setPosts(prev => [formattedResponsePost, ...prev]);
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+                            timestamp: new Date(),
+                            type: 'success'
+                        },
+                        ...prev
+                    ]);
+                } else {
+                    setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                    setNotifications(prev => [
+                        {
+                            _id: Date.now().toString(),
+                            message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
+                            timestamp: new Date(),
+                            type: 'success'
+                        },
+                        ...prev
+                    ]);
                 }
-                
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Your new ${newPost.type} "${newPost.title}" has been submitted for review successfully!`,
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-
             } else {
                 const errorData = await res.json();
                 console.error('Failed to save post:', errorData);
@@ -3361,66 +3234,6 @@ const App = () => {
         }
     };
 
-    // New function to handle approving a post by admin
-    const handleApprovePost = async (postId) => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
-            console.error('User not authorized to approve posts.');
-            return;
-        }
-
-        try {
-            const res = await fetch(`${API_URL}/posts/approve/${postId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
-            });
-            if (res.ok) {
-                const approvedPost = await res.json();
-                // Update the post in the main posts state to reflect its new status
-                setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        post._id === postId ? formatPostDates(approvedPost) : post
-                    )
-                );
-                // Also remove it from the admin's pending list if it was there
-                setPosts(prevPosts => prevPosts.filter(post => post._id !== postId || post.status === 'approved'));
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Event "${approvedPost.title}" has been approved!`,
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to approve post:', errorData);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to approve post: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
-                        type: 'error'
-                    },
-                    ...prev
-                ]);
-            }
-        } catch (error) {
-            console.error('Error approving post:', error);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not approve post.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-    };
-
     const handleEditPost = (post) => {
         if (!isLoggedIn) {
             setShowLoginModal(true);
@@ -3429,7 +3242,7 @@ const App = () => {
         if (currentUser && (post.userId === currentUser._id || currentUser.isAdmin)) {
             setPostToEdit(post);
             setIsModalOpen(true);
-            setActiveSection('profile'); // Assuming editing is done from profile page
+            setActiveSection('profile');
         }
     };
 
@@ -3443,7 +3256,6 @@ const App = () => {
         const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
         const method = 'PUT';
 
-        // Optimistic UI update
         setLikedPosts(prev => {
             const newLiked = new Set(prev);
             if (isCurrentlyLiked) {
@@ -3473,7 +3285,6 @@ const App = () => {
             if (!res.ok) {
                 console.error('Failed to like/unlike post:', await res.text());
 
-                // Revert UI on error
                 setLikedPosts(prev => {
                     const newLiked = new Set(prev);
                     if (isCurrentlyLiked) {
@@ -3503,7 +3314,6 @@ const App = () => {
         } catch (error) {
             console.error('Error liking/unliking post:', error);
 
-            // Revert UI on network error
             setLikedPosts(prev => {
                 const newLiked = new Set(prev);
                 if (isCurrentlyLiked) {
@@ -3598,7 +3408,6 @@ const App = () => {
                 });
             } catch (error) {
                 console.error('Share failed:', error);
-                // Fallback to clipboard copy if share fails
                 try {
                     const tempInput = document.createElement('textarea');
                     tempInput.value = shareUrl;
@@ -3608,11 +3417,10 @@ const App = () => {
                     setShowShareAlert(true);
                 } catch (err) {
                     console.error('Copy to clipboard failed:', err);
-                    setShowShareAlert(true); // Show alert even if copy fails
+                    setShowShareAlert(true);
                 }
             }
         } else {
-            // Fallback to clipboard copy if navigator.share is not available
             try {
                 const tempInput = document.createElement('textarea');
                 tempInput.value = shareUrl;
@@ -3622,7 +3430,7 @@ const App = () => {
                 document.body.removeChild(tempInput);
                 setShowShareAlert(true);
             } catch (err) {
-                setShowShareAlert(true); // Show alert even if copy fails
+                setShowShareAlert(true);
             }
         }
     };
@@ -3687,7 +3495,7 @@ const App = () => {
             });
             if (res.ok) {
                 if (currentUser.isAdmin) {
-                    fetchAdminNotifications(); // Refresh admin reported posts
+                    fetchAdminNotifications();
                 }
                 setNotifications(prev => [
                     {
@@ -3738,8 +3546,8 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                await fetchPosts(); // Re-fetch all posts to update the UI
-                await fetchAdminNotifications(); // Re-fetch admin notifications
+                await fetchPosts();
+                await fetchAdminNotifications();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -3800,7 +3608,6 @@ const App = () => {
                 setCurrentUser(newCurrentUser);
                 localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
 
-                // Update author avatars in existing posts and comments
                 setPosts(prevPosts =>
                     prevPosts.map(post => {
                         const updatedPost = post.userId === newCurrentUser._id
@@ -3867,7 +3674,7 @@ const App = () => {
             label: 'Home',
             icon: <Home className="nav-icon" />,
             component: () => <HomeComponent
-                posts={filteredPosts.filter(p => p.status === 'approved' || p.type !== 'event')} // Only show approved events on home
+                posts={filteredPosts}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3882,16 +3689,15 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
-                isLoggedIn={!!currentUser}
             />,
-            rightSidebar: () => <HomeRightSidebar posts={posts.filter(p => p.status === 'approved' || p.type !== 'event')} onOpenPostDetail={handleOpenPostDetail} />,
+            rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
             id: 'events',
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
             component: () => <EventsComponent
-                posts={filteredPosts.filter(post => post.type === 'event' && post.status === 'approved')} // Only show approved events
+                posts={filteredPosts.filter(post => post.type === 'event')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
@@ -3908,7 +3714,7 @@ const App = () => {
                 onShowCalendarAlert={handleShowCalendarAlert}
             />,
             rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'event' && p.status === 'approved')} // Only show approved events in sidebar
+                posts={posts.filter(p => p.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
                 onOpenEventDetail={handleOpenEventDetail}
             />,
@@ -3963,24 +3769,11 @@ const App = () => {
                 }
             }
         },
-        // New Admin Panel menu item, visible only to admins
-        ...(currentUser && currentUser.isAdmin ? [{
-            id: 'admin',
-            label: 'Admin Panel',
-            icon: <Landmark className="nav-icon" />,
-            component: () => <AdminPanelComponent
-                posts={posts} // Pass all posts, admin component will filter pending
-                currentUser={currentUser}
-                onApprovePost={handleApprovePost}
-                onDeletePost={handleDeletePost}
-            />,
-            rightSidebar: null, // Admin panel doesn't need a right sidebar
-        }] : []),
     ];
 
     const sectionComponents = {
         home: () => <HomeComponent
-            posts={filteredPosts.filter(p => p.status === 'approved' || p.type !== 'event')}
+            posts={filteredPosts}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -3997,7 +3790,7 @@ const App = () => {
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
         events: () => <EventsComponent
-            posts={filteredPosts.filter(post => post.type === 'event' && post.status === 'approved')}
+            posts={filteredPosts.filter(post => post.type === 'event')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4055,25 +3848,18 @@ const App = () => {
             onEditProfile={() => setShowProfileSettingsModal(true)}
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
-        admin: () => <AdminPanelComponent
-            posts={posts}
-            currentUser={currentUser}
-            onApprovePost={handleApprovePost}
-            onDeletePost={handleDeletePost}
-        />
     };
 
     const sectionSidebars = {
-        home: () => <HomeRightSidebar posts={posts.filter(p => p.status === 'approved' || p.type !== 'event')} onOpenPostDetail={handleOpenPostDetail} />,
+        home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         events: () => <EventsRightSidebar
-            posts={posts.filter(p => p.type === 'event' && p.status === 'approved')}
+            posts={posts.filter(p => p.type === 'event')}
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
         confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
-        admin: () => null, // Admin panel doesn't have a specific right sidebar
     };
 
     const CurrentComponent = sectionComponents[activeSection] || (() => null);
@@ -4118,53 +3904,55 @@ const App = () => {
 
             <header className="header">
                 <div className="header-container">
-                    <div className="header-left">
-                        <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
-                            <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
-                            <span className="app-title">Confique</span>
-                        </a>
-                    </div>
-                    {/* Mobile Calendar Icon - visible only on smaller screens */}
-                    {activeSection === 'events' && isLoggedIn && (
-                        <div className="mobile-calendar-icon-container">
-                            <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
-                                <CalendarIcon size={24} />
-                            </button>
+                    <div className="header-content">
+                        <div className="header-left">
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
+                                <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
+                                <span className="app-title">Confique</span>
+                            </a>
                         </div>
-                    )}
-
-                    <div className="header-search">
-                        <div className="search-container">
-                            <Search className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    <div className="header-right">
-                        {isLoggedIn ? (
-                            <ProfileDropdown
-                                user={currentUser}
-                                onLogout={handleLogout}
-                                onProfileClick={() => {
-                                    setActiveSection('profile');
-                                    setOpenCommentPostId(null);
-                                    setSelectedEvent(null);
-                                    setSelectedPost(null);
-                                }}
-                            />
-                        ) : (
-                            <button
-                                className="login-button"
-                                onClick={() => setShowLoginModal(true)}
-                            >
-                                Login
-                            </button>
+                        {/* Mobile Calendar Icon - visible only on smaller screens */}
+                        {activeSection === 'events' && isLoggedIn && (
+                            <div className="mobile-calendar-icon-container">
+                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                    <CalendarIcon size={24} />
+                                </button>
+                            </div>
                         )}
+
+                        <div className="header-search">
+                            <div className="search-container">
+                                <Search className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="header-right">
+                            {isLoggedIn ? (
+                                <ProfileDropdown
+                                    user={currentUser}
+                                    onLogout={handleLogout}
+                                    onProfileClick={() => {
+                                        setActiveSection('profile');
+                                        setOpenCommentPostId(null);
+                                        setSelectedEvent(null);
+                                        setSelectedPost(null);
+                                    }}
+                                />
+                            ) : (
+                                <button
+                                    className="login-button"
+                                    onClick={() => setShowLoginModal(true)}
+                                >
+                                    Login
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
