@@ -3163,6 +3163,8 @@ const App = () => {
 
                 if (method === 'POST') {
                     if (newPost.type === 'event' && newPost.status === 'pending') {
+                        // For events, we do not add to the main feed immediately
+                        // The user will see a notification that it's pending approval
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
@@ -3173,6 +3175,7 @@ const App = () => {
                             ...prev
                         ]);
                     } else {
+                        // Consights posts are added directly
                         setPosts(prev => [formattedResponsePost, ...prev]);
                         setNotifications(prev => [
                             {
@@ -3185,6 +3188,7 @@ const App = () => {
                         ]);
                     }
                 } else {
+                    // Update post logic remains the same
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
