@@ -674,7 +674,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         price: 0,
         language: 'English',
         duration: '',
-        // Removed 'ticketsNeeded' from initialFormData
+        source: '', // NEW: Added source field
         registrationLink: '',
         registrationOpen: true,
         enableRegistrationForm: false,
@@ -708,7 +708,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 price: postToEdit.price || 0,
                 language: postToEdit.language || 'English',
                 duration: postToEdit.duration || '',
-                // Removed 'ticketsNeeded' from postToEdit mapping
+                source: postToEdit.source || '', // NEW: Load source from postToEdit
                 venueAddress: postToEdit.venueAddress || '',
                 registrationLink: postToEdit.registrationLink || '',
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
@@ -806,8 +806,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }
 
         // Removed 'ticketsNeeded' from validation
-        if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration)) {
-            setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration).");
+        if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration || !formData.source)) {
+            setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration, and Source).");
             setShowUploadAlert(true);
             return;
         }
@@ -878,7 +878,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            // NEW: Add a status field for admin approval, unless it's an edit of an approved post
+            status: postToEdit && postToEdit.status === 'approved' ? 'approved' : 'pending'
         };
 
         onSubmit(submissionData);
@@ -1018,6 +1020,18 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Source</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.source}
+                                            onChange={handleFormChange}
+                                            name="source"
+                                            placeholder="e.g., Campus Website, Organiser"
+                                            required
+                                        />
+                                    </div>
 
                                     <div className="form-group">
                                         <label className="form-label">Start Date & Time</label>
@@ -1054,19 +1068,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-                                    {/* Removed "Tickets Needed For" section */}
-                                    {/* <div className="form-group">
-                                        <label className="form-label">Tickets Needed For</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={formData.ticketsNeeded}
-                                            onChange={handleFormChange}
-                                            name="ticketsNeeded"
-                                            placeholder="e.g., Individual, Group, Family"
-                                            required
-                                        />
-                                    </div> */}
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
                                         <input
@@ -1445,6 +1446,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 </button>
                             )}
                         </div>
+                        {/* NEW: Display source here */}
+                        {event.source && (
+                            <div className="event-detail-source">
+                                <p className="source-label">Source: <span className="source-text">{event.source}</span></p>
+                            </div>
+                        )}
 
                         <div className="event-detail-price-book">
                             <span className="event-detail-price">
@@ -1487,14 +1494,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 <p>{event.duration || 'N/A'}</p>
                             </div>
                         </div>
-                        {/* Removed "Tickets Needed For" from Event Detail Page */}
-                        {/* <div className="info-grid-item">
-                            <Ticket size={20} />
-                            <div>
-                                <strong>Tickets Needed For</strong>
-                                <p>{event.ticketsNeeded || 'N/A'}</p>
-                            </div>
-                        </div> */}
                     </div>
 
                     <div className="event-detail-venue-section">
@@ -1766,6 +1765,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 </span>
                             </div>
                         )}
+                        {post.source && (
+                            <div className="event-detail post-source">
+                                <Info size={16} />
+                                <span>Source: {post.source}</span>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -1993,14 +1998,14 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-// Notifications Component - Displays user notifications or admin reported posts
-const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+// Notifications Component - Displays user notifications or admin reported/pending posts
+const NotificationsComponent = ({ notifications, adminNotifications, pendingPosts, currentUser, onAdminAction }) => {
     const isAdmin = currentUser?.isAdmin;
-    const displayNotifications = isAdmin ? adminNotifications : notifications;
+    const displayNotifications = isAdmin ? [...adminNotifications, ...pendingPosts] : notifications;
 
     return (
         <div>
-            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+            <h2 className="page-title">{isAdmin ? 'Admin Panel' : 'Notifications'}</h2>
             <div className="notifications-container">
                 {displayNotifications.length > 0 ? (
                     <div className="notifications-list">
@@ -2015,15 +2020,26 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
                                                 Report Reason: {notification.reportReason}
                                             </span>
                                         )}
+                                        {isAdmin && notification.status === 'pending' && (
+                                            <span className="pending-badge">Awaiting Approval</span>
+                                        )}
                                     </p>
                                     <span className="notification-timestamp">
                                         {new Date(notification.timestamp).toLocaleDateString()}
                                     </span>
                                     {isAdmin && notification.postId && (
                                         <div className="admin-actions">
+                                            {notification.status === 'pending' && (
+                                                <button
+                                                    className="btn-success"
+                                                    onClick={() => onAdminAction('approve', notification.postId._id)}
+                                                >
+                                                    <Check size={16} /> Approve
+                                                </button>
+                                            )}
                                             <button
                                                 className="btn-danger"
-                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                                onClick={() => onAdminAction('delete', notification.postId._id)}
                                             >
                                                 <Trash2 size={16} /> Delete Post
                                             </button>
@@ -2036,7 +2052,7 @@ const NotificationsComponent = ({ notifications, adminNotifications, currentUser
                 ) : (
                     <div className="placeholder-card">
                         <p className="placeholder-text">
-                            {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+                            {isAdmin ? 'No reported or pending posts to review.' : 'No new notifications.'}
                         </p>
                     </div>
                 )}
@@ -2792,6 +2808,7 @@ const App = () => {
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
     const [adminNotifications, setAdminNotifications] = useState([]);
+    const [pendingPosts, setPendingPosts] = useState([]);
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
@@ -2833,7 +2850,16 @@ const App = () => {
         try {
             const res = await fetch(`${API_URL}/posts`);
             const data = await res.json();
-            setPosts(data.map(formatPostDates));
+            // Filter posts by status. Only approved posts are public.
+            const approvedPosts = data.filter(post => post.status === 'approved' || post.type === 'news');
+            setPosts(approvedPosts.map(formatPostDates));
+            
+            if (currentUser && currentUser.isAdmin) {
+                const pending = data.filter(post => post.status === 'pending');
+                setPendingPosts(pending.map(formatPostDates));
+            } else {
+                setPendingPosts([]);
+            }
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
@@ -2905,6 +2931,7 @@ const App = () => {
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
+                setAdminNotifications([]);
             }
         } catch (error) {
             console.error('Failed to fetch admin notifications (reported posts):', error);
@@ -3129,17 +3156,32 @@ const App = () => {
                 setPostToEdit(null);
 
                 if (method === 'POST') {
-                    setPosts(prev => [formattedResponsePost, ...prev]);
-                    setNotifications(prev => [
-                        {
-                            _id: Date.now().toString(),
-                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
-                            timestamp: new Date(),
-                            type: 'success'
-                        },
-                        ...prev
-                    ]);
+                    // Check if the post needs approval before adding to main feed
+                    if (formattedResponsePost.status === 'pending') {
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new event "${newPost.title}" has been submitted for admin review. You will be notified when it is approved.`,
+                                timestamp: new Date(),
+                                type: 'info'
+                            },
+                            ...prev
+                        ]);
+                    } else {
+                        // For non-event posts or already approved posts
+                        setPosts(prev => [formattedResponsePost, ...prev]);
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+                                timestamp: new Date(),
+                                type: 'success'
+                            },
+                            ...prev
+                        ]);
+                    }
                 } else {
+                    // Update the post in the state
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
@@ -3150,6 +3192,11 @@ const App = () => {
                         },
                         ...prev
                     ]);
+                }
+                // Refresh posts and admin notifications after a successful post/update
+                fetchPosts();
+                if (currentUser.isAdmin) {
+                    fetchAdminNotifications();
                 }
             } else {
                 const errorData = await res.json();
@@ -3533,14 +3580,14 @@ const App = () => {
         }
     };
 
-    const handleDeleteReportedPost = async (postId) => {
+    const handleAdminAction = async (action, postId) => {
         if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
-            console.error('User not authorized to delete reported posts.');
+            console.error('User not authorized for admin actions.');
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
-                method: 'DELETE',
+            const res = await fetch(`${API_URL}/admin/${action}-post/${postId}`, {
+                method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
                 },
@@ -3551,7 +3598,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Reported post (ID: ${postId}) has been deleted successfully.`,
+                        message: `Post (ID: ${postId}) has been ${action}d successfully.`,
                         timestamp: new Date(),
                         type: 'success'
                     },
@@ -3559,11 +3606,11 @@ const App = () => {
                 ]);
             } else {
                 const errorData = await res.json();
-                console.error('Failed to delete reported post:', errorData);
+                console.error(`Failed to ${action} post:`, errorData);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Failed to delete reported post: ${errorData.message || 'Unknown error.'}`,
+                        message: `Failed to ${action} post: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3571,11 +3618,11 @@ const App = () => {
                 ]);
             }
         } catch (error) {
-            console.error('Error deleting reported post:', error);
+            console.error(`Error ${action}ing post:`, error);
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Network error: Could not delete reported post.`,
+                    message: `Network error: Could not ${action} post.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -3749,8 +3796,9 @@ const App = () => {
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
+                pendingPosts={pendingPosts}
                 currentUser={currentUser}
-                onDeleteReportedPost={handleDeleteReportedPost}
+                onAdminAction={handleAdminAction}
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
@@ -3826,8 +3874,9 @@ const App = () => {
         notifications: () => <NotificationsComponent
             notifications={notifications}
             adminNotifications={adminNotifications}
+            pendingPosts={pendingPosts}
             currentUser={currentUser}
-            onDeleteReportedPost={handleDeleteReportedPost}
+            onAdminAction={handleAdminAction}
         />,
         profile: () => <UsersComponent
             posts={posts}
