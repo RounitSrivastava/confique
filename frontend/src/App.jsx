@@ -1606,7 +1606,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-    const displayContent = showFullContent ? post.content : post.content.substring(0, 200);
+    const displayContent = showFullContent ? post.content : (post.content ? post.content.substring(0, 200) + (post.content.length > 200 ? '...' : '') : '');
 
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -1756,9 +1756,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         ref={contentRef}
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
                     >
-                        {post.content}
+                        {displayContent || 'No content available.'}
                     </p>
-                    {needsShowMore && (
+                    {post.content && post.content.length > 200 && needsShowMore && (
                         <button
                             className="show-more-button"
                             onClick={() => setShowFullContent(!showFullContent)}
@@ -2838,6 +2838,7 @@ const App = () => {
 
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
+    const [showPostApprovalAlert, setShowPostApprovalAlert] = useState(false);
 
     const [postToEdit, setPostToEdit] = useState(null);
     const [registrations, setRegistrations] = useState({});
@@ -2848,7 +2849,7 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert || showPostApprovalAlert;
 
     const formatPostDates = (post) => {
         return {
@@ -3059,7 +3060,7 @@ const App = () => {
 
     const filteredPosts = approvedPosts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post.content && post.content.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
@@ -3203,6 +3204,7 @@ const App = () => {
                         ]);
                     } else {
                         setPosts(prev => [formattedResponsePost, ...prev]);
+                        setShowPostApprovalAlert(true); // Show alert for pending approval
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
@@ -4035,6 +4037,14 @@ const App = () => {
                     }}
                 />
             )}
+            
+            <CustomMessageModal
+                isOpen={showPostApprovalAlert}
+                onClose={() => setShowPostApprovalAlert(false)}
+                title="Post Submitted"
+                message="Your post has been submitted successfully and is now pending admin approval. It will appear on the feed shortly."
+                showConfirm={false}
+            />
 
             <header className="header">
                 <div className="header-container">
