@@ -681,7 +681,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         registrationFields: '',
         paymentMethod: 'link',
         paymentLink: '',
-        paymentQRCode: ''
+        paymentQRCode: '',
+        source: '' // New source field added here
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -716,7 +717,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationFields: postToEdit.registrationFields || '',
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
-                paymentQRCode: postToEdit.paymentQRCode || ''
+                paymentQRCode: postToEdit.paymentQRCode || '',
+                source: postToEdit.source || '' // Set source from post to edit
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
@@ -840,7 +842,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 }
             }
         }
-        
+    
         let submissionData = { ...formData };
         // Clear registration data if registration is not required
         if (!hasRegistration) {
@@ -878,7 +880,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            // New logic: Events are created as pending
+            status: submissionData.type === 'event' ? 'pending' : 'published',
         };
 
         onSubmit(submissionData);
@@ -1016,6 +1020,17 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             onChange={handleFormChange}
                                             name="venueAddress"
                                             required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Source</label>
+                                        <input
+                                            type="url"
+                                            className="form-input"
+                                            value={formData.source}
+                                            onChange={handleFormChange}
+                                            name="source"
+                                            placeholder="https://example.com/event-source"
                                         />
                                     </div>
 
@@ -1459,6 +1474,11 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                             </button>
                         </div>
                     </div>
+                    {event.source && (
+                        <div className="event-detail-source-section">
+                            <p className="source-link">Source: <a href={event.source} target="_blank" rel="noopener noreferrer">{event.source}</a></p>
+                        </div>
+                    )}
 
                     <div className="event-detail-about-section">
                         <h2>About the Event</h2>
@@ -1538,6 +1558,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     const upcomingEvents = events.filter(e =>
         e.type === 'event' &&
+        e.status === 'published' && // Only show published events
         e._id !== currentEvent?._id &&
         new Date(e.eventStartDate) > new Date()
     ).slice(0, 3);
@@ -1748,7 +1769,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         </button>
                     )}
                 </div>
-
+                {post.type === 'event' && post.source && (
+                    <div className="post-source-area">
+                        <a href={post.source} target="_blank" rel="noopener noreferrer">
+                            Source
+                        </a>
+                    </div>
+                )}
                 {post.type === 'event' && (
                     <div className="event-details">
                         {post.location && (
@@ -1927,7 +1954,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 
 // Events Component - Displays only event posts
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
-    const eventPosts = posts.filter(post => post.type === 'event');
+    const eventPosts = posts.filter(post => post.type === 'event' && post.status === 'published'); // Only show published events
 
     return (
         <div id="events-section-content">
@@ -1961,7 +1988,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 
 // Confessions Component - Displays only confession posts
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
-    const confessionPosts = posts.filter(post => post.type === 'confession');
+    const confessionPosts = posts.filter(post => post.type === 'confession' && post.status === 'published'); // Only show published confessions
 
     return (
         <div>
@@ -1993,14 +2020,59 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
+// Admin Pending Events Component - Displays events awaiting approval
+const AdminPendingEvents = ({ pendingEvents, onApproveEvent, onDeletePost }) => {
+    if (pendingEvents.length === 0) {
+        return (
+            <div className="placeholder-card">
+                <p className="placeholder-text">No events are currently awaiting approval.</p>
+            </div>
+        );
+    }
+    return (
+        <div className="pending-events-container">
+            {pendingEvents.map(event => (
+                <div key={event._id} className="pending-event-card">
+                    <div className="pending-event-info">
+                        <h4>{event.title}</h4>
+                        <p>Posted by: {event.author}</p>
+                        <p>Location: {event.location}</p>
+                        <p>Date: {new Date(event.eventStartDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="pending-event-actions">
+                        <button className="btn-approve" onClick={() => onApproveEvent(event._id)}>
+                            <Check size={16} /> Approve
+                        </button>
+                        <button className="btn-reject" onClick={() => onDeletePost(event._id)}>
+                            <Trash2 size={16} /> Reject
+                        </button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 // Notifications Component - Displays user notifications or admin reported posts
-const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+const NotificationsComponent = ({ notifications, adminNotifications, pendingEvents, currentUser, onDeleteReportedPost, onApproveEvent, onDeletePost }) => {
     const isAdmin = currentUser?.isAdmin;
     const displayNotifications = isAdmin ? adminNotifications : notifications;
 
     return (
         <div>
-            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+            <h2 className="page-title">{isAdmin ? 'Admin Panel' : 'Notifications'}</h2>
+            {isAdmin && (
+                <>
+                    <h3 className="section-subtitle">Pending Events</h3>
+                    <AdminPendingEvents
+                        pendingEvents={pendingEvents}
+                        onApproveEvent={onApproveEvent}
+                        onDeletePost={onDeletePost}
+                    />
+                    <h3 className="section-subtitle">Reported Posts</h3>
+                </>
+            )}
+
             <div className="notifications-container">
                 {displayNotifications.length > 0 ? (
                     <div className="notifications-list">
@@ -2392,7 +2464,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
 // Confessions Right Sidebar Component - Displays recent confessions
 const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
     const recentConfessions = [...posts]
-        .filter(post => post.type === 'confession')
+        .filter(post => post.type === 'confession' && post.status === 'published')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3);
     return (
@@ -2796,6 +2868,7 @@ const App = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+    const [pendingEvents, setPendingEvents] = useState([]);
 
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
@@ -2905,11 +2978,54 @@ const App = () => {
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
+                setAdminNotifications([]);
             }
         } catch (error) {
             console.error('Failed to fetch admin notifications (reported posts):', error);
+            setAdminNotifications([]);
         }
     };
+
+    const fetchPendingEvents = async () => {
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+            setPendingEvents([]);
+            return;
+        }
+        try {
+            const res = await fetch(`${API_URL}/posts/pending`, {
+                headers: { 'Authorization': `Bearer ${currentUser.token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingEvents(data.map(formatPostDates));
+            } else {
+                console.error('Failed to fetch pending events:', await res.text());
+                setPendingEvents([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch pending events:', error);
+            setPendingEvents([]);
+        }
+    };
+
+    const handleApproveEvent = async (eventId) => {
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+        try {
+            const res = await fetch(`${API_URL}/posts/approve/${eventId}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${currentUser.token}` }
+            });
+            if (res.ok) {
+                fetchPosts();
+                fetchPendingEvents();
+            } else {
+                console.error('Failed to approve event:', await res.text());
+            }
+        } catch (error) {
+            console.error('Error approving event:', error);
+        }
+    };
+
 
     const fetchLikedPosts = async (user) => {
         if (!user || !user.token) {
@@ -2974,6 +3090,7 @@ const App = () => {
                 fetchMyRegistrations(currentUser);
                 if (currentUser.isAdmin) {
                     fetchAdminNotifications();
+                    fetchPendingEvents();
                 }
             } else {
                 // Clear user-specific state when not logged in
@@ -2981,6 +3098,7 @@ const App = () => {
                 setMyRegisteredEvents(new Set());
                 setRegistrations({});
                 setNotifications([]);
+                setPendingEvents([]);
             }
         };
 
@@ -3003,9 +3121,10 @@ const App = () => {
     }, [hasOpenModal]);
 
     const filteredPosts = posts.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (post.status === 'published' || (currentUser && post.userId === currentUser._id)) &&
+        (post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())))
     );
 
     const handleShowCalendarAlert = () => {
@@ -3129,16 +3248,32 @@ const App = () => {
                 setPostToEdit(null);
 
                 if (method === 'POST') {
-                    setPosts(prev => [formattedResponsePost, ...prev]);
-                    setNotifications(prev => [
-                        {
-                            _id: Date.now().toString(),
-                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
-                            timestamp: new Date(),
-                            type: 'success'
-                        },
-                        ...prev
-                    ]);
+                    // Update the state based on the post status
+                    if (formattedResponsePost.status === 'pending') {
+                        // For pending events, add a notification but don't add to the main feed yet
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your event "${formattedResponsePost.title}" has been submitted and is awaiting admin approval.`,
+                                timestamp: new Date(),
+                                type: 'info'
+                            },
+                            ...prev
+                        ]);
+                        fetchPendingEvents();
+                    } else {
+                        // For other posts, add directly to the feed
+                        setPosts(prev => [formattedResponsePost, ...prev]);
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
+                                timestamp: new Date(),
+                                type: 'success'
+                            },
+                            ...prev
+                        ]);
+                    }
                 } else {
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
@@ -3207,6 +3342,7 @@ const App = () => {
                     },
                     ...prev
                 ]);
+                fetchPendingEvents();
             } else {
                 const errorData = await res.json();
                 console.error('Failed to delete post:', errorData);
@@ -3749,8 +3885,11 @@ const App = () => {
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
+                pendingEvents={pendingEvents}
                 currentUser={currentUser}
                 onDeleteReportedPost={handleDeleteReportedPost}
+                onApproveEvent={handleApproveEvent}
+                onDeletePost={handleDeletePost}
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
@@ -3826,8 +3965,11 @@ const App = () => {
         notifications: () => <NotificationsComponent
             notifications={notifications}
             adminNotifications={adminNotifications}
+            pendingEvents={pendingEvents}
             currentUser={currentUser}
             onDeleteReportedPost={handleDeleteReportedPost}
+            onApproveEvent={handleApproveEvent}
+            onDeletePost={handleDeletePost}
         />,
         profile: () => <UsersComponent
             posts={posts}
@@ -3851,13 +3993,13 @@ const App = () => {
     };
 
     const sectionSidebars = {
-        home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
+        home: () => <HomeRightSidebar posts={posts.filter(p => p.status === 'published')} onOpenPostDetail={handleOpenPostDetail} />,
         events: () => <EventsRightSidebar
-            posts={posts.filter(p => p.type === 'event')}
+            posts={posts.filter(p => p.type === 'event' && p.status === 'published')}
             myCalendarEvents={myCalendarEvents}
             onOpenEventDetail={handleOpenEventDetail}
         />,
-        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession' && p.status === 'published')} onOpenPostDetail={handleOpenPostDetail} />,
         notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
     };
