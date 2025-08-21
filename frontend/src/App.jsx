@@ -1730,6 +1730,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <span className={`post-type-badge ${post.type}`}>
                         {getPostTypeLabel(post.type)}
                     </span>
+                    {/* NEW: Display PENDING badge for admin view */}
+                    {post.type === 'event' && post.status === 'pending' && currentUser?.isAdmin && (
+                        <span className="post-status-badge pending">Pending</span>
+                    )}
                     <PostOptions
                         post={post}
                         onDelete={onDeletePost}
@@ -1993,52 +1997,85 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
 };
 
 // Notifications Component - Displays user notifications or admin reported posts
-const NotificationsComponent = ({ notifications, adminNotifications, currentUser, onDeleteReportedPost }) => {
+const NotificationsComponent = ({ notifications, adminNotifications, pendingEvents, currentUser, onDeleteReportedPost, onApproveEvent, onRejectEvent }) => {
     const isAdmin = currentUser?.isAdmin;
     const displayNotifications = isAdmin ? adminNotifications : notifications;
 
     return (
         <div>
-            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts' : 'Notifications'}</h2>
+            <h2 className="page-title">{isAdmin ? 'Admin Panel: Reported Posts & Approvals' : 'Notifications'}</h2>
             <div className="notifications-container">
-                {displayNotifications.length > 0 ? (
-                    <div className="notifications-list">
-                        {displayNotifications.map((notification) => (
-                            <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
-                                <Bell size={20} className="notification-icon" />
-                                <div className="notification-content">
-                                    <p className="notification-text">
-                                        {notification.message}
-                                        {isAdmin && notification.reportReason && (
-                                            <span className="report-reason">
-                                                Report Reason: {notification.reportReason}
-                                            </span>
-                                        )}
-                                    </p>
-                                    <span className="notification-timestamp">
-                                        {new Date(notification.timestamp).toLocaleDateString()}
-                                    </span>
-                                    {isAdmin && notification.postId && (
-                                        <div className="admin-actions">
-                                            <button
-                                                className="btn-danger"
-                                                onClick={() => onDeleteReportedPost(notification.postId._id)}
-                                            >
-                                                <Trash2 size={16} /> Delete Post
+                {isAdmin && (
+                    <div className="admin-pending-section">
+                        <h3 className="admin-section-title">Pending Events ({pendingEvents.length})</h3>
+                        {pendingEvents.length > 0 ? (
+                            <div className="pending-events-list">
+                                {pendingEvents.map(event => (
+                                    <div key={event._id} className="pending-event-item">
+                                        <div className="pending-event-info">
+                                            <h4>{event.title}</h4>
+                                            <p>{event.content.substring(0, 100)}...</p>
+                                        </div>
+                                        <div className="pending-event-actions">
+                                            <button className="btn-approve" onClick={() => onApproveEvent(event._id)}>
+                                                <Check size={16} /> Approve
+                                            </button>
+                                            <button className="btn-reject" onClick={() => onRejectEvent(event._id)}>
+                                                <X size={16} /> Reject
                                             </button>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="placeholder-card">
-                        <p className="placeholder-text">
-                            {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
-                        </p>
+                        ) : (
+                            <div className="placeholder-card">
+                                <p className="placeholder-text">No events awaiting approval.</p>
+                            </div>
+                        )}
                     </div>
                 )}
+
+                <div className="admin-reported-section">
+                    <h3 className="admin-section-title">{isAdmin ? 'Reported Posts' : 'Notifications'} ({displayNotifications.length})</h3>
+                    {displayNotifications.length > 0 ? (
+                        <div className="notifications-list">
+                            {displayNotifications.map((notification) => (
+                                <div key={notification._id} className={`notification-item ${notification.type || ''}`}>
+                                    <Bell size={20} className="notification-icon" />
+                                    <div className="notification-content">
+                                        <p className="notification-text">
+                                            {notification.message}
+                                            {isAdmin && notification.reportReason && (
+                                                <span className="report-reason">
+                                                    Report Reason: {notification.reportReason}
+                                                </span>
+                                            )}
+                                        </p>
+                                        <span className="notification-timestamp">
+                                            {new Date(notification.timestamp).toLocaleDateString()}
+                                        </span>
+                                        {isAdmin && notification.postId && (
+                                            <div className="admin-actions">
+                                                <button
+                                                    className="btn-danger"
+                                                    onClick={() => onDeleteReportedPost(notification.postId._id)}
+                                                >
+                                                    <Trash2 size={16} /> Delete Post
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="placeholder-card">
+                            <p className="placeholder-text">
+                                {isAdmin ? 'No reported posts to review.' : 'No new notifications.'}
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -2791,6 +2828,7 @@ const App = () => {
     const [registrations, setRegistrations] = useState({});
     const [notifications, setNotifications] = useState([]);
     const [adminNotifications, setAdminNotifications] = useState([]);
+    const [pendingEvents, setPendingEvents] = useState([]); // NEW: State for pending events
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
@@ -2838,12 +2876,32 @@ const App = () => {
                 if (post.type === 'event') {
                     return post.status === 'approved' || (currentUser && currentUser.isAdmin);
                 }
-                // For other post types (confessions, etc.), always show them
+                // For other post types (consights, news), always show them
                 return true;
             });
             setPosts(filteredData.map(formatPostDates));
         } catch (error) {
             console.error('Failed to fetch posts:', error);
+        }
+    };
+    
+    // NEW: Function to fetch pending events for admin
+    const fetchPendingEvents = async () => {
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+        try {
+            const res = await fetch(`${API_URL}/posts/pending-events`, {
+                headers: { 'Authorization': `Bearer ${currentUser.token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPendingEvents(data.map(formatPostDates));
+            } else {
+                console.error('Failed to fetch pending events:', await res.text());
+                setPendingEvents([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch pending events:', error);
+            setPendingEvents([]);
         }
     };
 
@@ -2905,18 +2963,24 @@ const App = () => {
     const fetchAdminNotifications = async () => {
         if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
         try {
-            const res = await fetch(`${API_URL}/users/admin/reported-posts`, {
+            // Fetch reported posts
+            const reportedRes = await fetch(`${API_URL}/users/admin/reported-posts`, {
                 headers: { 'Authorization': `Bearer ${currentUser.token}` }
             });
-            if (res.ok) {
-                const data = await res.json();
+            if (reportedRes.ok) {
+                const data = await reportedRes.json();
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
-                console.error('Failed to fetch admin notifications:', await res.text());
-                setAdminNotifications({});
+                console.error('Failed to fetch admin notifications:', await reportedRes.text());
+                setAdminNotifications([]);
             }
+
+            // Fetch pending events
+            await fetchPendingEvents();
+
         } catch (error) {
-            console.error('Failed to fetch admin notifications (reported posts):', error);
+            console.error('Failed to fetch admin notifications:', error);
+            setAdminNotifications([]);
         }
     };
 
@@ -2983,6 +3047,7 @@ const App = () => {
                 fetchMyRegistrations(currentUser);
                 if (currentUser.isAdmin) {
                     fetchAdminNotifications();
+                    fetchPendingEvents();
                 }
             } else {
                 // Clear user-specific state when not logged in
@@ -3206,6 +3271,111 @@ const App = () => {
             ]);
         }
     };
+
+    const handleApproveEvent = async (postId) => {
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+            console.error('Admin not authenticated.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/posts/approve-event/${postId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${currentUser.token}`,
+                },
+            });
+            if (res.ok) {
+                await fetchPosts();
+                await fetchPendingEvents(); // Refresh pending events list
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Event (ID: ${postId}) has been approved and is now live.`,
+                        timestamp: new Date(),
+                        type: 'success'
+                    },
+                    ...prev
+                ]);
+            } else {
+                const errorData = await res.json();
+                console.error('Failed to approve event:', errorData);
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Failed to approve event: ${errorData.message || 'Unknown error.'}`,
+                        timestamp: new Date(),
+                        type: 'error'
+                    },
+                    ...prev
+                ]);
+            }
+        } catch (error) {
+            console.error('Error approving event:', error);
+            setNotifications(prev => [
+                {
+                    _id: Date.now().toString(),
+                    message: `Network error: Could not approve event.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
+        }
+    };
+
+    const handleRejectEvent = async (postId) => {
+        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+            console.error('Admin not authenticated.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/posts/reject-event/${postId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${currentUser.token}`,
+                },
+            });
+            if (res.ok) {
+                await fetchPosts();
+                await fetchPendingEvents();
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Event (ID: ${postId}) has been rejected and deleted.`,
+                        timestamp: new Date(),
+                        type: 'info'
+                    },
+                    ...prev
+                ]);
+            } else {
+                const errorData = await res.json();
+                console.error('Failed to reject event:', errorData);
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Failed to reject event: ${errorData.message || 'Unknown error.'}`,
+                        timestamp: new Date(),
+                        type: 'error'
+                    },
+                    ...prev
+                ]);
+            }
+        } catch (error) {
+            console.error('Error rejecting event:', error);
+            setNotifications(prev => [
+                {
+                    _id: Date.now().toString(),
+                    message: `Network error: Could not reject event.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
+        }
+    };
+
 
     const handleDeletePost = async (postId) => {
         if (!isLoggedIn || !currentUser || !currentUser.token) {
@@ -3778,8 +3948,11 @@ const App = () => {
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
+                pendingEvents={pendingEvents} // Pass pending events to the notifications component
                 currentUser={currentUser}
                 onDeleteReportedPost={handleDeleteReportedPost}
+                onApproveEvent={handleApproveEvent} // Pass new admin functions
+                onRejectEvent={handleRejectEvent}
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
@@ -3855,8 +4028,11 @@ const App = () => {
         notifications: () => <NotificationsComponent
             notifications={notifications}
             adminNotifications={adminNotifications}
+            pendingEvents={pendingEvents}
             currentUser={currentUser}
             onDeleteReportedPost={handleDeleteReportedPost}
+            onApproveEvent={handleApproveEvent}
+            onRejectEvent={handleRejectEvent}
         />,
         profile: () => <UsersComponent
             posts={posts}
