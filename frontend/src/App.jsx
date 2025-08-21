@@ -1072,19 +1072,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-                                    {/* Removed "Tickets Needed For" section */}
-                                    {/* <div className="form-group">
-                                        <label className="form-label">Tickets Needed For</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={formData.ticketsNeeded}
-                                            onChange={handleFormChange}
-                                            name="ticketsNeeded"
-                                            placeholder="e.g., Individual, Group, Family"
-                                            required
-                                        />
-                                    </div> */}
                                     <div className="form-group">
                                         <label className="form-label">Price (₹)</label>
                                         <input
@@ -1773,32 +1760,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     )}
                 </div>
 
-                {post.type === 'event' && (
-                    <div className="event-details">
-                        {post.location && (
-                            <div className="event-detail">
-                                <MapPin size={16} />
-                                <span>{post.location}</span>
-                            </div>
-                        )}
-                        {post.eventStartDate && (
-                            <div className="event-detail">
-                                <Clock size={16} />
-                                <span>
-                                    {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
-                                    {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                            </div>
-                        )}
-                        {/* New: Display source name below the 'Add to Calendar' button */}
-                        {post.source && (
-                            <div className="event-source">
-                                <p>Source: {post.source}</p>
-                            </div>
-                        )}
-                    </div>
-                )}
-
                 {post.images && post.images.length > 0 && (
                     <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
                         {post.images.map((image, index) => (
@@ -1819,16 +1780,24 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             {isInteractive && (
                 <>
                     {post.type === 'event' && (
-                        <div className="event-action-buttons-top">
-                            <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
-                                <Info size={20} />
-                                <span>Details</span>
-                            </button>
-                            <button className="action-btn" onClick={handleAddToCalendarClick}>
-                                <CalendarPlus size={20} />
-                                <span>Add to Calendar</span>
-                            </button>
-                        </div>
+                        <>
+                            <div className="event-action-buttons-top">
+                                <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
+                                    <Info size={20} />
+                                    <span>Details</span>
+                                </button>
+                                <button className="action-btn" onClick={handleAddToCalendarClick}>
+                                    <CalendarPlus size={20} />
+                                    <span>Add to Calendar</span>
+                                </button>
+                            </div>
+                            {/* Display source name below the "Add to Calendar" button */}
+                            {post.source && (
+                                <p className="event-source-display">
+                                    Source: {post.source}
+                                </p>
+                            )}
+                        </>
                     )}
 
                     <div className="post-actions">
