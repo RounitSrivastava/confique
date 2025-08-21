@@ -4033,7 +4033,18 @@ const App = () => {
 
                 <main className="main-content">
                     <div className="content-padding">
-                        {selectedPost ? (
+                        {selectedEvent ? (
+                            <EventDetailPage
+                                event={selectedEvent}
+                                onClose={handleCloseEventDetail}
+                                isLoggedIn={isLoggedIn}
+                                onRequireLogin={() => setShowLoginModal(true)}
+                                onAddToCalendar={handleAddToCalendar}
+                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                                onShowCalendarAlert={handleShowCalendarAlert}
+                            />
+                        ) : selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
                                     key={selectedPost._id}
@@ -4084,17 +4095,6 @@ const App = () => {
                                         ))}
                                 </div>
                             </div>
-                        ) : selectedEvent ? (
-                            <EventDetailPage
-                                event={selectedEvent}
-                                onClose={handleCloseEventDetail}
-                                isLoggedIn={isLoggedIn}
-                                onRequireLogin={() => setShowLoginModal(true)}
-                                onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                                onShowCalendarAlert={handleShowCalendarAlert}
-                            />
                         ) : (
                             <CurrentComponent
                                 posts={filteredPosts}
