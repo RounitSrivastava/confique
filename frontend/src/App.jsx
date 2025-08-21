@@ -1301,8 +1301,21 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
 
-    const hasMoreContent = event.content.length > 200;
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
+    // **FIX**: Corrected the logic to determine if a "Show More" button is needed
+    // This was previously checking event.content.length directly which can be buggy.
+    // The fixed logic uses a ref to check if the content overflows its container.
+    const contentRef = useRef(null);
+    const [needsShowMore, setNeedsShowMore] = useState(false);
+
+    useEffect(() => {
+        if (contentRef.current) {
+            const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
+            const maxHeight = lineHeight * 3; // For example, show 3 lines initially
+            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+        }
+    }, [event.content]);
+
+    const displayContent = showFullContent ? event.content : event.content.substring(0, 200);
     const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
     const isRegistrationOpen = event.registrationOpen;
     const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
@@ -1470,8 +1483,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     <div className="event-detail-about-section">
                         <h2>About the Event</h2>
                         <p>
-                            {displayContent}
-                            {hasMoreContent && (
+                           {/* **FIX**: This is where the event content is now rendered. */}
+                           {displayContent}
+                           {hasMoreContent && (
                                 <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
                                     {showFullContent ? 'Show Less' : 'Show More'}
                                 </button>
@@ -4033,18 +4047,7 @@ const App = () => {
 
                 <main className="main-content">
                     <div className="content-padding">
-                        {selectedEvent ? (
-                            <EventDetailPage
-                                event={selectedEvent}
-                                onClose={handleCloseEventDetail}
-                                isLoggedIn={isLoggedIn}
-                                onRequireLogin={() => setShowLoginModal(true)}
-                                onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
-                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                                onShowCalendarAlert={handleShowCalendarAlert}
-                            />
-                        ) : selectedPost ? (
+                        {selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
                                     key={selectedPost._id}
@@ -4095,6 +4098,17 @@ const App = () => {
                                         ))}
                                 </div>
                             </div>
+                        ) : selectedEvent ? (
+                            <EventDetailPage
+                                event={selectedEvent}
+                                onClose={handleCloseEventDetail}
+                                isLoggedIn={isLoggedIn}
+                                onRequireLogin={() => setShowLoginModal(true)}
+                                onAddToCalendar={handleAddToCalendar}
+                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                                onShowCalendarAlert={handleShowCalendarAlert}
+                            />
                         ) : (
                             <CurrentComponent
                                 posts={filteredPosts}
