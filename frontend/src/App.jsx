@@ -681,7 +681,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         registrationFields: '',
         paymentMethod: 'link',
         paymentLink: '',
-        paymentQRCode: ''
+        paymentQRCode: '',
+        // NEW: Add source field for events
+        source: ''
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -716,7 +718,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationFields: postToEdit.registrationFields || '',
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
-                paymentQRCode: postToEdit.paymentQRCode || ''
+                paymentQRCode: postToEdit.paymentQRCode || '',
+                // NEW: Load source from postToEdit
+                source: postToEdit.source || ''
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || '');
@@ -878,7 +882,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            // NEW: Add approval status based on post type
+            status: formData.type === 'event' ? 'pending' : 'approved'
         };
 
         onSubmit(submissionData);
@@ -1020,6 +1026,18 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     </div>
 
                                     <div className="form-group">
+                                        <label className="form-label">Source Name</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.source}
+                                            onChange={handleFormChange}
+                                            name="source"
+                                            placeholder="e.g., Department of CS"
+                                        />
+                                    </div>
+
+                                    <div className="form-group">
                                         <label className="form-label">Start Date & Time</label>
                                         <input
                                             type="datetime-local"
@@ -1156,6 +1174,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             onChange={handleFormChange}
                                                             name="registrationFields"
                                                             placeholder="e.g., Roll Number, Branch, Semester"
+                                                            required
                                                         />
                                                     </div>
                                                     
@@ -1445,7 +1464,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 </button>
                             )}
                         </div>
-
+                        {/* New: Display source name below the "Add to Calendar" button */}
+                        {event.source && (
+                            <p className="event-source-small">
+                                Source: {event.source}
+                            </p>
+                        )}
                         <div className="event-detail-price-book">
                             <span className="event-detail-price">
                                 {event.price === 0 ? 'FREE' : `₹${event.price}`}
@@ -1653,7 +1677,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             return;
         }
         if (post.type === 'event' && post.eventStartDate) {
-            onAddToCalendar(post);
+            onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
         }
     };
@@ -1764,6 +1788,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     {new Date(post.eventStartDate).toLocaleDateString()} at{' '}
                                     {new Date(post.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
+                            </div>
+                        )}
+                        {/* New: Display source name below the 'Add to Calendar' button */}
+                        {post.source && (
+                            <div className="event-source">
+                                <p>Source: {post.source}</p>
                             </div>
                         )}
                     </div>
@@ -2833,7 +2863,9 @@ const App = () => {
         try {
             const res = await fetch(`${API_URL}/posts`);
             const data = await res.json();
-            setPosts(data.map(formatPostDates));
+            // Filter out pending events for non-admins
+            const filteredData = data.filter(post => post.type !== 'event' || post.status === 'approved' || (currentUser && currentUser.isAdmin));
+            setPosts(filteredData.map(formatPostDates));
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
@@ -2905,6 +2937,7 @@ const App = () => {
                 setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
             } else {
                 console.error('Failed to fetch admin notifications:', await res.text());
+                setAdminNotifications({});
             }
         } catch (error) {
             console.error('Failed to fetch admin notifications (reported posts):', error);
@@ -3082,7 +3115,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${eventTitle}" failed: ${errorData.message}`,
+                        message: `Registration for "${eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3129,16 +3162,28 @@ const App = () => {
                 setPostToEdit(null);
 
                 if (method === 'POST') {
-                    setPosts(prev => [formattedResponsePost, ...prev]);
-                    setNotifications(prev => [
-                        {
-                            _id: Date.now().toString(),
-                            message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
-                            timestamp: new Date(),
-                            type: 'success'
-                        },
-                        ...prev
-                    ]);
+                    if (newPost.type === 'event' && newPost.status === 'pending') {
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new event "${newPost.title}" has been submitted for admin approval.`,
+                                timestamp: new Date(),
+                                type: 'info'
+                            },
+                            ...prev
+                        ]);
+                    } else {
+                        setPosts(prev => [formattedResponsePost, ...prev]);
+                        setNotifications(prev => [
+                            {
+                                _id: Date.now().toString(),
+                                message: `Your new consights "${newPost.title}" has been posted successfully!`,
+                                timestamp: new Date(),
+                                type: 'success'
+                            },
+                            ...prev
+                        ]);
+                    }
                 } else {
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
