@@ -2832,8 +2832,15 @@ const App = () => {
         try {
             const res = await fetch(`${API_URL}/posts`);
             const data = await res.json();
-            // Filter out pending events for non-admins
-            const filteredData = data.filter(post => post.type !== 'event' || post.status === 'approved' || (currentUser && currentUser.isAdmin));
+            // Filter posts based on user role
+            const filteredData = data.filter(post => {
+                // If it's an event, only show it if it's approved OR the user is an admin
+                if (post.type === 'event') {
+                    return post.status === 'approved' || (currentUser && currentUser.isAdmin);
+                }
+                // For other post types (confessions, etc.), always show them
+                return true;
+            });
             setPosts(filteredData.map(formatPostDates));
         } catch (error) {
             console.error('Failed to fetch posts:', error);
@@ -3143,6 +3150,10 @@ const App = () => {
                             },
                             ...prev
                         ]);
+                        // We also need to fetch the posts again to get the pending event for the admin view
+                        if (currentUser.isAdmin) {
+                            fetchPosts();
+                        }
                     } else {
                         // Consights posts are added directly
                         setPosts(prev => [formattedResponsePost, ...prev]);
