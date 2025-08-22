@@ -476,6 +476,28 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
 
+        // Validate the standard 'phone' field (assuming it's for a number)
+        if (!/^\d{10}$/.test(formData.phone)) {
+            setFormAlertMessage("Phone number must be exactly 10 digits.");
+            setShowFormAlert(true);
+            return;
+        }
+
+        // New: Validate custom phone-like fields dynamically
+        const phoneKeywords = ['phone', 'mobile', 'contact'];
+        const customPhoneFields = customFields.filter(field =>
+            phoneKeywords.some(keyword => field.toLowerCase().includes(keyword))
+        );
+
+        for (const field of customPhoneFields) {
+            const fieldValue = formData[field];
+            if (!/^\d{10}$/.test(fieldValue)) {
+                setFormAlertMessage(`The field '${field}' must be exactly 10 digits.`);
+                setShowFormAlert(true);
+                return;
+            }
+        }
+
         setFormSubmitted(true);
 
         if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
@@ -595,6 +617,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         className="form-input"
                         value={formData.phone}
                         onChange={handleChange}
+                        placeholder="e.g., 9876543210"
                         required
                     />
                 </div>
@@ -988,16 +1011,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                 />
                             </div>
 
-                            <div className="form-group">
-                                <label className="form-label">Author</label>
-                                <input
-                                    type="text"
-                                    className="form-input"
-                                    value={currentUser?.name || ''}
-                                    name="author"
-                                    disabled={true}
-                                />
-                            </div>
+                            {/* Author name bar removed from here */}
 
                             {/* Event-specific fields */}
                             {formData.type === 'event' && (
