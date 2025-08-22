@@ -1451,6 +1451,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 </button>
                             )}
                         </div>
+                        {/* New: Display source name below the "Add to Calendar" button */}
                         {event.source && (
                             <p className="event-source-small">
                                 Source: {event.source}
@@ -1497,6 +1498,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 <p>{event.duration || 'N/A'}</p>
                             </div>
                         </div>
+                        {/* Removed "Tickets Needed For" from Event Detail Page */}
+                        {/* <div className="info-grid-item">
+                            <Ticket size={20} />
+                            <div>
+                                <strong>Tickets Needed For</strong>
+                                <p>{event.ticketsNeeded || 'N/A'}</p>
+                            </div>
+                        </div> */}
                     </div>
 
                     <div className="event-detail-venue-section">
@@ -1513,6 +1522,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     </div>
                 </div>
 
+                {/* Modals for registration, geolocation error, and calendar confirmation */}
                 {showRegistrationForm && (
                     <RegistrationFormModal
                         isOpen={showRegistrationForm}
@@ -1621,6 +1631,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         if (isLoggedIn) {
             setOpenCommentPostId(isCommentsOpen ? null : post._id);
         } else {
+            // Show a login prompt if not logged in
             alert("Please log in to comment.");
         }
     };
@@ -1653,7 +1664,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             return;
         }
         if (post.type === 'event' && post.eventStartDate) {
-            onAddToCalendar(post);
+            onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
         }
     };
@@ -1719,6 +1730,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <span className={`post-type-badge ${post.type}`}>
                         {getPostTypeLabel(post.type)}
                     </span>
+                    {/* NEW: Display PENDING badge for admin view */}
                     {post.type === 'event' && post.status === 'pending' && currentUser?.isAdmin && (
                         <span className="post-status-badge pending">Pending</span>
                     )}
@@ -1783,8 +1795,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     <span>Add to Calendar</span>
                                 </button>
                             </div>
+                            {/* Display source name below the "Add to Calendar" button */}
                             {post.source && (
-                                <p className="event-source-small">
+                                <p className="event-source-display">
                                     Source: {post.source}
                                 </p>
                             )}
@@ -1793,6 +1806,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                            {/* Explicitly setting fill and stroke based on isLiked state */}
                             <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
                             <span>{post.likes}</span>
                         </button>
@@ -1806,6 +1820,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span>{registrationCount || 0}</span>
                             </div>
                         )}
+                        {/* Modified share button to only show the icon on small screens */}
                         <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
                             <Share2 size={20} />
                             <span className="share-text">Share</span>
@@ -2194,7 +2209,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                     </button>
                 </div>
             </div>
-        </ErrorBoundary>
+        </div>
     );
 };
 
@@ -3102,14 +3117,7 @@ const App = () => {
             return;
         }
 
-        const event = posts.find(p => p._id === eventId);
-        if (!event) {
-            console.error('Event not found for registration.');
-            return;
-        }
-
-        const isAlreadyRegistered = event.registrations.some(reg => reg.userId.toString() === currentUser._id.toString());
-        if (isAlreadyRegistered) {
+        if (myRegisteredEvents.has(eventId)) {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
@@ -3123,39 +3131,15 @@ const App = () => {
         }
 
         try {
-            // Prepare custom fields from event.registrationFields
-            const customFields = {};
-            if (event.registrationFields) {
-                event.registrationFields.split(',').map(field => field.trim()).forEach(field => {
-                    // Assuming formData contains these fields from the RegistrationFormModal
-                    customFields[field] = 'N/A'; // Placeholder, replace with actual form data if available
-                });
-            }
-
-            const registrationPayload = {
-                name: currentUser.name,
-                email: currentUser.email,
-                phone: currentUser.phone || 'N/A', // Assuming phone can be part of currentUser or handled by form
-                ...customFields,
-                // transactionId will come from the form if applicable
-            };
-
             const res = await fetch(`${API_URL}/users/register-event/${eventId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${currentUser.token}`,
                 },
-                body: JSON.stringify(registrationPayload),
             });
             if (res.ok) {
-                // Update local state to reflect registration
                 setMyRegisteredEvents(prev => new Set(prev).add(eventId));
-                // Update the specific event's registrations array in the posts state
-                setPosts(prevPosts => prevPosts.map(p => 
-                    p._id === eventId ? { ...p, registrations: [...p.registrations, { userId: currentUser._id, name: currentUser.name, email: currentUser.email, phone: currentUser.phone, ...customFields }] } : p
-                ));
-
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -3172,7 +3156,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${eventTitle}" failed: ${errorData.message}`,
+                        message: `Registration for "${eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3220,6 +3204,8 @@ const App = () => {
 
                 if (method === 'POST') {
                     if (newPost.type === 'event' && newPost.status === 'pending') {
+                        // For events, we do not add to the main feed immediately
+                        // The user will see a notification that it's pending approval
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
@@ -3229,11 +3215,12 @@ const App = () => {
                             },
                             ...prev
                         ]);
+                        // We also need to fetch the posts again to get the pending event for the admin view
                         if (currentUser.isAdmin) {
-                            fetchPosts(); // Refresh for admin to see pending event
+                            fetchPosts();
                         }
                     } else {
-                        // For non-event posts, add to the feed immediately
+                        // Consights posts are added directly
                         setPosts(prev => [formattedResponsePost, ...prev]);
                         setNotifications(prev => [
                             {
@@ -3244,10 +3231,9 @@ const App = () => {
                             },
                             ...prev
                         ]);
-                        fetchPosts(); // Refresh posts to ensure new content is visible
                     }
                 } else {
-                    // For updates, refresh posts to ensure changes are visible
+                    // Update post logic remains the same
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
@@ -3258,7 +3244,6 @@ const App = () => {
                         },
                         ...prev
                     ]);
-                    fetchPosts(); // Refresh posts to ensure updated content is visible
                 }
             } else {
                 const errorData = await res.json();
@@ -3301,7 +3286,7 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                await fetchPosts(); // Re-fetch all posts to show the approved event
+                await fetchPosts();
                 await fetchPendingEvents(); // Refresh pending events list
                 setNotifications(prev => [
                     {
@@ -3353,8 +3338,8 @@ const App = () => {
                 },
             });
             if (res.ok) {
-                await fetchPosts(); // Re-fetch all posts (to ensure it's removed from any admin view)
-                await fetchPendingEvents(); // Refresh pending events list
+                await fetchPosts();
+                await fetchPendingEvents();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -3963,10 +3948,10 @@ const App = () => {
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
-                pendingEvents={pendingEvents}
+                pendingEvents={pendingEvents} // Pass pending events to the notifications component
                 currentUser={currentUser}
                 onDeleteReportedPost={handleDeleteReportedPost}
-                onApproveEvent={handleApproveEvent}
+                onApproveEvent={handleApproveEvent} // Pass new admin functions
                 onRejectEvent={handleRejectEvent}
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
@@ -4013,8 +3998,8 @@ const App = () => {
             onAddComment={handleAddComment}
             likedPosts={likedPosts}
             openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
             onOpenEventDetail={handleOpenEventDetail}
+            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
