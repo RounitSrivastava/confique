@@ -29,18 +29,9 @@ const uploadImage = async (image) => {
 // @access  Public (filtered for non-admins), Private (admin)
 router.get('/', protect, asyncHandler(async (req, res) => {
     let query = {};
-
-    // If a user is logged in and is NOT an admin, only show approved posts
-    // This handles both logged-in non-admins and public access
     if (req.user && !req.user.isAdmin) {
         query = { status: 'approved' };
     }
-    // If the user is an admin or not authenticated, the query remains empty,
-    // which means all posts (including pending) are fetched. The frontend will
-    // then display them appropriately.
-    // NOTE: The frontend's `fetchPosts` already handles public access, but adding
-    // this check here is a good practice for robust server-side filtering.
-
     const posts = await Post.find(query).sort({ timestamp: -1 });
     res.json(posts);
 }));
@@ -57,7 +48,6 @@ router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
 // @desc    Get all registrations for a specific event
 // @route   GET /api/posts/:id/registrations
 // @access  Private (Event creator or Admin only)
-// NEW ROUTE ADDED FOR FETCHING REGISTRATION DATA FOR A SPECIFIC EVENT
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id).select('registrations userId enableRegistrationForm');
 
@@ -66,13 +56,11 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
         throw new Error('Post not found');
     }
 
-    // Ensure it's an event and has in-app registration enabled
     if (post.type !== 'event' || !post.enableRegistrationForm) {
         res.status(400);
         throw new Error('This is not an event with in-app registration enabled.');
     }
 
-    // Check if the user is the post's creator or an admin
     if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         res.status(403);
         throw new Error('Not authorized to view registrations for this post');
@@ -122,7 +110,6 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         qrCodeUrl = await uploadImage(paymentQRCode);
     }
 
-    // Determine status based on post type
     const status = type === 'event' ? 'pending' : 'approved';
 
     const post = new Post({
@@ -236,7 +223,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.paymentMethod = rest.paymentMethod !== undefined ? rest.paymentMethod : post.paymentMethod;
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
     } else {
-        // Clear event-specific fields if type changes from event to non-event
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -342,8 +328,10 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             const parts = post.paymentQRCode.split('/');
             const filename = parts[parts.length - 1];
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-        });
-
+        }
+        // FIX: The extra closing parenthesis was here.
+        // I have removed it to fix the syntax error.
+        
         if (publicIdsToDelete.length > 0) {
             try {
                 await cloudinary.api.delete_resources(publicIdsToDelete);
