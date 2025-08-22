@@ -1,21 +1,21 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const { Parser } = require('json2csv'); // NEW: For CSV generation
+const { Parser } = require('json2csv');
 const Post = require('../models/Post');
-const Registration = require('../models/Registration'); // NEW: Import the new Registration model
+const Registration = require('../models/Registration');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
-const upload = require('../middleware/upload'); // Still needed if other routes use it for file uploads
+const upload = require('../middleware/upload');
 const cloudinary = require('cloudinary').v2;
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// Helper function to upload base64 images to Cloudinary
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
-            folder: 'confique_posts', // Using a specific folder for post images
+            folder: 'confique_posts',
         });
         return result.secure_url;
     } catch (error) {
@@ -26,35 +26,55 @@ const uploadImage = async (image) => {
 
 // --- POST ROUTES ---
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (filtered for non-admins), Private (admin)
-router.get('/', protect, asyncHandler(async (req, res) => {
-    let query = {};
-    if (req.user && !req.user.isAdmin) {
-        query = { status: 'approved' };
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (for approved posts), Private (for all posts as admin)
+// FIXED: This route now correctly handles both public and private access.
+router.get('/', asyncHandler(async (req, res) => {
+    let posts;
+    let isAdmin = false;
+
+    // Attempt to verify token if provided, but don't fail if not present or invalid
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        const token = req.headers.authorization.split(' ')[1];
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await require('../models/User').findById(decoded.id).select('isAdmin');
+            if (user && user.isAdmin) {
+                isAdmin = true;
+            }
+        } catch (error) {
+            // Token is invalid or expired, proceed as public user
+            console.log("Invalid or expired token for GET /api/posts, serving public content.");
+        }
     }
-    const posts = await Post.find(query).sort({ timestamp: -1 });
+
+    if (isAdmin) {
+        // Admin gets all posts (approved and pending)
+        posts = await Post.find().sort({ timestamp: -1 });
+    } else {
+        // Public/non-admin users only get approved posts
+        posts = await Post.find({ status: 'approved' }).sort({ timestamp: -1 });
+    }
     res.json(posts);
 }));
 
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: 'event', status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
 }));
 
-// @desc    Get all registrations for a specific event
-// @route   GET /api/posts/:id/registrations
-// @access  Private (Event creator or Admin only)
-// UPDATED: Now fetches from the new Registration model
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
-    const event = await Post.findById(eventId).select('userId type enableRegistrationForm');
+    const event = await Post.findById(eventId).select('userId type');
 
     if (!event) {
         res.status(404);
@@ -66,7 +86,6 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
         throw new Error('This is not an event.');
     }
 
-    // Security check: Only the host or an admin can view this data
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         res.status(403);
         throw new Error('Not authorized to view registrations for this event');
@@ -77,9 +96,9 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -89,10 +108,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
-// UPDATED: Removed 'registrations: []' from Post creation
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -112,7 +130,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     } else if (images && typeof images === 'string') {
         imageUrls = [await uploadImage(images)];
     }
-    
+
     let qrCodeUrl = null;
     if (paymentQRCode) {
         qrCodeUrl = await uploadImage(paymentQRCode);
@@ -130,7 +148,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         userId: userId,
         status: status,
         source: type === 'event' ? source : undefined,
-        
+
         location: type === 'event' ? location : undefined,
         eventStartDate: type === 'event' ? eventStartDate : undefined,
         eventEndDate: type === 'event' ? eventEndDate : undefined,
@@ -146,28 +164,26 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         paymentMethod: type === 'event' ? paymentMethod : undefined,
         paymentLink: type === 'event' ? paymentLink : undefined,
         paymentQRCode: qrCodeUrl,
-        
+
         likes: 0,
         likedBy: [],
         commentData: [],
         timestamp: new Date(),
-        // Removed 'registrations: []' as registrations are now in a separate model
     });
 
     const createdPost = await post.save();
     res.status(201).json(createdPost);
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
-// UPDATED: No longer handles 'registrations' field
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
     }
-    
+
     if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
@@ -178,18 +194,18 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     post.title = title !== undefined ? title : post.title;
     post.content = content !== undefined ? content : post.content;
     post.source = type === 'event' ? (source !== undefined ? source : post.source) : undefined;
-    
+
     if (req.user.isAdmin && status !== undefined) {
         post.status = status;
     }
-    
+
     if (images !== undefined) {
         const oldImagePublicIds = post.images.map(url => {
             const parts = url.split('/');
             const filename = parts[parts.length - 1];
             return `confique_posts/${filename.split('.')[0]}`;
         }).filter(id => id.startsWith('confique_posts/'));
-        
+
         if (oldImagePublicIds.length > 0) {
             try {
                 await cloudinary.api.delete_resources(oldImagePublicIds);
@@ -197,12 +213,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
                 console.error('Cloudinary deletion failed for some old images:', cloudinaryErr);
             }
         }
-        
+
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const newImageUrls = await Promise.all(newImageArray.map(uploadImage));
         post.images = newImageUrls.filter(url => url !== null);
     }
-    
+
     if (paymentQRCode !== undefined) {
         if (post.paymentQRCode && post.paymentQRCode.includes('cloudinary')) {
             const parts = post.paymentQRCode.split('/');
@@ -231,9 +247,8 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.registrationFields = rest.registrationFields !== undefined ? rest.registrationFields : post.registrationFields;
         post.paymentMethod = rest.paymentMethod !== undefined ? rest.paymentMethod : post.paymentMethod;
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
-        post.paymentQRCode = rest.paymentQRCode !== undefined ? rest.paymentQRCode : post.paymentQRCode; // Keep this as URL if already uploaded
+        post.paymentQRCode = rest.paymentQRCode !== undefined ? rest.paymentQRCode : post.paymentQRCode;
     } else {
-        // Clear event-specific fields if type changes from event
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -256,9 +271,9 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     res.json(updatedPost);
 }));
 
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -275,10 +290,9 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 }));
 
 
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
-// UPDATED: Deletes associated registrations
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -310,7 +324,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
         }
 
         await event.deleteOne();
-        await Registration.deleteMany({ eventId: event._id }); // NEW: Delete associated registrations
+        await Registration.deleteMany({ eventId: event._id });
         res.json({ message: 'Event rejected and removed' });
     } else {
         res.status(404).json({ message: 'Event not found' });
@@ -318,10 +332,9 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 }));
 
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
-// UPDATED: Deletes associated registrations if it's an event
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -343,7 +356,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             const filename = parts[parts.length - 1];
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
         }
-        
+
         if (publicIdsToDelete.length > 0) {
             try {
                 await cloudinary.api.delete_resources(publicIdsToDelete);
@@ -353,7 +366,6 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
         }
 
         await post.deleteOne();
-        // NEW: If the deleted post was an event, also delete its registrations
         if (post.type === 'event') {
             await Registration.deleteMany({ eventId: post._id });
         }
@@ -364,9 +376,9 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -391,9 +403,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -411,9 +423,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -426,7 +438,7 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
             post.likes -= 1;
         }
         post.likedBy = post.likedBy.filter(userId => userId.toString() !== req.user._id.toString());
-        
+
         await post.save();
         res.json({ likes: post.likes, likedBy: post.likedBy });
     } else {
@@ -434,9 +446,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -450,7 +462,7 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
             reporter: req.user._id,
             postId: post._id,
             reportReason: reason,
-            type: 'report', 
+            type: 'report',
             timestamp: new Date(),
         });
         await notification.save();
@@ -461,7 +473,6 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
 }));
 
 // NEW ROUTE: GET /api/posts/export-registrations/:eventId
-// This route generates and serves a CSV file of registrations for a specific event.
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -479,7 +490,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    // Flatten data and add headers for CSV
     let customFieldsSet = new Set();
     registrations.forEach(reg => {
         Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
