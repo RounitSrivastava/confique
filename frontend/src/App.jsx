@@ -844,7 +844,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 }
             }
         }
-        
+    
         let submissionData = { ...formData };
         // Clear registration data if registration is not required
         if (!hasRegistration) {
@@ -1451,7 +1451,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 </button>
                             )}
                         </div>
-                        {/* New: Display source name below the "Add to Calendar" button */}
                         {event.source && (
                             <p className="event-source-small">
                                 Source: {event.source}
@@ -1795,7 +1794,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     <span>Add to Calendar</span>
                                 </button>
                             </div>
-                            {/* Display source name below the "Add to Calendar" button */}
                             {post.source && (
                                 <p className="event-source-display">
                                     Source: {post.source}
@@ -1806,7 +1804,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            {/* Explicitly setting fill and stroke based on isLiked state */}
                             <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
                             <span>{post.likes}</span>
                         </button>
@@ -1820,7 +1817,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span>{registrationCount || 0}</span>
                             </div>
                         )}
-                        {/* Modified share button to only show the icon on small screens */}
                         <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
                             <Share2 size={20} />
                             <span className="share-text">Share</span>
@@ -2849,6 +2845,41 @@ const App = () => {
         };
     };
 
+    const callApi = async (endpoint, options = {}) => {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        };
+        if (user && user.token) {
+            headers['Authorization'] = `Bearer ${user.token}`;
+        }
+
+        const response = await fetch(`${API_URL}${endpoint}`, {
+            ...options,
+            headers,
+        });
+
+        if (response.status === 401) {
+            console.error('API call failed: Not authorized. Forcing logout.');
+            localStorage.removeItem('currentUser');
+            window.location.reload();
+            return;
+        }
+
+        if (!response.ok) {
+            let errorMsg = 'An unknown error occurred.';
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorMsg;
+            } catch (e) {
+                // Ignore if response body is not JSON
+            }
+            throw new Error(errorMsg);
+        }
+        return response;
+    };
+    
     // New useEffect to save myCalendarEvents to local storage whenever it changes
     useEffect(() => {
         // Create a copy of the array and convert Date objects to ISO strings for saving
@@ -2868,7 +2899,7 @@ const App = () => {
 
     const fetchPosts = async () => {
         try {
-            const res = await fetch(`${API_URL}/posts`);
+            const res = await callApi('/posts');
             const data = await res.json();
             // Filter posts based on user role
             const filteredData = data.filter(post => {
@@ -2887,18 +2918,11 @@ const App = () => {
     
     // NEW: Function to fetch pending events for admin
     const fetchPendingEvents = async () => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+        if (!currentUser || !currentUser.isAdmin) return;
         try {
-            const res = await fetch(`${API_URL}/posts/pending-events`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setPendingEvents(data.map(formatPostDates));
-            } else {
-                console.error('Failed to fetch pending events:', await res.text());
-                setPendingEvents([]);
-            }
+            const res = await callApi('/posts/pending-events');
+            const data = await res.json();
+            setPendingEvents(data.map(formatPostDates));
         } catch (error) {
             console.error('Failed to fetch pending events:', error);
             setPendingEvents([]);
@@ -2906,21 +2930,14 @@ const App = () => {
     };
 
     const fetchRegistrations = async () => {
-        if (!currentUser || !currentUser.token) {
+        if (!currentUser) {
             setRegistrations({});
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/users/my-events/registration-counts`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setRegistrations(data.registrations);
-            } else {
-                console.error('Failed to fetch registrations:', await res.text());
-                setRegistrations({});
-            }
+            const res = await callApi('/users/my-events/registration-counts');
+            const data = await res.json();
+            setRegistrations(data.registrations);
         } catch (error) {
             console.error('Failed to fetch registrations:', error);
             setRegistrations({});
@@ -2928,31 +2945,23 @@ const App = () => {
     };
 
     const fetchMyRegistrations = async (user) => {
-        if (!user || !user.token) {
+        if (!user) {
             setMyRegisteredEvents(new Set());
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/users/my-events-registrations`, {
-                headers: { 'Authorization': `Bearer ${user.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setMyRegisteredEvents(new Set(data.registeredEventIds));
-            } else {
-                console.error('Failed to fetch my registrations:', await res.text());
-            }
+            const res = await callApi('/users/my-events-registrations');
+            const data = await res.json();
+            setMyRegisteredEvents(new Set(data.registeredEventIds));
         } catch (error) {
             console.error('Error fetching my registrations:', error);
         }
     };
 
     const fetchNotifications = async () => {
-        if (!currentUser || !currentUser.token) return;
+        if (!currentUser) return;
         try {
-            const res = await fetch(`${API_URL}/notifications`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
+            const res = await callApi('/notifications');
             const data = await res.json();
             setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
         } catch (error) {
@@ -2961,19 +2970,12 @@ const App = () => {
     };
 
     const fetchAdminNotifications = async () => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) return;
+        if (!currentUser || !currentUser.isAdmin) return;
         try {
             // Fetch reported posts
-            const reportedRes = await fetch(`${API_URL}/users/admin/reported-posts`, {
-                headers: { 'Authorization': `Bearer ${currentUser.token}` }
-            });
-            if (reportedRes.ok) {
-                const data = await reportedRes.json();
-                setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
-            } else {
-                console.error('Failed to fetch admin notifications:', await reportedRes.text());
-                setAdminNotifications([]);
-            }
+            const reportedRes = await callApi('/users/admin/reported-posts');
+            const data = await reportedRes.json();
+            setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
 
             // Fetch pending events
             await fetchPendingEvents();
@@ -2985,22 +2987,14 @@ const App = () => {
     };
 
     const fetchLikedPosts = async (user) => {
-        if (!user || !user.token) {
+        if (!user) {
             console.log("Not logged in, skipping fetchLikedPosts.");
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/users/liked-posts`, {
-                headers: {
-                    'Authorization': `Bearer ${user.token}`
-                }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setLikedPosts(new Set(data.likedPostIds || []));
-            } else {
-                console.error('Failed to fetch liked posts for user:', await res.text());
-            }
+            const res = await callApi('/users/liked-posts');
+            const data = await res.json();
+            setLikedPosts(new Set(data.likedPostIds || []));
         } catch (error) {
             console.error('Error fetching liked posts:', error);
         }
@@ -3111,7 +3105,7 @@ const App = () => {
     };
 
     const handleRegisterEvent = async (eventId, eventTitle) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
+        if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
             setShowLoginModal(true);
             return;
@@ -3131,12 +3125,8 @@ const App = () => {
         }
 
         try {
-            const res = await fetch(`${API_URL}/users/register-event/${eventId}`, {
+            const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
             if (res.ok) {
                 setMyRegisteredEvents(prev => new Set(prev).add(eventId));
@@ -3178,21 +3168,17 @@ const App = () => {
     };
 
     const handleAddPost = async (newPost) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
+        if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for posting.');
             return;
         }
 
         try {
-            const endpoint = postToEdit ? `${API_URL}/posts/${postToEdit._id}` : `${API_URL}/posts`;
+            const endpoint = postToEdit ? `/posts/${postToEdit._id}` : `/posts`;
             const method = postToEdit ? 'PUT' : 'POST';
 
-            const res = await fetch(endpoint, {
+            const res = await callApi(endpoint, {
                 method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
                 body: JSON.stringify(newPost),
             });
 
@@ -3273,17 +3259,14 @@ const App = () => {
     };
 
     const handleApproveEvent = async (postId) => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+        if (!currentUser || !currentUser.isAdmin) {
             console.error('Admin not authenticated.');
             return;
         }
 
         try {
-            const res = await fetch(`${API_URL}/posts/approve-event/${postId}`, {
+            const res = await callApi(`/posts/approve-event/${postId}`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
             if (res.ok) {
                 await fetchPosts();
@@ -3325,17 +3308,14 @@ const App = () => {
     };
 
     const handleRejectEvent = async (postId) => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+        if (!currentUser || !currentUser.isAdmin) {
             console.error('Admin not authenticated.');
             return;
         }
 
         try {
-            const res = await fetch(`${API_URL}/posts/reject-event/${postId}`, {
+            const res = await callApi(`/posts/reject-event/${postId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
             if (res.ok) {
                 await fetchPosts();
@@ -3378,16 +3358,13 @@ const App = () => {
 
 
     const handleDeletePost = async (postId) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
+        if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for deleting posts.');
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/posts/${postId}`, {
+            const res = await callApi(`/posts/${postId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
             if (res.ok) {
                 setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
@@ -3446,13 +3423,13 @@ const App = () => {
     };
 
     const handleLikePost = async (postId) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
+        if (!isLoggedIn || !currentUser) {
             setShowLoginModal(true);
             return;
         }
 
         const isCurrentlyLiked = likedPosts.has(postId);
-        const endpoint = `${API_URL}/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
+        const endpoint = `/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
         const method = 'PUT';
 
         setLikedPosts(prev => {
@@ -3474,44 +3451,11 @@ const App = () => {
         );
 
         try {
-            const res = await fetch(endpoint, {
+            await callApi(endpoint, {
                 method,
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
-
-            if (!res.ok) {
-                console.error('Failed to like/unlike post:', await res.text());
-
-                setLikedPosts(prev => {
-                    const newLiked = new Set(prev);
-                    if (isCurrentlyLiked) {
-                        newLiked.add(postId);
-                    } else {
-                        newLiked.delete(postId);
-                    }
-                    return newLiked;
-                });
-                setPosts(prevPosts =>
-                    prevPosts.map(post =>
-                        post._id === postId
-                            ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
-                            : post
-                    )
-                );
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
-                        timestamp: new Date(),
-                        type: 'error'
-                    },
-                    ...prev
-                ]);
-            }
         } catch (error) {
-            console.error('Error liking/unliking post:', error);
+            console.error('Failed to like/unlike post:', error);
 
             setLikedPosts(prev => {
                 const newLiked = new Set(prev);
@@ -3533,7 +3477,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Network error: Could not ${isCurrentlyLiked ? 'unlike' : 'like'} post.`,
+                    message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -3543,18 +3487,14 @@ const App = () => {
     };
 
     const handleAddComment = async (postId, commentText) => {
-        if (!isLoggedIn || !currentUser || !currentUser.token) {
+        if (!isLoggedIn || !currentUser) {
             setShowLoginModal(true);
             return;
         }
 
         try {
-            const res = await fetch(`${API_URL}/posts/${postId}/comments`, {
+            const res = await callApi(`/posts/${postId}/comments`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
                 body: JSON.stringify({ text: commentText }),
             });
             if (res.ok) {
@@ -3679,17 +3619,13 @@ const App = () => {
     };
 
     const handleReportPost = async (postId, reason) => {
-        if (!currentUser || !currentUser.token) {
+        if (!currentUser) {
             console.error('User not authenticated for reporting posts.');
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/posts/${postId}/report`, {
+            const res = await callApi(`/posts/${postId}/report`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
                 body: JSON.stringify({ reason }),
             });
             if (res.ok) {
@@ -3733,16 +3669,13 @@ const App = () => {
     };
 
     const handleDeleteReportedPost = async (postId) => {
-        if (!currentUser || !currentUser.isAdmin || !currentUser.token) {
+        if (!currentUser || !currentUser.isAdmin) {
             console.error('User not authorized to delete reported posts.');
             return;
         }
         try {
-            const res = await fetch(`${API_URL}/users/admin/delete-post/${postId}`, {
+            const res = await callApi(`/users/admin/delete-post/${postId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
             if (res.ok) {
                 await fetchPosts();
@@ -3784,18 +3717,14 @@ const App = () => {
     };
 
     const handleUpdateAvatar = async (newAvatar) => {
-        if (!currentUser || !currentUser.token) {
+        if (!currentUser) {
             console.error('User not authenticated for updating avatar.');
             return;
         }
 
         try {
-            const res = await fetch(`${API_URL}/users/profile/avatar`, {
+            const res = await callApi(`/users/profile/avatar`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
                 body: JSON.stringify({ avatar: newAvatar }),
             });
 
