@@ -2903,9 +2903,9 @@ const App = () => {
             const data = await res.json();
             // Filter posts based on user role
             const filteredData = data.filter(post => {
-                // If it's an event, only show it if it's approved OR the user is an admin
+                // If it's an event, only show it if it's approved OR the user is an admin and the post is pending.
                 if (post.type === 'event') {
-                    return post.status === 'approved' || (currentUser && currentUser.isAdmin);
+                    return post.status === 'approved' || (currentUser?.isAdmin && post.status === 'pending');
                 }
                 // For other post types (consights, news), always show them
                 return true;
@@ -3041,7 +3041,6 @@ const App = () => {
                 fetchMyRegistrations(currentUser);
                 if (currentUser.isAdmin) {
                     fetchAdminNotifications();
-                    fetchPendingEvents();
                 }
             } else {
                 // Clear user-specific state when not logged in
@@ -3049,6 +3048,7 @@ const App = () => {
                 setMyRegisteredEvents(new Set());
                 setRegistrations({});
                 setNotifications([]);
+                setPendingEvents([]);
             }
         };
 
@@ -3191,7 +3191,6 @@ const App = () => {
                 if (method === 'POST') {
                     if (newPost.type === 'event' && newPost.status === 'pending') {
                         // For events, we do not add to the main feed immediately
-                        // The user will see a notification that it's pending approval
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
@@ -3201,9 +3200,9 @@ const App = () => {
                             },
                             ...prev
                         ]);
-                        // We also need to fetch the posts again to get the pending event for the admin view
                         if (currentUser.isAdmin) {
-                            fetchPosts();
+                            // If the user is an admin, fetch the updated list of pending events
+                            fetchPendingEvents();
                         }
                     } else {
                         // Consights posts are added directly
