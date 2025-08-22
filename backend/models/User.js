@@ -1,22 +1,7 @@
+// models/User.js
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-
-// New sub-schema for event registrations
-const registrationSchema = mongoose.Schema({
-    eventId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Post',
-        required: true,
-    },
-    eventName: {
-        type: String,
-        required: true,
-    },
-    registeredAt: {
-        type: Date,
-        default: Date.now,
-    }
-});
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -48,7 +33,7 @@ const userSchema = new mongoose.Schema({
         unique: true, 
         sparse: true 
     },
-    registrations: [registrationSchema],
+    // REMOVED: The registrations field is moved to the Post model for better data modeling.
     // ADDED: This is the critical field for tracking which posts a user has liked.
     likedPosts: [{ 
         type: mongoose.Schema.Types.ObjectId, 

@@ -24,14 +24,67 @@ const uploadImage = async (image) => {
 
 // --- POST ROUTES ---
 
-// Get all posts (publicly accessible)
-router.get('/', asyncHandler(async (req, res) => {
-    const posts = await Post.find({})
-        .sort({ timestamp: -1 });
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (filtered for non-admins), Private (admin)
+router.get('/', protect, asyncHandler(async (req, res) => {
+    let query = {};
+
+    // If a user is logged in and is NOT an admin, only show approved posts
+    // This handles both logged-in non-admins and public access
+    if (req.user && !req.user.isAdmin) {
+        query = { status: 'approved' };
+    }
+    // If the user is an admin or not authenticated, the query remains empty,
+    // which means all posts (including pending) are fetched. The frontend will
+    // then display them appropriately.
+    // NOTE: The frontend's `fetchPosts` already handles public access, but adding
+    // this check here is a good practice for robust server-side filtering.
+
+    const posts = await Post.find(query).sort({ timestamp: -1 });
     res.json(posts);
 }));
 
-// Get a single post by ID (publicly accessible)
+
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
+router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
+    const pendingEvents = await Post.find({ type: 'event', status: 'pending' }).sort({ timestamp: 1 });
+    res.json(pendingEvents);
+}));
+
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
+// NEW ROUTE ADDED FOR FETCHING REGISTRATION DATA FOR A SPECIFIC EVENT
+router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
+    const post = await Post.findById(req.params.id).select('registrations userId enableRegistrationForm');
+
+    if (!post) {
+        res.status(404);
+        throw new Error('Post not found');
+    }
+
+    // Ensure it's an event and has in-app registration enabled
+    if (post.type !== 'event' || !post.enableRegistrationForm) {
+        res.status(400);
+        throw new Error('This is not an event with in-app registration enabled.');
+    }
+
+    // Check if the user is the post's creator or an admin
+    if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        res.status(403);
+        throw new Error('Not authorized to view registrations for this post');
+    }
+
+    res.json(post.registrations);
+}));
+
+
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -41,8 +94,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// Create a new post (protected - only logged-in users can create)
-// FIX: Removed 'upload.none()' middleware
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -52,14 +106,14 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         location, eventStartDate, eventEndDate,
         price, language, duration, ticketsNeeded, venueAddress, registrationLink,
         registrationOpen, enableRegistrationForm, registrationFields,
-        paymentMethod, paymentLink, paymentQRCode
+        paymentMethod, paymentLink, paymentQRCode,
+        source
     } = req.body;
 
     let imageUrls = [];
-    // If images are sent as base64 strings within the JSON body
     if (images && Array.isArray(images) && images.length > 0) {
         imageUrls = await Promise.all(images.map(uploadImage));
-    } else if (images && typeof images === 'string') { // Handle single image as string
+    } else if (images && typeof images === 'string') {
         imageUrls = [await uploadImage(images)];
     }
     
@@ -67,6 +121,9 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     if (paymentQRCode) {
         qrCodeUrl = await uploadImage(paymentQRCode);
     }
+
+    // Determine status based on post type
+    const status = type === 'event' ? 'pending' : 'approved';
 
     const post = new Post({
         type,
@@ -76,6 +133,8 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         author: authorNameFromUser,
         authorAvatar: authorAvatarFinal,
         userId: userId,
+        status: status,
+        source: type === 'event' ? source : undefined,
         
         location: type === 'event' ? location : undefined,
         eventStartDate: type === 'event' ? eventStartDate : undefined,
@@ -97,14 +156,16 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         likedBy: [],
         commentData: [],
         timestamp: new Date(),
+        registrations: [], // Initialize with an empty array
     });
 
     const createdPost = await post.save();
     res.status(201).json(createdPost);
 }));
 
-// Update a post
-// FIX: Removed 'upload.none()' middleware
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -115,13 +176,17 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
 
-    const { type, title, content, images, paymentQRCode, ...rest } = req.body; 
-    
+    const { type, title, content, images, paymentQRCode, source, status, ...rest } = req.body;
+
     post.type = type !== undefined ? type : post.type;
     post.title = title !== undefined ? title : post.title;
     post.content = content !== undefined ? content : post.content;
+    post.source = type === 'event' ? (source !== undefined ? source : post.source) : undefined;
     
-    // Handle image updates
+    if (req.user.isAdmin && status !== undefined) {
+        post.status = status;
+    }
+    
     if (images !== undefined) {
         const oldImagePublicIds = post.images.map(url => {
             const parts = url.split('/');
@@ -171,6 +236,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.paymentMethod = rest.paymentMethod !== undefined ? rest.paymentMethod : post.paymentMethod;
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
     } else {
+        // Clear event-specific fields if type changes from event to non-event
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -186,13 +252,76 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.paymentMethod = undefined;
         post.paymentLink = undefined;
         post.paymentQRCode = undefined;
+        post.source = undefined;
     }
 
     const updatedPost = await post.save();
     res.json(updatedPost);
 }));
 
-// Delete a post
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
+router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (event.type !== 'event') {
+            return res.status(400).json({ message: 'Only events can be approved through this route' });
+        }
+        event.status = 'approved';
+        const updatedEvent = await event.save();
+        res.json(updatedEvent);
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
+router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (event.type !== 'event') {
+            return res.status(400).json({ message: 'Only events can be rejected through this route' });
+        }
+        
+        const publicIdsToDelete = [];
+        if (event.images && event.images.length > 0) {
+            event.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        if (event.paymentQRCode) {
+            const parts = event.paymentQRCode.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
+
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
+            }
+        }
+
+        await event.deleteOne();
+        res.json({ message: 'Event rejected and removed' });
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -213,7 +342,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             const parts = post.paymentQRCode.split('/');
             const filename = parts[parts.length - 1];
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-        }
+        });
 
         if (publicIdsToDelete.length > 0) {
             try {
@@ -230,7 +359,10 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// Add a comment to a post
+
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -255,7 +387,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// Like a post
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -273,7 +407,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// Unlike a post
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -294,7 +430,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// Report a post
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -317,5 +455,6 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
+
 
 module.exports = router;

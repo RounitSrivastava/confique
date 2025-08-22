@@ -1,5 +1,19 @@
 const mongoose = require('mongoose');
 
+// NEW: Sub-schema for storing individual registration data
+const registrationSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    transactionId: { type: String },
+    // Custom fields from the registration form will be stored here
+    rollNumber: { type: String }, 
+    branch: { type: String },
+    semester: { type: String }
+}, { _id: false });
+
+// ADDED: The schema for comments. This was missing and caused the error.
 const commentSchema = new mongoose.Schema({
     author: { type: String, required: true },
     authorAvatar: { type: String, default: 'https://placehold.co/40x40/cccccc/000000?text=A' },
@@ -26,6 +40,8 @@ const postSchema = new mongoose.Schema({
     commentData: [commentSchema],
     
     // Event-specific fields
+    status: { type: String, enum: ['pending', 'approved'], default: 'approved' }, // NEW: Post status for approval
+    source: { type: String }, // NEW: Source of the event
     location: { type: String },
     eventStartDate: { type: Date },
     eventEndDate: { type: Date },
@@ -42,14 +58,11 @@ const postSchema = new mongoose.Schema({
     paymentLink: { type: String },
     paymentQRCode: { type: String },
 
-    // ADDED: This field tracks who has registered for an event
-    registeredUsers: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
+    // Array to store all detailed registrations for this event
+    registrations: [registrationSchema],
 }, { timestamps: true });
 
-// ADDED: Pre-save hook to automatically update the comments count
+// Pre-save hook to automatically update the comments count
 postSchema.pre('save', function(next) {
     if (this.isModified('commentData')) {
         this.comments = this.commentData.length;
