@@ -29,7 +29,8 @@ import {
     Trash2,
     Mail,
     Flag,
-    Check
+    Check,
+    ArrowDownToLine
 } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -483,7 +484,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
 
-        // New: Validate custom phone-like fields dynamically
+        // Validate custom phone-like fields dynamically
         const phoneKeywords = ['phone', 'mobile', 'contact'];
         const customPhoneFields = customFields.filter(field =>
             phoneKeywords.some(keyword => field.toLowerCase().includes(keyword))
@@ -504,7 +505,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             setShowPaymentStep(true);
         } else {
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
-            onRegister(event._id, event.title);
+            onRegister(event._id, formData);
             setShowSuccessModal(true);
         }
     };
@@ -518,7 +519,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
         setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-        onRegister(event._id, event.title);
+        onRegister(event._id, formData);
         setShowSuccessModal(true);
     };
 
@@ -906,7 +907,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            // NEW: Add approval status based on post type
+            // Add approval status based on post type
             status: formData.type === 'event' ? 'pending' : 'approved'
         };
 
@@ -1010,8 +1011,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     required
                                 />
                             </div>
-
-                            {/* Author name bar removed from here */}
+                            {/* Author name bar removed as it's set automatically */}
 
                             {/* Event-specific fields */}
                             {formData.type === 'event' && (
@@ -1605,7 +1605,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1830,6 +1830,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <Ticket size={20} />
                                 <span>{registrationCount || 0}</span>
                             </div>
+                        )}
+                        {isUserPost && isProfileView && post.type === 'event' && (
+                            <button
+                                className="action-btn export-data-btn"
+                                onClick={(e) => { e.stopPropagation(); onExportData(post._id, post.title); }}
+                            >
+                                <ArrowDownToLine size={20} />
+                                <span className="export-text">Export Data</span>
+                            </button>
                         )}
                         <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
                             <Share2 size={20} />
@@ -2227,7 +2236,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData }) => {
     if (!currentUser) {
         return (
             <div>
@@ -2320,6 +2329,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
@@ -3118,7 +3128,7 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
-    const handleRegisterEvent = async (eventId, eventTitle) => {
+    const handleRegisterEvent = async (eventId, formData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
             setShowLoginModal(true);
@@ -3129,7 +3139,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `You are already registered for "${eventTitle}".`,
+                    message: `You are already registered for "${formData.title}".`,
                     timestamp: new Date(),
                     type: 'info'
                 },
@@ -3139,28 +3149,30 @@ const App = () => {
         }
 
         try {
+            // Correctly passing the formData in the request body
             const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
+                body: JSON.stringify(formData),
             });
             if (res.ok) {
                 setMyRegisteredEvents(prev => new Set(prev).add(eventId));
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `You are now registered for "${eventTitle}". See you there!`,
+                        message: `You are now registered for "${formData.title}". See you there!`,
                         timestamp: new Date(),
                         type: 'success'
                     },
                     ...prev
                 ]);
-                fetchRegistrations(); // Refresh registration counts
+                fetchRegistrations(); // Refresh registration counts for the host
             } else {
                 const errorData = await res.json();
                 console.error('Registration failed:', errorData.message);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
+                        message: `Registration for "${formData.title}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3172,7 +3184,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Registration for "${eventTitle}" failed due to network error.`,
+                    message: `Registration for "${formData.title}" failed due to network error.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -3809,6 +3821,70 @@ const App = () => {
         setShowCalendarModal(false);
     };
 
+    const handleExportRegistrations = async (eventId, eventTitle) => {
+        if (!currentUser || !currentUser.token) {
+            console.error('User not authenticated.');
+            setNotifications(prev => [
+                { _id: Date.now().toString(), message: `Please log in to export registration data.`, timestamp: new Date(), type: 'error' },
+                ...prev
+            ]);
+            return;
+        }
+    
+        try {
+            const res = await callApi(`/posts/export-registrations/${eventId}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${currentUser.token}`,
+                }
+            });
+    
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `registrations_${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+    
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Registration data for "${eventTitle}" downloaded successfully!`,
+                        timestamp: new Date(),
+                        type: 'success'
+                    },
+                    ...prev
+                ]);
+            } else {
+                const errorData = await res.json();
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Failed to export data: ${errorData.message || 'Unknown error.'}`,
+                        timestamp: new Date(),
+                        type: 'error'
+                    },
+                    ...prev
+                ]);
+            }
+        } catch (error) {
+            console.error('Error exporting data:', error);
+            setNotifications(prev => [
+                {
+                    _id: Date.now().toString(),
+                    message: `Network error: Could not export registration data.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
+        }
+    };
+
     const menuItems = [
         {
             id: 'home',
@@ -3890,10 +3966,10 @@ const App = () => {
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
-                pendingEvents={pendingEvents} // Pass pending events to the notifications component
+                pendingEvents={pendingEvents}
                 currentUser={currentUser}
                 onDeleteReportedPost={handleDeleteReportedPost}
-                onApproveEvent={handleApproveEvent} // Pass new admin functions
+                onApproveEvent={handleApproveEvent}
                 onRejectEvent={handleRejectEvent}
             />,
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
@@ -3994,6 +4070,7 @@ const App = () => {
             onReportPost={handleOpenReportModal}
             onEditProfile={() => setShowProfileSettingsModal(true)}
             onShowCalendarAlert={handleShowCalendarAlert}
+            onExportData={handleExportRegistrations}
         />,
     };
 
@@ -4152,6 +4229,7 @@ const App = () => {
                                     onReportPost={handleOpenReportModal}
                                     onShowCalendarAlert={handleShowCalendarAlert}
                                     isLoggedIn={isLoggedIn}
+                                    onExportData={handleExportRegistrations}
                                 />
                                 <hr className="section-divider" />
                                 <h3 className="section-subtitle">More Posts</h3>
@@ -4178,6 +4256,7 @@ const App = () => {
                                                 onEditPost={handleEditPost}
                                                 onShowCalendarAlert={handleShowCalendarAlert}
                                                 isLoggedIn={isLoggedIn}
+                                                onExportData={handleExportRegistrations}
                                             />
                                         ))}
                                 </div>
@@ -4189,7 +4268,7 @@ const App = () => {
                                 isLoggedIn={isLoggedIn}
                                 onRequireLogin={() => setShowLoginModal(true)}
                                 onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId) => handleRegisterEvent(eventId, selectedEvent.title)}
+                                onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
                                 isRegistered={myRegisteredEvents.has(selectedEvent._id)}
                                 onShowCalendarAlert={handleShowCalendarAlert}
                             />
@@ -4210,6 +4289,7 @@ const App = () => {
                                 registrations={registrations}
                                 onReportPost={handleOpenReportModal}
                                 onShowCalendarAlert={handleShowCalendarAlert}
+                                onExportData={handleExportRegistrations}
                             />
                         )}
                     </div>
