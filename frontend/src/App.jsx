@@ -1686,12 +1686,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
+        console.log("Button clicked. Attempting to add event:", post); // DEBUG LOG
         if (!isLoggedIn) {
             alert("Please log in to add events to your calendar.");
             return;
         }
         // NEW: Check if event or eventStartDate is missing before adding
         if (!post || !post.eventStartDate) {
+            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             setNotifications(prev => [
                 {
                     _id: `notif-${Date.now()}`,
@@ -1703,6 +1705,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             ]);
             return;
         }
+
         if (post.type === 'event' && post.eventStartDate) {
             onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
@@ -2418,10 +2421,12 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents
-        .filter(e => new Date(e.eventStartDate) > new Date())
-        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-        .slice(0, 3);
+    // TEMPORARY: Display all events in myCalendarEvents for debugging
+    const upcomingCalendarEvents = myCalendarEvents;
+    // .filter(e => new Date(e.eventStartDate) > new Date()) // Re-enable this line after debugging
+    // .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    // .slice(0, 3);
+
 
     return (
         <>
@@ -2855,7 +2860,7 @@ const App = () => {
     const [myCalendarEvents, setMyCalendarEvents] = useState(() => {
         const savedEvents = JSON.parse(localStorage.getItem('myCalendarEvents'));
         if (savedEvents) {
-            // Re-format timestamps from strings to Date objects
+            // FIXED: Ensure date strings are converted back to Date objects
             return savedEvents.map(event => ({
                 ...event,
                 eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
@@ -3132,12 +3137,17 @@ const App = () => {
     };
 
     const handleAddToCalendar = (event) => {
+        console.log("1. Starting 'handleAddToCalendar' function."); // DEBUG LOG
+        console.log("Event object received:", event); // DEBUG LOG
+
         if (!isLoggedIn) {
+            console.log("2. User is not logged in. Showing login modal."); // DEBUG LOG
             setShowLoginModal(true);
             return;
         }
-        // NEW: Check if event or eventStartDate is missing before adding
+        
         if (!event || !event.eventStartDate) {
+            console.log("2. Event data is incomplete. Not adding."); // DEBUG LOG
             setNotifications(prev => [
                 {
                     _id: `notif-${Date.now()}`,
@@ -3149,13 +3159,27 @@ const App = () => {
             ]);
             return;
         }
+
         setMyCalendarEvents(prev => {
-            // Check for duplicates before adding
-            if (prev.some(e => e._id === event._id)) {
+            console.log("3. Current state before adding:", prev); // DEBUG LOG
+            const isDuplicate = prev.some(e => e._id === event._id);
+            console.log("3. Checking for duplicates. Is duplicate?", isDuplicate); // DEBUG LOG
+
+            if (isDuplicate) {
+                console.log("4. Event is a duplicate. Not adding."); // DEBUG LOG
                 return prev;
             }
-            return [...prev, event];
+            
+            const newState = [...prev, event];
+            console.log("4. Event added successfully. New state length:", newState.length, "New state:", newState); // DEBUG LOG
+            return newState;
         });
+
+        // Use a small timeout to allow state to update before logging localStorage
+        setTimeout(() => {
+            console.log("5. Final state in localStorage should contain event:", localStorage.getItem('myCalendarEvents')); // DEBUG LOG
+        }, 100);
+
         setNotifications(prev => [
             {
                 _id: `notif-${Date.now()}`,
@@ -3165,6 +3189,7 @@ const App = () => {
             },
             ...prev
         ]);
+        
         handleShowCalendarAlert();
     };
 
@@ -3571,7 +3596,6 @@ const App = () => {
                             commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
                             comments: commentData.length
                         } : post
-                        // FIX: Ensure comments are updated for the correct post
                     )
                 );
             } else {
