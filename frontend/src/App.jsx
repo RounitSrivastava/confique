@@ -1403,6 +1403,20 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             onRequireLogin();
             return;
         }
+        // NEW: Check if event or eventStartDate is missing before adding
+        if (!event || !event.eventStartDate) {
+            setNotifications(prev => [
+                {
+                    _id: `notif-${Date.now()}`,
+                    message: `Cannot add event to calendar. Event data is incomplete.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
+            return;
+        }
+
         if (event.eventStartDate) {
             onAddToCalendar(event); // This saves the event
             onShowCalendarAlert();
@@ -1674,6 +1688,19 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleAddToCalendarClick = () => {
         if (!isLoggedIn) {
             alert("Please log in to add events to your calendar.");
+            return;
+        }
+        // NEW: Check if event or eventStartDate is missing before adding
+        if (!post || !post.eventStartDate) {
+            setNotifications(prev => [
+                {
+                    _id: `notif-${Date.now()}`,
+                    message: `Cannot add event to calendar. Event data is incomplete.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
             return;
         }
         if (post.type === 'event' && post.eventStartDate) {
@@ -3109,6 +3136,19 @@ const App = () => {
             setShowLoginModal(true);
             return;
         }
+        // NEW: Check if event or eventStartDate is missing before adding
+        if (!event || !event.eventStartDate) {
+            setNotifications(prev => [
+                {
+                    _id: `notif-${Date.now()}`,
+                    message: `Cannot add event to calendar. Event data is incomplete.`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
+            return;
+        }
         setMyCalendarEvents(prev => {
             // Check for duplicates before adding
             if (prev.some(e => e._id === event._id)) {
@@ -3531,6 +3571,7 @@ const App = () => {
                             commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
                             comments: commentData.length
                         } : post
+                        // FIX: Ensure comments are updated for the correct post
                     )
                 );
             } else {
