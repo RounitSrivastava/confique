@@ -379,49 +379,59 @@ const CommentItem = ({ comment, currentUser }) => {
     );
 };
 
-// Comment Section Component - Handles displaying and adding comments
-const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }) => {
+// Comment Section Component - Handles displaying and adding comments (now as an overlay)
+const CommentSection = ({ post, onAddComment, onCloseComments, currentUser }) => {
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
+    const commentSectionRef = useRef(null);
 
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
         if (newCommentText.trim()) {
-            onAddComment(newCommentText, currentUser);
+            onAddComment(post._id, newCommentText, currentUser);
             setNewCommentText('');
         } else {
             setShowCommentAlert(true);
         }
     };
 
+    const handleBackArrowClick = (e) => {
+        e.stopPropagation();
+        onCloseComments();
+    };
+
+    if (!post) return null;
+
     return (
-        <div className="comment-section">
-            <div className="comment-section-header">
-                <button onClick={onCloseComments} className="back-to-post-btn" title="Back to Post">
-                    <ArrowLeft size={18} />
-                </button>
-                <h4 className="comment-section-title">Comments</h4>
-            </div>
-            <form onSubmit={handleAddCommentSubmit} className="comment-input-form">
-                <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    className="comment-input"
-                />
-                <button type="submit" className="comment-submit-btn" title="Add Comment">
-                    <ArrowRight size={18} />
-                </button>
-            </form>
-            <div className="comments-list">
-                {comments && comments.length > 0 ? (
-                    comments.map(comment => (
-                        <CommentItem key={comment._id} comment={comment} currentUser={currentUser} />
-                    ))
-                ) : (
-                    <p className="no-comments-message">No comments yet. Be the first to comment!</p>
-                )}
+        <div className={`comment-section-overlay active`}>
+            <div className="comment-section" ref={commentSectionRef}>
+                <div className="comment-section-header">
+                    <button onClick={handleBackArrowClick} className="back-to-post-btn" title="Back to Post">
+                        <ArrowLeft size={18} />
+                    </button>
+                    <h4 className="comment-section-title">Comments for "{post.title}"</h4>
+                </div>
+                <form onSubmit={handleAddCommentSubmit} className="comment-input-form">
+                    <input
+                        type="text"
+                        placeholder="Add a comment..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        className="comment-input"
+                    />
+                    <button type="submit" className="comment-submit-btn" title="Add Comment">
+                        <ArrowRight size={18} />
+                    </button>
+                </form>
+                <div className="comments-list">
+                    {post.commentData && post.commentData.length > 0 ? (
+                        post.commentData.map(comment => (
+                            <CommentItem key={comment._id} comment={comment} currentUser={currentUser} />
+                        ))
+                    ) : (
+                        <p className="no-comments-message">No comments yet. Be the first to comment!</p>
+                    )}
+                </div>
             </div>
             <CustomMessageModal
                 isOpen={showCommentAlert}
@@ -433,6 +443,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
         </div>
     );
 };
+
 
 // Registration Form Modal Component for events
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
@@ -1401,12 +1412,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const handleAddToCalendarClick = () => {
+        console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
         if (!isLoggedIn) {
             onRequireLogin();
             return;
         }
         // NEW: Check if event or eventStartDate is missing before adding
         if (!event || !event.eventStartDate) {
+            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             setNotifications(prev => [
                 {
                     _id: `notif-${Date.now()}`,
@@ -1621,7 +1634,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
+const PostCard = ({ post, onLike, onShare, onOpenCommentSection, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1633,12 +1646,19 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
     };
-
+    
+    // FIX APPLIED HERE
     useEffect(() => {
         if (contentRef.current) {
-            const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
-            const maxHeight = lineHeight * 3;
-            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+            const checkContentHeight = () => {
+                if (contentRef.current) {
+                    const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
+                    const maxHeight = lineHeight * 3;
+                    setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+                }
+            };
+            
+            requestAnimationFrame(checkContentHeight);
         }
     }, [post.content]);
 
@@ -1653,39 +1673,18 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
-    const isLiked = likedPosts?.has(post._id);
+    // FIX APPLIED HERE: Added a safety check for post.likesBy
+    const isLiked = currentUser && post.likesBy && post.likesBy.includes(currentUser._id);
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
         if (isLoggedIn) {
-            setOpenCommentPostId(isCommentsOpen ? null : post._id);
+            onOpenCommentSection(post);
         } else {
-            // Show a login prompt if not logged in
             alert("Please log in to comment.");
         }
     };
 
-    const handleBackArrowClick = (e) => {
-        e.stopPropagation();
-        setOpenCommentPostId(null);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (overlayRef.current && !overlayRef.current.contains(event.target)) {
-                setOpenCommentPostId(null);
-            }
-        };
-
-        if (isCommentsOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
         console.log("Button clicked. Attempting to add event:", post); // DEBUG LOG
@@ -1877,15 +1876,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             <span className="share-text">Share</span>
                         </button>
                     </div>
-
-                    {isCommentsOpen && (
-                        <CommentSection
-                            comments={post.commentData || []}
-                            onAddComment={(commentText) => onAddComment(post._id, commentText)}
-                            onCloseComments={handleBackArrowClick}
-                            currentUser={currentUser}
-                        />
-                    )}
                 </>
             )}
             <CustomMessageModal
@@ -1897,24 +1887,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             />
         </>
     );
-
-    return (
-        isCommentsOpen ? (
-            <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
-                <div className="post-card comments-open-fixed">
-                    {renderPostCardContent()}
-                </div>
-            </div>
-        ) : (
-            <div className="post-card">
-                {renderPostCardContent()}
-            </div>
-        )
-    );
 };
 
 // Home Component - Displays a feed of posts
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, onOpenCommentSection, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -1932,9 +1908,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onLike={onLike}
                                 onShare={onShare}
                                 onAddComment={onAddComment}
-                                likedPosts={likedPosts}
-                                isCommentsOpen={openCommentPostId === post._id}
-                                setOpenCommentPostId={setOpenCommentPostId}
+                                onOpenCommentSection={onOpenCommentSection}
                                 onOpenEventDetail={onOpenEventDetail}
                                 onAddToCalendar={onAddToCalendar}
                                 currentUser={currentUser}
@@ -1959,9 +1933,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenCommentSection={onOpenCommentSection}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
@@ -1980,7 +1952,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 };
 
 // Events Component - Displays only event posts
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, onOpenCommentSection, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -1993,9 +1965,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenCommentSection={onOpenCommentSection}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
@@ -2014,7 +1984,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 };
 
 // Confessions Component - Displays only confession posts
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, onOpenCommentSection, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -2027,9 +1997,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onLike={onLike}
                         onShare={onShare}
                         onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenCommentSection={onOpenCommentSection}
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
@@ -2268,7 +2236,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, onOpenCommentSection, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData }) => {
     if (!currentUser) {
         return (
             <div>
@@ -2348,9 +2316,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onLike={onLike}
                             onShare={onShare}
                             onAddComment={onAddComment}
-                            likedPosts={likedPosts}
-                            isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenCommentSection={onOpenCommentSection}
                             onOpenEventDetail={onOpenEventDetail}
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
@@ -2361,7 +2327,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
@@ -2427,9 +2393,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -2856,7 +2822,7 @@ const App = () => {
         return savedLikes ? new Set(JSON.parse(savedLikes)) : new Set();
     });
 
-    const [openCommentPostId, setOpenCommentPostId] = useState(null);
+    const [selectedPostForComments, setSelectedPostForComments] = useState(null);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [selectedPost, setSelectedPost] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -2889,7 +2855,7 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert || selectedPostForComments;
 
     const formatPostDates = (post) => {
         return {
@@ -3170,7 +3136,7 @@ const App = () => {
 
             if (isDuplicate) {
                 console.log("4. Event is a duplicate. Not adding."); // DEBUG LOG
-                 setNotifications(notificationPrev => [
+                    setNotifications(notificationPrev => [
                     {
                         _id: `notif-${Date.now()}`,
                         message: `Event "${event.title}" is already in your calendar.`,
@@ -3680,13 +3646,13 @@ const App = () => {
     const handleOpenEventDetail = (event) => {
         setSelectedEvent(event);
         setSelectedPost(null);
-        setOpenCommentPostId(null);
+        setSelectedPostForComments(null);
     };
 
     const handleOpenPostDetail = (post) => {
         setSelectedPost(post);
         setSelectedEvent(null);
-        setOpenCommentPostId(null);
+        setSelectedPostForComments(null);
     };
 
     const handleCloseEventDetail = () => {
@@ -3963,6 +3929,19 @@ const App = () => {
         }
     };
 
+    const handleOpenCommentSection = (post) => {
+        if (selectedPostForComments?._id === post._id) {
+            setSelectedPostForComments(null);
+        } else {
+            setSelectedPostForComments(post);
+        }
+    };
+
+    const handleCloseCommentSection = () => {
+        setSelectedPostForComments(null);
+    };
+
+
     const menuItems = [
         {
             id: 'home',
@@ -3973,9 +3952,7 @@ const App = () => {
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
+                onOpenCommentSection={handleOpenCommentSection}
                 onOpenEventDetail={handleOpenEventDetail}
                 onAddToCalendar={handleAddToCalendar}
                 currentUser={currentUser}
@@ -3996,9 +3973,7 @@ const App = () => {
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
+                onOpenCommentSection={handleOpenCommentSection}
                 onOpenEventDetail={handleOpenEventDetail}
                 onAddToCalendar={handleAddToCalendar}
                 currentUser={currentUser}
@@ -4023,9 +3998,7 @@ const App = () => {
                 onLike={handleLikePost}
                 onShare={handleShareClick}
                 onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
+                onOpenCommentSection={handleOpenCommentSection}
                 onOpenEventDetail={handleOpenEventDetail}
                 onAddToCalendar={handleAddToCalendar}
                 currentUser={currentUser}
@@ -4075,11 +4048,8 @@ const App = () => {
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
+            onOpenCommentSection={handleOpenCommentSection}
             onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
             onReportPost={handleOpenReportModal}
@@ -4092,10 +4062,8 @@ const App = () => {
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
+            onOpenCommentSection={handleOpenCommentSection}
             onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
             registrations={registrations}
@@ -4109,9 +4077,7 @@ const App = () => {
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
+            onOpenCommentSection={handleOpenCommentSection}
             onOpenEventDetail={handleOpenEventDetail}
             onAddToCalendar={handleAddToCalendar}
             currentUser={currentUser}
@@ -4136,10 +4102,8 @@ const App = () => {
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
+            onOpenCommentSection={handleOpenCommentSection}
             onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
             onAddToCalendar={handleAddToCalendar}
             setIsModalOpen={setIsModalOpen}
             onDeletePost={handleDeletePost}
@@ -4241,7 +4205,7 @@ const App = () => {
                                     onLogout={handleLogout}
                                     onProfileClick={() => {
                                         setActiveSection('profile');
-                                        setOpenCommentPostId(null);
+                                        setSelectedPostForComments(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
                                     }}
@@ -4271,7 +4235,7 @@ const App = () => {
                                         item.action();
                                     } else {
                                         setActiveSection(item.id);
-                                        setOpenCommentPostId(null);
+                                        setSelectedPostForComments(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
                                     }
@@ -4294,9 +4258,7 @@ const App = () => {
                                     onLike={handleLikePost}
                                     onShare={handleShareClick}
                                     onAddComment={handleAddComment}
-                                    likedPosts={likedPosts}
-                                    isCommentsOpen={openCommentPostId === selectedPost._id}
-                                    setOpenCommentPostId={setOpenCommentPostId}
+                                    onOpenCommentSection={handleOpenCommentSection}
                                     onOpenEventDetail={handleOpenEventDetail}
                                     onAddToCalendar={handleAddToCalendar}
                                     currentUser={currentUser}
@@ -4321,9 +4283,7 @@ const App = () => {
                                                 onLike={handleLikePost}
                                                 onShare={handleShareClick}
                                                 onAddComment={handleAddComment}
-                                                likedPosts={likedPosts}
-                                                isCommentsOpen={openCommentPostId === post._id}
-                                                setOpenCommentPostId={setOpenCommentPostId}
+                                                onOpenCommentSection={handleOpenCommentSection}
                                                 onOpenEventDetail={handleOpenEventDetail}
                                                 onAddToCalendar={handleAddToCalendar}
                                                 currentUser={currentUser}
@@ -4356,10 +4316,8 @@ const App = () => {
                                 onLike={handleLikePost}
                                 onShare={handleShareClick}
                                 onAddComment={handleAddComment}
-                                likedPosts={likedPosts}
-                                openCommentPostId={openCommentPostId}
+                                onOpenCommentSection={handleOpenCommentSection}
                                 onOpenEventDetail={handleOpenEventDetail}
-                                setOpenCommentPostId={setOpenCommentPostId}
                                 onAddToCalendar={handleAddToCalendar}
                                 currentUser={currentUser}
                                 onDeletePost={handleDeletePost}
@@ -4416,6 +4374,16 @@ const App = () => {
                 message="Your event has been saved. You can view it by opening the calendar."
                 showConfirm={false}
             />
+
+            {/* NEW: Conditional rendering of the comment section overlay */}
+            {selectedPostForComments && (
+                <CommentSection
+                    post={selectedPostForComments}
+                    onAddComment={handleAddComment}
+                    onCloseComments={handleCloseCommentSection}
+                    currentUser={currentUser}
+                />
+            )}
         </div>
     );
 };
