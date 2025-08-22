@@ -1,6 +1,8 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
+const { Parser } = require('json2csv'); // NEW: For CSV generation
 const Post = require('../models/Post');
+const Registration = require('../models/Registration'); // NEW: Import the new Registration model
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const upload = require('../middleware/upload'); // Still needed if other routes use it for file uploads
@@ -24,9 +26,9 @@ const uploadImage = async (image) => {
 
 // --- POST ROUTES ---
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (filtered for non-admins), Private (admin)
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (filtered for non-admins), Private (admin)
 router.get('/', protect, asyncHandler(async (req, res) => {
     let query = {};
     if (req.user && !req.user.isAdmin) {
@@ -37,42 +39,47 @@ router.get('/', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: 'event', status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
 }));
 
-// @desc    Get all registrations for a specific event
-// @route   GET /api/posts/:id/registrations
-// @access  Private (Event creator or Admin only)
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
+// UPDATED: Now fetches from the new Registration model
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
-    const post = await Post.findById(req.params.id).select('registrations userId enableRegistrationForm');
+    const eventId = req.params.id;
 
-    if (!post) {
+    const event = await Post.findById(eventId).select('userId type enableRegistrationForm');
+
+    if (!event) {
         res.status(404);
-        throw new Error('Post not found');
+        throw new Error('Event not found');
     }
 
-    if (post.type !== 'event' || !post.enableRegistrationForm) {
+    if (event.type !== 'event') {
         res.status(400);
-        throw new Error('This is not an event with in-app registration enabled.');
+        throw new Error('This is not an event.');
     }
 
-    if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    // Security check: Only the host or an admin can view this data
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         res.status(403);
-        throw new Error('Not authorized to view registrations for this post');
+        throw new Error('Not authorized to view registrations for this event');
     }
 
-    res.json(post.registrations);
+    const registrations = await Registration.find({ eventId: event._id });
+    res.json(registrations);
 }));
 
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -82,9 +89,10 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
+// UPDATED: Removed 'registrations: []' from Post creation
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -143,16 +151,17 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         likedBy: [],
         commentData: [],
         timestamp: new Date(),
-        registrations: [], // Initialize with an empty array
+        // Removed 'registrations: []' as registrations are now in a separate model
     });
 
     const createdPost = await post.save();
     res.status(201).json(createdPost);
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
+// UPDATED: No longer handles 'registrations' field
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -222,7 +231,9 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.registrationFields = rest.registrationFields !== undefined ? rest.registrationFields : post.registrationFields;
         post.paymentMethod = rest.paymentMethod !== undefined ? rest.paymentMethod : post.paymentMethod;
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
+        post.paymentQRCode = rest.paymentQRCode !== undefined ? rest.paymentQRCode : post.paymentQRCode; // Keep this as URL if already uploaded
     } else {
+        // Clear event-specific fields if type changes from event
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -245,9 +256,9 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     res.json(updatedPost);
 }));
 
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -264,9 +275,10 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 }));
 
 
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
+// UPDATED: Deletes associated registrations
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -298,6 +310,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
         }
 
         await event.deleteOne();
+        await Registration.deleteMany({ eventId: event._id }); // NEW: Delete associated registrations
         res.json({ message: 'Event rejected and removed' });
     } else {
         res.status(404).json({ message: 'Event not found' });
@@ -305,9 +318,10 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 }));
 
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
+// UPDATED: Deletes associated registrations if it's an event
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -329,8 +343,6 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             const filename = parts[parts.length - 1];
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
         }
-        // FIX: The extra closing parenthesis was here.
-        // I have removed it to fix the syntax error.
         
         if (publicIdsToDelete.length > 0) {
             try {
@@ -341,6 +353,10 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
         }
 
         await post.deleteOne();
+        // NEW: If the deleted post was an event, also delete its registrations
+        if (post.type === 'event') {
+            await Registration.deleteMany({ eventId: post._id });
+        }
         res.json({ message: 'Post removed' });
     } else {
         res.status(404).json({ message: 'Post not found' });
@@ -348,9 +364,9 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -375,9 +391,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -395,9 +411,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -418,9 +434,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -441,6 +457,60 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
         res.status(201).json({ message: 'Post reported successfully' });
     } else {
         res.status(404).json({ message: 'Post not found' });
+    }
+}));
+
+// NEW ROUTE: GET /api/posts/export-registrations/:eventId
+// This route generates and serves a CSV file of registrations for a specific event.
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    // Security check: Only the host or an admin can export this data
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+
+    const registrations = await Registration.find({ eventId });
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+
+    // Flatten data and add headers for CSV
+    let customFieldsSet = new Set();
+    registrations.forEach(reg => {
+        Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
+    });
+    const customFields = [...customFieldsSet];
+
+    const fields = ['Name', 'Email', 'Phone', ...customFields, 'Registered At'];
+
+    const data = registrations.map(reg => {
+        const row = {
+            'Name': reg.name,
+            'Email': reg.email,
+            'Phone': reg.phone,
+            'Registered At': reg.createdAt.toISOString(),
+        };
+        for (const field of customFields) {
+            row[field] = reg.customFields[field] || '';
+        }
+        return row;
+    });
+
+    try {
+        const json2csvParser = new Parser({ fields });
+        const csv = json2csvParser.parse(data);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
 

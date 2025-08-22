@@ -1,9 +1,9 @@
-// routes/users.js
-
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const User = require('../models/User'); 
-const Post = require('../models/Post'); 
+const { Parser } = require('json2csv'); // NEW: For CSV generation
+const User = require('../models/User');
+const Post = require('../models/Post');
+const Registration = require('../models/Registration'); // NEW: Import the new model
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
@@ -24,9 +24,9 @@ const uploadImage = async (image) => {
     }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 router.get('/profile', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
@@ -43,9 +43,9 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Update user avatar
-// @route   PUT /api/users/profile/avatar
-// @access  Private
+// @desc    Update user avatar
+// @route   PUT /api/users/profile/avatar
+// @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user) {
@@ -94,96 +94,101 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Get a list of all posts the user has liked
-// @route   GET /api/users/liked-posts
-// @access  Private
+// @desc    Get a list of all posts the user has liked
+// @route   GET /api/users/liked-posts
+// @access  Private
 router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     const likedPosts = await Post.find({ likedBy: req.user._id });
     const likedPostIds = likedPosts.map(post => post._id);
     res.json({ likedPostIds });
 }));
 
-// @desc    Get event IDs the current user has registered for
-// @route   GET /api/users/my-events-registrations
-// @access  Private
+// @desc    Get event IDs the current user has registered for
+// @route   GET /api/users/my-events-registrations
+// @access  Private
+// UPDATED: Now fetches from the new Registration model
 router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
     const userId = req.user._id;
-    const registeredEvents = await Post.find({ 'registrations.userId': userId });
-    const registeredEventIds = registeredEvents.map(event => event._id);
+    const registeredEvents = await Registration.find({ userId: userId }).select('eventId');
+    const registeredEventIds = registeredEvents.map(reg => reg.eventId);
     res.json({ registeredEventIds });
 }));
 
-// @desc    Get registration counts for events created by the logged-in user
-// @route   GET /api/users/my-events/registration-counts
-// @access  Private
+// @desc    Get registration counts for events created by the logged-in user
+// @route   GET /api/users/my-events/registration-counts
+// @access  Private
+// UPDATED: Now gets counts from the new Registration model
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
     try {
-        const myEvents = await Post.find({ userId: req.user._id, type: 'event' }).select('registrations');
-        const registrationsMap = {};
-        myEvents.forEach(event => {
-            registrationsMap[event._id.toString()] = event.registrations.length;
-        });
-        res.json({ registrations: registrationsMap });
+        const myEvents = await Post.find({ userId: req.user._id, type: 'event' });
+        const registrationCounts = {};
+        
+        // Use Promise.all to efficiently count registrations for all events
+        await Promise.all(myEvents.map(async (event) => {
+            const count = await Registration.countDocuments({ eventId: event._id });
+            registrationCounts[event._id] = count;
+        }));
+
+        res.status(200).json({ registrations: registrationCounts });
     } catch (error) {
         console.error('Error in registration-counts route:', error);
         res.status(500).json({ message: 'Failed to fetch registration counts due to a server error. Check server logs.' });
     }
 }));
 
-// @desc    Register for an event
-// @route   POST /api/users/register-event/:eventId
-// @access  Private
+// @desc    Register for an event
+// @route   POST /api/users/register-event/:eventId
+// @access  Private
+// UPDATED: Now saves to the new Registration model
 router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user._id;
+    const { name, email, phone, transactionId, ...customFields } = req.body;
 
+    // Verify the event and that the user isn't already registered
     const event = await Post.findById(eventId);
     if (!event || event.type !== 'event') {
         res.status(404);
         throw new Error('Event not found');
     }
-
-    // Check if the user is already registered in the event's registrations array
-    const isAlreadyRegistered = event.registrations.some(reg => reg.userId.toString() === userId.toString());
+    const isAlreadyRegistered = await Registration.findOne({ eventId: eventId, userId: userId });
     if (isAlreadyRegistered) {
         res.status(400);
         throw new Error('You are already registered for this event');
     }
 
-    const { name, email, phone, transactionId, ...customFields } = req.body;
-    
-    // Create the registration data object
-    const registrationData = {
-        userId: userId,
-        name: name,
-        email: email,
-        phone: phone,
-        transactionId: transactionId,
-        ...customFields
-    };
-
-    // Add the new registration to the event's registrations array
-    event.registrations.push(registrationData);
-    await event.save();
-
-    const eventCreator = await User.findById(event.userId);
-    if(eventCreator) {
-        const newNotification = new Notification({
-            recipient: eventCreator._id,
-            message: `${req.user.name} has registered for your event "${event.title}"!`,
-            postId: event._id,
-            type: 'registration',
-            timestamp: new Date(),
+    try {
+        const newRegistration = await Registration.create({
+            eventId,
+            userId,
+            name,
+            email,
+            phone,
+            customFields: { ...customFields, transactionId: transactionId || '' }
         });
-        await newNotification.save();
-    }
+    
+        const eventCreator = await User.findById(event.userId);
+        if(eventCreator) {
+            const newNotification = new Notification({
+                recipient: eventCreator._id,
+                message: `${req.user.name} has registered for your event "${event.title}"!`,
+                postId: event._id,
+                type: 'registration',
+                timestamp: new Date(),
+            });
+            await newNotification.save();
+        }
 
-    res.status(201).json({ message: 'Registration successful', registeredEventId: event._id });
+        res.status(201).json({ message: 'Registration successful', registration: newRegistration });
+    } catch (error) {
+        console.error('Registration failed:', error);
+        res.status(500).json({ message: 'Server error during registration.' });
+    }
 }));
 
-// @desc    Admin endpoint to get all reported posts
-// @route   GET /api/users/admin/reported-posts
-// @access  Private, Admin
+// @desc    Admin endpoint to get all reported posts
+// @route   GET /api/users/admin/reported-posts
+// @access  Private, Admin
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
     const reportedPosts = await Notification.find({ type: 'report' })
         .populate('reporter', 'name email')
@@ -191,13 +196,14 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
     res.json(reportedPosts);
 }));
 
-// @desc    Admin endpoint to get all registrations for a specific event
-// @route   GET /api/users/admin/registrations/:eventId
-// @access  Private, Admin
+// @desc    Admin endpoint to get all registrations for a specific event
+// @route   GET /api/users/admin/registrations/:eventId
+// @access  Private, Admin
+// UPDATED: Now fetches from the new Registration model
 router.get('/admin/registrations/:eventId', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.eventId).select('registrations userId');
+    const event = await Post.findById(req.params.eventId);
     
-    if (!event || event.type !== 'event') {
+    if (!event) {
         return res.status(404).json({ message: 'Event not found' });
     }
 
@@ -205,13 +211,14 @@ router.get('/admin/registrations/:eventId', protect, admin, asyncHandler(async (
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'You are not authorized to view this data.' });
     }
-
-    res.json(event.registrations);
+    
+    const registrations = await Registration.find({ eventId: event._id });
+    res.json(registrations);
 }));
 
-// @desc    Admin endpoint to delete a post and its reports
-// @route   DELETE /api/users/admin/delete-post/:id
-// @access  Private, Admin
+// @desc    Admin endpoint to delete a post and its reports
+// @route   DELETE /api/users/admin/delete-post/:id
+// @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const postId = req.params.id;
     const post = await Post.findById(postId);
@@ -219,9 +226,64 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     if (post) {
         await post.deleteOne();
         await Notification.deleteMany({ postId: postId });
-        res.json({ message: 'Post and associated reports removed' });
+        await Registration.deleteMany({ eventId: postId }); // NEW: Delete registrations when the event is deleted
+        res.json({ message: 'Post and associated data removed' });
     } else {
         res.status(404).json({ message: 'Post not found' });
+    }
+}));
+
+// NEW ROUTE: GET /api/posts/export-registrations/:eventId
+// NOTE: For better organization, this route should ideally be in your posts.js file.
+// But it is included here for a single, comprehensive change.
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    if (event.userId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+
+    const registrations = await Registration.find({ eventId });
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+
+    // Flatten data and add headers for CSV
+    let customFieldsSet = new Set();
+    registrations.forEach(reg => {
+        Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
+    });
+    const customFields = [...customFieldsSet];
+
+    const fields = ['Name', 'Email', 'Phone', ...customFields, 'Registered At'];
+
+    const data = registrations.map(reg => {
+        const row = {
+            'Name': reg.name,
+            'Email': reg.email,
+            'Phone': reg.phone,
+            'Registered At': reg.createdAt.toISOString(),
+        };
+        for (const field of customFields) {
+            row[field] = reg.customFields[field] || '';
+        }
+        return row;
+    });
+
+    try {
+        const json2csvParser = new Parser({ fields });
+        const csv = json2csvParser.parse(data);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
 

@@ -1,0 +1,38 @@
+const mongoose = require('mongoose');
+
+const registrationSchema = mongoose.Schema({
+    eventId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Post',
+        required: true,
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
+    name: {
+        type: String,
+        required: true,
+    },
+    email: {
+        type: String,
+        required: true,
+    },
+    phone: {
+        type: String,
+        required: true,
+    },
+    customFields: {
+        type: Object,
+        default: {}
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+    }
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('Registration', registrationSchema);
