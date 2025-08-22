@@ -1743,7 +1743,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <span className={`post-type-badge ${post.type}`}>
                         {getPostTypeLabel(post.type)}
                     </span>
-                    {/* NEW: Display PENDING badge for admin view */}
+                    {/* Display PENDING badge for admin view */}
                     {post.type === 'event' && post.status === 'pending' && currentUser?.isAdmin && (
                         <span className="post-status-badge pending">Pending</span>
                     )}
