@@ -16,7 +16,7 @@ import {
     Share2,
     Bell,
     Search,
-    ArrowLeft,
+    ArrowLeft, // Used for the new "cut" icon
     Info,
     CalendarPlus,
     Landmark,
@@ -26,7 +26,7 @@ import {
     LogOut,
     ArrowRight,
     Edit3,
-    Trash2,
+    Trash2, // More conventional for deletion/removal
     Mail,
     Flag,
     Check,
@@ -1219,7 +1219,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                     className="remove-image-btn"
                                                                                     onClick={removeQRImage}
                                                                                 >
-                                                                                    <X size={14} />
+                                                                                    {/* CHANGED: Icon from X to ArrowLeft */}
+                                                                                    <ArrowLeft size={14} /> 
                                                                                 </button>
                                                                             </div>
                                                                         ) : (
@@ -1280,7 +1281,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                         className="remove-image-btn"
                                                         onClick={() => removeImage(index)}
                                                     >
-                                                        <X size={14} />
+                                                        {/* CHANGED: Icon from X to ArrowLeft */}
+                                                        <ArrowLeft size={14} /> 
                                                     </button>
                                                 </div>
                                             ))}
@@ -1603,20 +1605,20 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 </div>
                                 <div className="sidebar-event-time">
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="no-events-message">
-                        <CalendarPlus size={24} />
-                        <p>No upcoming events found</p>
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="no-events-message">
+                            <CalendarPlus size={24} />
+                            <p>No upcoming events found</p>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
-    );
-};
+        );
+    };
 
 // Post Card Component - Displays a single post (confession, event, or news)
 const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
@@ -2421,12 +2423,13 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    // TEMPORARY: Display all events in myCalendarEvents for debugging
+    // DEBUGGING: Display all events in myCalendarEvents for easier debugging
     const upcomingCalendarEvents = myCalendarEvents;
-    // .filter(e => new Date(e.eventStartDate) > new Date()) // Re-enable this line after debugging
-    // .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    // .slice(0, 3);
-
+    // To restore original functionality (only upcoming events):
+    // const upcomingCalendarEvents = myCalendarEvents
+    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -2459,13 +2462,13 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                                 >
                                     <h4 className="sidebar-event-title">{event.title}</h4>
                                     <div className="sidebar-event-date">
-                                        {new Date(event.eventStartDate).toLocaleDateString('en-US', {
+                                        {event.eventStartDate ? new Date(event.eventStartDate).toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric'
-                                        })}
+                                        }) : 'N/A'}
                                     </div>
                                     <div className="sidebar-event-time">
-                                        {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {event.eventStartDate ? new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                     </div>
                                 </div>
                             ))}
@@ -2820,7 +2823,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                                     >
                                         <div className="event-info">
                                             <strong>{event.title}</strong>
-                                            <small>{new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                            <small>{event.eventStartDate ? new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</small>
                                         </div>
                                     </li>
                                 ))}
@@ -3167,11 +3170,31 @@ const App = () => {
 
             if (isDuplicate) {
                 console.log("4. Event is a duplicate. Not adding."); // DEBUG LOG
+                 setNotifications(notificationPrev => [
+                    {
+                        _id: `notif-${Date.now()}`,
+                        message: `Event "${event.title}" is already in your calendar.`,
+                        timestamp: new Date(),
+                        type: 'info'
+                    },
+                    ...notificationPrev
+                ]);
                 return prev;
             }
             
             const newState = [...prev, event];
             console.log("4. Event added successfully. New state length:", newState.length, "New state:", newState); // DEBUG LOG
+            
+            setNotifications(notificationPrev => [
+                {
+                    _id: `notif-${Date.now()}`,
+                    message: `Event "${event.title}" has been added to your calendar.`,
+                    timestamp: new Date(),
+                    type: 'success'
+                },
+                ...notificationPrev
+            ]);
+            
             return newState;
         });
 
@@ -3179,16 +3202,6 @@ const App = () => {
         setTimeout(() => {
             console.log("5. Final state in localStorage should contain event:", localStorage.getItem('myCalendarEvents')); // DEBUG LOG
         }, 100);
-
-        setNotifications(prev => [
-            {
-                _id: `notif-${Date.now()}`,
-                message: `Event "${event.title}" has been added to your calendar.`,
-                timestamp: new Date(),
-                type: 'success'
-            },
-            ...prev
-        ]);
         
         handleShowCalendarAlert();
     };
