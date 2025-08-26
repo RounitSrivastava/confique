@@ -16,7 +16,7 @@ import {
     Share2,
     Bell,
     Search,
-    ArrowLeft, // Used for the new "cut" icon
+    ArrowLeft,
     Info,
     CalendarPlus,
     Landmark,
@@ -26,7 +26,7 @@ import {
     LogOut,
     ArrowRight,
     Edit3,
-    Trash2, // More conventional for deletion/removal
+    Trash2,
     Mail,
     Flag,
     Check,
@@ -1401,12 +1401,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const handleAddToCalendarClick = () => {
+        console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
         if (!isLoggedIn) {
-            onRequireLogin();
+            alert("Please log in to add events to your calendar.");
             return;
         }
         // NEW: Check if event or eventStartDate is missing before adding
         if (!event || !event.eventStartDate) {
+            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             setNotifications(prev => [
                 {
                     _id: `notif-${Date.now()}`,
@@ -2358,10 +2360,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onDeletePost={handleDeletePost}
                             onEditPost={handleEditPost}
                             registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
+                            onReportPost={handleOpenReportModal}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
@@ -2889,6 +2891,9 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
+    // NEW: State for post ID from URL
+    const [urlPostId, setUrlPostId] = useState(null);
+
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
@@ -3059,8 +3064,32 @@ const App = () => {
         }
     };
 
+    // NEW: Function to fetch a single post by ID
+    const fetchSinglePost = async (postId) => {
+        try {
+            const res = await callApi(`/posts/single/${postId}`);
+            const data = await res.json();
+            const formattedData = formatPostDates(data);
+            setSelectedPost(formattedData);
+            setActiveSection('home');
+        } catch (error) {
+            console.error('Failed to fetch single post:', error);
+            setSelectedPost(null);
+            setUrlPostId(null);
+            setNotifications(prev => [{ _id: Date.now().toString(), message: `Post not found.`, timestamp: new Date(), type: 'error' }, ...prev]);
+            window.history.replaceState({}, document.title, '/');
+        }
+    };
+
 
     useEffect(() => {
+        // Get the post ID from the URL path (e.g., /posts/123)
+        const path = window.location.pathname;
+        const postIdMatch = path.match(/\/posts\/(.+)/);
+        if (postIdMatch && postIdMatch[1]) {
+            setUrlPostId(postIdMatch[1]);
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const name = urlParams.get('name');
@@ -3081,6 +3110,13 @@ const App = () => {
             }
         }
     }, []);
+
+    // Effect to fetch a single post when a URL post ID is set
+    useEffect(() => {
+        if (urlPostId) {
+            fetchSinglePost(urlPostId);
+        }
+    }, [urlPostId]);
 
     // Set theme to dark on first render and keep it that way
     useEffect(() => {
