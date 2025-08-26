@@ -3072,14 +3072,25 @@ const App = () => {
             const res = await callApi(`/posts/single/${postId}`);
             const data = await res.json();
             const formattedData = formatPostDates(data);
-            setSharedPost(formattedData);
-            setSelectedPost(null);
+            
+            // NEW LOGIC: Check the post type and set state accordingly
+            if (formattedData.type === 'event') {
+                setSelectedEvent(formattedData);
+                setSharedPost(null);
+                setSelectedPost(null);
+            } else {
+                setSharedPost(formattedData);
+                setSelectedPost(null);
+                setSelectedEvent(null);
+            }
+            
             setUrlPostId(null);
             setActiveSection('home');
         } catch (error) {
             console.error('Failed to fetch single post:', error);
             setSharedPost(null);
             setSelectedPost(null);
+            setSelectedEvent(null);
             setUrlPostId(null);
             setNotifications(prev => [{ _id: Date.now().toString(), message: `Post not found.`, timestamp: new Date(), type: 'error' }, ...prev]);
             window.history.replaceState({}, document.title, '/');
@@ -4251,7 +4262,7 @@ const App = () => {
                 <div className="header-container">
                     <div className="header-content">
                         <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSharedPost(null); }}>
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSharedPost(null); setSelectedEvent(null); }}>
                                 <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
@@ -4331,6 +4342,7 @@ const App = () => {
 
                 <main className="main-content">
                     <div className="content-padding">
+                        {/* New rendering logic for shared content */}
                         {sharedPost ? (
                             <div className="single-post-at-top">
                                 <PostCard
@@ -4359,7 +4371,22 @@ const App = () => {
                             </div>
                         ) : null}
 
-                        {selectedPost ? (
+                        {/* Existing rendering logic for event/post details or the main feed */}
+                        {selectedEvent ? (
+                            <EventDetailPage
+                                event={selectedEvent}
+                                onClose={() => {
+                                    handleCloseEventDetail();
+                                    setSharedPost(null);
+                                }}
+                                isLoggedIn={isLoggedIn}
+                                onRequireLogin={() => setShowLoginModal(true)}
+                                onAddToCalendar={handleAddToCalendar}
+                                onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
+                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                                onShowCalendarAlert={handleShowCalendarAlert}
+                            />
+                        ) : selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
                                     key={selectedPost._id}
@@ -4412,17 +4439,6 @@ const App = () => {
                                         ))}
                                 </div>
                             </div>
-                        ) : selectedEvent ? (
-                            <EventDetailPage
-                                event={selectedEvent}
-                                onClose={handleCloseEventDetail}
-                                isLoggedIn={isLoggedIn}
-                                onRequireLogin={() => setShowLoginModal(true)}
-                                onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
-                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                                onShowCalendarAlert={handleShowCalendarAlert}
-                            />
                         ) : (
                             <CurrentComponent
                                 posts={sharedPost ? filteredPosts.filter(p => p._id !== sharedPost._id) : filteredPosts}
