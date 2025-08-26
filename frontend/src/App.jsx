@@ -16,7 +16,7 @@ import {
     Share2,
     Bell,
     Search,
-    ArrowLeft,
+    ArrowLeft, // Used for the new "cut" icon
     Info,
     CalendarPlus,
     Landmark,
@@ -26,7 +26,7 @@ import {
     LogOut,
     ArrowRight,
     Edit3,
-    Trash2,
+    Trash2, // More conventional for deletion/removal
     Mail,
     Flag,
     Check,
@@ -1401,14 +1401,12 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const handleAddToCalendarClick = () => {
-        console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
         if (!isLoggedIn) {
-            alert("Please log in to add events to your calendar.");
+            onRequireLogin();
             return;
         }
         // NEW: Check if event or eventStartDate is missing before adding
         if (!event || !event.eventStartDate) {
-            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             setNotifications(prev => [
                 {
                     _id: `notif-${Date.now()}`,
@@ -2360,10 +2358,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onDeletePost={handleDeletePost}
                             onEditPost={handleEditPost}
                             registrationCount={registrations[post._id]}
-                            onReportPost={handleOpenReportModal}
+                            onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
-                            onExportData={handleExportRegistrations}
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
@@ -2891,11 +2889,6 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    // NEW: State for post ID from URL
-    const [urlPostId, setUrlPostId] = useState(null);
-    // NEW: State for the shared post
-    const [sharedPost, setSharedPost] = useState(null);
-
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
     const formatPostDates = (post) => {
@@ -3066,46 +3059,8 @@ const App = () => {
         }
     };
 
-    // NEW: Function to fetch a single post by ID
-    const fetchSinglePost = async (postId) => {
-        try {
-            const res = await callApi(`/posts/single/${postId}`);
-            const data = await res.json();
-            const formattedData = formatPostDates(data);
-            
-            // NEW LOGIC: Check the post type and set state accordingly
-            if (formattedData.type === 'event') {
-                setSelectedEvent(formattedData);
-                setSharedPost(null);
-                setSelectedPost(null);
-            } else {
-                setSharedPost(formattedData);
-                setSelectedPost(null);
-                setSelectedEvent(null);
-            }
-            
-            setUrlPostId(null);
-            setActiveSection('home');
-        } catch (error) {
-            console.error('Failed to fetch single post:', error);
-            setSharedPost(null);
-            setSelectedPost(null);
-            setSelectedEvent(null);
-            setUrlPostId(null);
-            setNotifications(prev => [{ _id: Date.now().toString(), message: `Post not found.`, timestamp: new Date(), type: 'error' }, ...prev]);
-            window.history.replaceState({}, document.title, '/');
-        }
-    };
-
 
     useEffect(() => {
-        // Get the post ID from the URL path (e.g., /posts/123)
-        const path = window.location.pathname;
-        const postIdMatch = path.match(/\/posts\/(.+)/);
-        if (postIdMatch && postIdMatch[1]) {
-            setUrlPostId(postIdMatch[1]);
-        }
-
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const name = urlParams.get('name');
@@ -3126,13 +3081,6 @@ const App = () => {
             }
         }
     }, []);
-
-    // Effect to fetch a single post when a URL post ID is set
-    useEffect(() => {
-        if (urlPostId) {
-            fetchSinglePost(urlPostId);
-        }
-    }, [urlPostId]);
 
     // Set theme to dark on first render and keep it that way
     useEffect(() => {
@@ -3733,14 +3681,12 @@ const App = () => {
         setSelectedEvent(event);
         setSelectedPost(null);
         setOpenCommentPostId(null);
-        setSharedPost(null); // Clear shared post state
     };
 
     const handleOpenPostDetail = (post) => {
         setSelectedPost(post);
         setSelectedEvent(null);
         setOpenCommentPostId(null);
-        setSharedPost(null); // Clear shared post state
     };
 
     const handleCloseEventDetail = () => {
@@ -4125,7 +4071,7 @@ const App = () => {
 
     const sectionComponents = {
         home: () => <HomeComponent
-            posts={sharedPost ? filteredPosts.filter(p => p._id !== sharedPost._id) : filteredPosts}
+            posts={filteredPosts}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4142,7 +4088,7 @@ const App = () => {
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
         events: () => <EventsComponent
-            posts={sharedPost ? filteredPosts.filter(p => p.type === 'event' && p._id !== sharedPost._id) : filteredPosts.filter(post => post.type === 'event')}
+            posts={filteredPosts.filter(post => post.type === 'event')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4159,7 +4105,7 @@ const App = () => {
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
         confessions: () => <ConfessionsComponent
-            posts={sharedPost ? filteredPosts.filter(p => p.type === 'confession' && p._id !== sharedPost._id) : filteredPosts.filter(post => post.type === 'confession')}
+            posts={filteredPosts.filter(post => post.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4262,7 +4208,7 @@ const App = () => {
                 <div className="header-container">
                     <div className="header-content">
                         <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSharedPost(null); setSelectedEvent(null); }}>
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
                                 <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
@@ -4298,7 +4244,6 @@ const App = () => {
                                         setOpenCommentPostId(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
-                                        setSharedPost(null);
                                     }}
                                 />
                             ) : (
@@ -4329,7 +4274,6 @@ const App = () => {
                                         setOpenCommentPostId(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
-                                        setSharedPost(null);
                                     }
                                 }}
                             >
@@ -4342,51 +4286,7 @@ const App = () => {
 
                 <main className="main-content">
                     <div className="content-padding">
-                        {/* New rendering logic for shared content */}
-                        {sharedPost ? (
-                            <div className="single-post-at-top">
-                                <PostCard
-                                    key={sharedPost._id}
-                                    post={sharedPost}
-                                    onLike={handleLikePost}
-                                    onShare={handleShareClick}
-                                    onAddComment={handleAddComment}
-                                    likedPosts={likedPosts}
-                                    isCommentsOpen={openCommentPostId === sharedPost._id}
-                                    setOpenCommentPostId={setOpenCommentPostId}
-                                    onOpenEventDetail={handleOpenEventDetail}
-                                    onAddToCalendar={handleAddToCalendar}
-                                    currentUser={currentUser}
-                                    onDeletePost={handleDeletePost}
-                                    onEditPost={handleEditPost}
-                                    isProfileView={sharedPost.userId === currentUser?._id}
-                                    registrationCount={registrations[sharedPost._id]}
-                                    onReportPost={handleOpenReportModal}
-                                    onShowCalendarAlert={handleShowCalendarAlert}
-                                    isLoggedIn={isLoggedIn}
-                                    onExportData={handleExportRegistrations}
-                                />
-                                <hr className="section-divider" />
-                                <h3 className="section-subtitle">More Posts</h3>
-                            </div>
-                        ) : null}
-
-                        {/* Existing rendering logic for event/post details or the main feed */}
-                        {selectedEvent ? (
-                            <EventDetailPage
-                                event={selectedEvent}
-                                onClose={() => {
-                                    handleCloseEventDetail();
-                                    setSharedPost(null);
-                                }}
-                                isLoggedIn={isLoggedIn}
-                                onRequireLogin={() => setShowLoginModal(true)}
-                                onAddToCalendar={handleAddToCalendar}
-                                onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
-                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                                onShowCalendarAlert={handleShowCalendarAlert}
-                            />
-                        ) : selectedPost ? (
+                        {selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
                                     key={selectedPost._id}
@@ -4439,9 +4339,20 @@ const App = () => {
                                         ))}
                                 </div>
                             </div>
+                        ) : selectedEvent ? (
+                            <EventDetailPage
+                                event={selectedEvent}
+                                onClose={handleCloseEventDetail}
+                                isLoggedIn={isLoggedIn}
+                                onRequireLogin={() => setShowLoginModal(true)}
+                                onAddToCalendar={handleAddToCalendar}
+                                onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
+                                isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                                onShowCalendarAlert={handleShowCalendarAlert}
+                            />
                         ) : (
                             <CurrentComponent
-                                posts={sharedPost ? filteredPosts.filter(p => p._id !== sharedPost._id) : filteredPosts}
+                                posts={filteredPosts}
                                 onLike={handleLikePost}
                                 onShare={handleShareClick}
                                 onAddComment={handleAddComment}
