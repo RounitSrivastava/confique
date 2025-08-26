@@ -2893,6 +2893,8 @@ const App = () => {
 
     // NEW: State for post ID from URL
     const [urlPostId, setUrlPostId] = useState(null);
+    // NEW: State for the shared post
+    const [sharedPost, setSharedPost] = useState(null);
 
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
 
@@ -3070,10 +3072,13 @@ const App = () => {
             const res = await callApi(`/posts/single/${postId}`);
             const data = await res.json();
             const formattedData = formatPostDates(data);
-            setSelectedPost(formattedData);
+            setSharedPost(formattedData);
+            setSelectedPost(null);
+            setUrlPostId(null);
             setActiveSection('home');
         } catch (error) {
             console.error('Failed to fetch single post:', error);
+            setSharedPost(null);
             setSelectedPost(null);
             setUrlPostId(null);
             setNotifications(prev => [{ _id: Date.now().toString(), message: `Post not found.`, timestamp: new Date(), type: 'error' }, ...prev]);
@@ -3717,12 +3722,14 @@ const App = () => {
         setSelectedEvent(event);
         setSelectedPost(null);
         setOpenCommentPostId(null);
+        setSharedPost(null); // Clear shared post state
     };
 
     const handleOpenPostDetail = (post) => {
         setSelectedPost(post);
         setSelectedEvent(null);
         setOpenCommentPostId(null);
+        setSharedPost(null); // Clear shared post state
     };
 
     const handleCloseEventDetail = () => {
@@ -4107,7 +4114,7 @@ const App = () => {
 
     const sectionComponents = {
         home: () => <HomeComponent
-            posts={filteredPosts}
+            posts={sharedPost ? filteredPosts.filter(p => p._id !== sharedPost._id) : filteredPosts}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4124,7 +4131,7 @@ const App = () => {
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
         events: () => <EventsComponent
-            posts={filteredPosts.filter(post => post.type === 'event')}
+            posts={sharedPost ? filteredPosts.filter(p => p.type === 'event' && p._id !== sharedPost._id) : filteredPosts.filter(post => post.type === 'event')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4141,7 +4148,7 @@ const App = () => {
             onShowCalendarAlert={handleShowCalendarAlert}
         />,
         confessions: () => <ConfessionsComponent
-            posts={filteredPosts.filter(post => post.type === 'confession')}
+            posts={sharedPost ? filteredPosts.filter(p => p.type === 'confession' && p._id !== sharedPost._id) : filteredPosts.filter(post => post.type === 'confession')}
             onLike={handleLikePost}
             onShare={handleShareClick}
             onAddComment={handleAddComment}
@@ -4244,7 +4251,7 @@ const App = () => {
                 <div className="header-container">
                     <div className="header-content">
                         <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSharedPost(null); }}>
                                 <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
@@ -4280,6 +4287,7 @@ const App = () => {
                                         setOpenCommentPostId(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
+                                        setSharedPost(null);
                                     }}
                                 />
                             ) : (
@@ -4310,6 +4318,7 @@ const App = () => {
                                         setOpenCommentPostId(null);
                                         setSelectedEvent(null);
                                         setSelectedPost(null);
+                                        setSharedPost(null);
                                     }
                                 }}
                             >
@@ -4322,6 +4331,34 @@ const App = () => {
 
                 <main className="main-content">
                     <div className="content-padding">
+                        {sharedPost ? (
+                            <div className="single-post-at-top">
+                                <PostCard
+                                    key={sharedPost._id}
+                                    post={sharedPost}
+                                    onLike={handleLikePost}
+                                    onShare={handleShareClick}
+                                    onAddComment={handleAddComment}
+                                    likedPosts={likedPosts}
+                                    isCommentsOpen={openCommentPostId === sharedPost._id}
+                                    setOpenCommentPostId={setOpenCommentPostId}
+                                    onOpenEventDetail={handleOpenEventDetail}
+                                    onAddToCalendar={handleAddToCalendar}
+                                    currentUser={currentUser}
+                                    onDeletePost={handleDeletePost}
+                                    onEditPost={handleEditPost}
+                                    isProfileView={sharedPost.userId === currentUser?._id}
+                                    registrationCount={registrations[sharedPost._id]}
+                                    onReportPost={handleOpenReportModal}
+                                    onShowCalendarAlert={handleShowCalendarAlert}
+                                    isLoggedIn={isLoggedIn}
+                                    onExportData={handleExportRegistrations}
+                                />
+                                <hr className="section-divider" />
+                                <h3 className="section-subtitle">More Posts</h3>
+                            </div>
+                        ) : null}
+
                         {selectedPost ? (
                             <div className="single-post-and-feed">
                                 <PostCard
@@ -4388,7 +4425,7 @@ const App = () => {
                             />
                         ) : (
                             <CurrentComponent
-                                posts={filteredPosts}
+                                posts={sharedPost ? filteredPosts.filter(p => p._id !== sharedPost._id) : filteredPosts}
                                 onLike={handleLikePost}
                                 onShare={handleShareClick}
                                 onAddComment={handleAddComment}
