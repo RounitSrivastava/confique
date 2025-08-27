@@ -1401,6 +1401,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     };
 
     const handleAddToCalendarClick = () => {
+        console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
         if (!isLoggedIn) {
             onRequireLogin();
             return;
@@ -2427,9 +2428,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -3081,6 +3082,25 @@ const App = () => {
             }
         }
     }, []);
+
+    // New useEffect to handle shared post links
+    useEffect(() => {
+        const path = window.location.pathname;
+        const postRegex = /^\/posts\/(.*)$/;
+        const match = path.match(postRegex);
+    
+        if (match && posts.length > 0) {
+            const postId = match[1];
+            const postToDisplay = posts.find(p => p._id === postId);
+            if (postToDisplay) {
+                setSelectedPost(postToDisplay);
+                setActiveSection('home');
+            }
+            // Clear the path after handling to prevent re-triggering
+            window.history.replaceState({}, document.title, '/');
+        }
+    }, [posts]); // Depend on posts state to ensure posts are loaded before checking the URL
+    
 
     // Set theme to dark on first render and keep it that way
     useEffect(() => {
