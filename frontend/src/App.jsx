@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Analytics } from "@vercel/analytics/next"
+// import { Analytics } from "@vercel/analytics/next"
 import API_URL from './api';
 import confiquelogo from './assets/confiquelogo.jpg';
 import {
