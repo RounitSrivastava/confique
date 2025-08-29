@@ -7,6 +7,7 @@ const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
 const session = require('express-session');
 const { passport } = require('./config/passport-setup'); // Path to your passport setup
+const path = require('path'); // NEW: Import 'path' module
 
 // Import your route files
 const authRoutes = require('./routes/auth');
@@ -16,7 +17,7 @@ const notificationsRoutes = require('./routes/notifications');
 const cronRoutes = require('./routes/cronRoutes');
 
 // Import the sitemap route file
-const sitemapRouter = require('./routes/sitemap'); // <--- NEW: Import sitemap router
+const sitemapRouter = require('./routes/sitemap');
 
 const app = express();
 
@@ -60,16 +61,30 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Route Handlers
+// API Route Handlers
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/cron', cronRoutes);
 
-// NEW: Sitemap route. This should be a top-level route, not under /api.
-// This is because search engines expect to find the sitemap at yourdomain.com/sitemap.xml
-app.use('/', sitemapRouter); 
+// IMPORTANT: Sitemap route must come BEFORE serving static frontend files
+app.use('/', sitemapRouter); // This handles /sitemap.xml specifically
+
+// Serve static files from the React app (if your backend also serves frontend)
+// This assumes your React app's build output is in a 'client/build' or 'public' folder
+// relative to your backend server. Adjust path as necessary.
+// For Render, if your backend is in 'backend/' and frontend in 'client/',
+// you might need `path.join(__dirname, '../client/build')`
+// Or if Render is configured to serve static files from a 'public' directory in the backend:
+app.use(express.static(path.join(__dirname, 'public'))); // Assuming 'public' is in your backend root
+
+// Catch-all route to serve the React app's index.html for all other routes
+// This should always be the LAST route handler.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html')); // Adjust path if needed
+});
+
 
 // Basic error handling middleware (optional, but good practice)
 app.use((err, req, res, next) => {
