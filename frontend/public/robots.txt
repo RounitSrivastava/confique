@@ -1,4 +1,4 @@
-User-agent: *
+ser-agent: *
 Allow: /
 
-Sitemap: https://www.confique.com/sitemap.xml
+Sitemap: https://confique.onrender.com/sitemap.xml
