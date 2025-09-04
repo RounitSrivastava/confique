@@ -15,9 +15,6 @@ const userRoutes = require('./routes/user');
 const notificationsRoutes = require('./routes/notifications');
 const cronRoutes = require('./routes/cronRoutes');
 
-// Import the sitemap route file
-const sitemapRouter = require('./routes/sitemap'); // <--- NEW: Import sitemap router
-
 const app = express();
 
 // Configure Cloudinary
@@ -66,10 +63,6 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/cron', cronRoutes);
-
-// NEW: Sitemap route. This should be a top-level route, not under /api.
-// This is because search engines expect to find the sitemap at yourdomain.com/sitemap.xml
-app.use('/', sitemapRouter); 
 
 // Basic error handling middleware (optional, but good practice)
 app.use((err, req, res, next) => {
