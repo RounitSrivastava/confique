@@ -113,7 +113,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
-    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    const authorAvatarFinal = avatarFromUser || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)';
 
     const {
         type, title, content, images,
@@ -389,7 +389,7 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         }
         const newComment = {
             author: req.user.name,
-            authorAvatar: req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            authorAvatar: req.user.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)',
             text,
             timestamp: new Date(),
             userId: req.user._id,
@@ -485,28 +485,42 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(403).json({ message: 'Not authorized to export this data.' });
     }
 
-    const registrations = await Registration.find({ eventId });
+    const registrations = await Registration.find({ eventId }).lean();
     if (registrations.length === 0) {
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    let customFieldsSet = new Set();
+    // UPDATED: Dynamically get all unique custom field keys from the registration documents
+    const customFieldsSet = new Set();
     registrations.forEach(reg => {
-        Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
+        if (reg.customFields) {
+            Object.keys(reg.customFields).forEach(key => customFieldsSet.add(key));
+        }
     });
-    const customFields = [...customFieldsSet];
+    const customFields = Array.from(customFieldsSet);
 
-    const fields = ['Name', 'Email', 'Phone', ...customFields, 'Registered At'];
-
+    // Define the fields for the CSV with labels and values
+    // This is more robust as it pulls the actual keys from the data
+    const fields = [
+        { label: 'Name', value: 'name' },
+        { label: 'Email', value: 'email' },
+        { label: 'Phone', value: 'phone' },
+        ...customFields.map(fieldKey => ({
+            label: fieldKey, // Use the actual field key as the CSV header
+            value: (row) => row.customFields[fieldKey] || '' // Access the nested value with the correct key
+        })),
+        { label: 'Registered At', value: 'registeredAt' },
+    ];
+    
+    // Create the flattened data array for the parser
     const data = registrations.map(reg => {
         const row = {
-            'Name': reg.name,
-            'Email': reg.email,
-            'Phone': reg.phone,
-            'Registered At': reg.createdAt.toISOString(),
+            ...reg, // Start with all top-level properties
+            registeredAt: reg.registeredAt.toISOString(),
         };
-        for (const field of customFields) {
-            row[field] = reg.customFields[field] || '';
+        // Add custom fields directly to the top level for easier access
+        for (const key of customFields) {
+            row[key] = reg.customFields[key] || '';
         }
         return row;
     });
