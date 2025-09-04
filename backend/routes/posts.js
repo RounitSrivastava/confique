@@ -113,7 +113,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
-    const authorAvatarFinal = avatarFromUser || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)';
+    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const {
         type, title, content, images,
@@ -389,7 +389,7 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         }
         const newComment = {
             author: req.user.name,
-            authorAvatar: req.user.avatar || '[https://placehold.co/40x40/cccccc/000000?text=A](https://placehold.co/40x40/cccccc/000000?text=A)',
+            authorAvatar: req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
             text,
             timestamp: new Date(),
             userId: req.user._id,
@@ -498,9 +498,9 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         }
     });
     const customFields = Array.from(customFieldsSet);
-
+    
     // Define the fields for the CSV with labels and values
-    // This is more robust as it pulls the actual keys from the data
+    // Use the actual field key from the database as the value, and the label as the display name
     const fields = [
         { label: 'Name', value: 'name' },
         { label: 'Email', value: 'email' },
@@ -511,23 +511,11 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         })),
         { label: 'Registered At', value: 'registeredAt' },
     ];
-    
-    // Create the flattened data array for the parser
-    const data = registrations.map(reg => {
-        const row = {
-            ...reg, // Start with all top-level properties
-            registeredAt: reg.registeredAt.toISOString(),
-        };
-        // Add custom fields directly to the top level for easier access
-        for (const key of customFields) {
-            row[key] = reg.customFields[key] || '';
-        }
-        return row;
-    });
 
     try {
+        // Prepare the data to be parsed. This is now simplified as the parser config handles the nesting.
         const json2csvParser = new Parser({ fields });
-        const csv = json2csvParser.parse(data);
+        const csv = json2csvParser.parse(registrations);
 
         res.header('Content-Type', 'text/csv');
         res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
