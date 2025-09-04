@@ -30,8 +30,9 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Middleware
-app.use(express.json()); // For parsing application/json
-app.use(express.urlencoded({ extended: true })); // For parsing application/x-www-form-urlencoded (if needed)
+// INCREASED PAYLOAD SIZE LIMIT for JSON
+app.use(express.json({ limit: '50mb' })); // This line is changed
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // This line is changed
 
 // CORS Configuration
 app.use(cors({
