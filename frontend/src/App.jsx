@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 // import { Analytics } from "@vercel/analytics/next"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/confiquelogo.jpg';
 import {
@@ -135,7 +135,7 @@ const CustomMessageModal = ({ isOpen, onClose, title, message, showConfirm = fal
         </div>
     );
 };
-
+<Analytics />
 // Help & Support Modal Component
 const HelpAndSupportModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
