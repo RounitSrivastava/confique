@@ -51,8 +51,8 @@ const compressImage = (file, callback) => {
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            const maxWidth = 800;
-            const maxHeight = 800;
+            const maxWidth = 1000;
+            const maxHeight = 1000;
 
             let width = img.width;
             let height = img.height;
@@ -74,7 +74,7 @@ const compressImage = (file, callback) => {
 
             ctx.drawImage(img, 0, 0, width, height);
 
-            const quality = 0.8;
+            const quality = 0.95;
             const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
             callback(compressedDataUrl);
         };
