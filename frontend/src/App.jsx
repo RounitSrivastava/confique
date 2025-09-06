@@ -1798,6 +1798,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <p
                         ref={contentRef}
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
+                         style={{ whiteSpace: 'pre-wrap' }} 
                     >
                         {post.content}
                     </p>
