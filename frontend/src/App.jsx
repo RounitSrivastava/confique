@@ -4238,6 +4238,7 @@ const App = () => {
 
     return (
         <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
+            {/* All Modals should be rendered first, but outside the main-layout-container logic */}
             <LoginModal
                 isOpen={showLoginModal}
                 onClose={() => setShowLoginModal(false)}
@@ -4260,7 +4261,6 @@ const App = () => {
                 />
             )}
 
-            {/* New Calendar Modal */}
             {currentUser && (
                 <CalendarModal
                     isOpen={showCalendarModal}
@@ -4273,6 +4273,29 @@ const App = () => {
                 />
             )}
 
+            <AddPostModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setPostToEdit(null);
+                }}
+                onSubmit={handleAddPost}
+                postToEdit={postToEdit}
+                currentUser={currentUser}
+            />
+
+            <HelpAndSupportModal
+                isOpen={showHelpModal}
+                onClose={() => setShowHelpModal(false)}
+            />
+            <CustomMessageModal
+                isOpen={showAddedToCalendarAlert}
+                onClose={() => setShowAddedToCalendarAlert(false)}
+                title="Event Added to Calendar"
+                message="Your event has been saved. You can view it by opening the calendar."
+                showConfirm={false}
+            />
+
             <header className="header">
                 <div className="header-container">
                     <div className="header-content">
@@ -4282,7 +4305,6 @@ const App = () => {
                                 <span className="app-title">Confique</span>
                             </a>
                         </div>
-                        {/* Mobile Calendar Icon - visible only on smaller screens */}
                         {activeSection === 'events' && isLoggedIn && (
                             <div className="mobile-calendar-icon-container">
                                 <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
@@ -4462,29 +4484,6 @@ const App = () => {
                     </div>
                 </aside>
             </div>
-
-            <AddPostModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setPostToEdit(null);
-                }}
-                onSubmit={handleAddPost}
-                postToEdit={postToEdit}
-                currentUser={currentUser}
-            />
-
-            <HelpAndSupportModal
-                isOpen={showHelpModal}
-                onClose={() => setShowHelpModal(false)}
-            />
-            <CustomMessageModal
-                isOpen={showAddedToCalendarAlert}
-                onClose={() => setShowAddedToCalendarAlert(false)}
-                title="Event Added to Calendar"
-                message="Your event has been saved. You can view it by opening the calendar."
-                showConfirm={false}
-            />
         </div>
     );
 };
