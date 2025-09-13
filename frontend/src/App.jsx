@@ -3591,6 +3591,8 @@ const App = () => {
             setPostToEdit(post);
             setIsModalOpen(true);
             setActiveSection('profile');
+            setSelectedPost(null); // FIX: Clear selected post
+            setSelectedEvent(null); // FIX: Clear selected event
         }
     };
 
@@ -4133,6 +4135,8 @@ const App = () => {
                 } else {
                     setPostToEdit(null);
                     setIsModalOpen(true);
+                    setSelectedPost(null); // FIX: Clear selected post
+                    setSelectedEvent(null); // FIX: Clear selected event
                 }
             }
         },
@@ -4278,6 +4282,8 @@ const App = () => {
                 onClose={() => {
                     setIsModalOpen(false);
                     setPostToEdit(null);
+                    setSelectedPost(null); // FIX: Clear state on modal close
+                    setSelectedEvent(null); // FIX: Clear state on modal close
                 }}
                 onSubmit={handleAddPost}
                 postToEdit={postToEdit}
