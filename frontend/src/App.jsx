@@ -2939,7 +2939,8 @@ const App = () => {
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
 
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || selectedEvent || selectedPost || showCalendarModal || showAddedToCalendarAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert;
+
 
     const formatPostDates = (post) => {
         return {
@@ -3591,8 +3592,8 @@ const App = () => {
             setPostToEdit(post);
             setIsModalOpen(true);
             setActiveSection('profile');
-            setSelectedPost(null); // FIX: Clear selected post
-            setSelectedEvent(null); // FIX: Clear selected event
+            setSelectedPost(null); // FIX: Clear selected post when opening modal
+            setSelectedEvent(null); // FIX: Clear selected event when opening modal
         }
     };
 
@@ -4039,6 +4040,7 @@ const App = () => {
             id: 'home',
             label: 'Home',
             icon: <Home className="nav-icon" />,
+            action: () => setActiveSection('home'),
             component: () => <HomeComponent
                 posts={filteredPosts}
                 onLike={handleLikePost}
@@ -4062,6 +4064,7 @@ const App = () => {
             id: 'events',
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
+            action: () => setActiveSection('events'),
             component: () => <EventsComponent
                 posts={filteredPosts.filter(post => post.type === 'event')}
                 onLike={handleLikePost}
@@ -4089,6 +4092,7 @@ const App = () => {
             id: 'confessions',
             label: 'Consights',
             icon: <MessageCircle className="nav-icon" />,
+            action: () => setActiveSection('confessions'),
             component: () => <ConfessionsComponent
                 posts={filteredPosts.filter(post => post.type === 'confession')}
                 onLike={handleLikePost}
@@ -4112,6 +4116,7 @@ const App = () => {
             id: 'notifications',
             label: 'Notifications',
             icon: <Bell className="nav-icon" />,
+            action: () => setActiveSection('notifications'),
             component: () => <NotificationsComponent
                 notifications={notifications}
                 adminNotifications={adminNotifications}
@@ -4124,138 +4129,165 @@ const App = () => {
             rightSidebar: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
         },
         {
+            id: 'profile',
+            label: 'Profile',
+            icon: <User className="nav-icon" />,
+            action: () => setActiveSection('profile'),
+            component: () => <UsersComponent
+                posts={posts}
+                currentUser={currentUser}
+                onLike={handleLikePost}
+                onShare={handleShareClick}
+                onAddComment={handleAddComment}
+                likedPosts={likedPosts}
+                openCommentPostId={openCommentPostId}
+                onOpenEventDetail={handleOpenEventDetail}
+                setOpenCommentPostId={setOpenCommentPostId}
+                onAddToCalendar={handleAddToCalendar}
+                setIsModalOpen={setIsModalOpen}
+                onDeletePost={handleDeletePost}
+                onEditPost={handleEditPost}
+                registrations={registrations}
+                onReportPost={handleOpenReportModal}
+                onEditProfile={() => setShowProfileSettingsModal(true)}
+                onShowCalendarAlert={handleShowCalendarAlert}
+                onExportData={handleExportRegistrations}
+            />,
+            rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
+        },
+        {
             id: 'add',
             label: 'Add',
             icon: <Plus className="nav-icon" />,
-            component: null,
-            rightSidebar: null,
             action: () => {
                 if (!isLoggedIn) {
                     setShowLoginModal(true);
                 } else {
                     setPostToEdit(null);
                     setIsModalOpen(true);
-                    setSelectedPost(null); // FIX: Clear selected post
-                    setSelectedEvent(null); // FIX: Clear selected event
+                    setSelectedPost(null); 
+                    setSelectedEvent(null); 
                 }
             }
         },
     ];
 
-    const sectionComponents = {
-        home: () => <HomeComponent
-            posts={filteredPosts}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-            onDeletePost={handleDeletePost}
-            onEditPost={handleEditPost}
-            onShowCalendarAlert={handleShowCalendarAlert}
-        />,
-        events: () => <EventsComponent
-            posts={filteredPosts.filter(post => post.type === 'event')}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-            onDeletePost={handleDeletePost}
-            onEditPost={handleEditPost}
-            onShowCalendarAlert={handleShowCalendarAlert}
-        />,
-        confessions: () => <ConfessionsComponent
-            posts={filteredPosts.filter(post => post.type === 'confession')}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            onAddToCalendar={handleAddToCalendar}
-            currentUser={currentUser}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-            onDeletePost={handleDeletePost}
-            onEditPost={handleEditPost}
-            onShowCalendarAlert={handleShowCalendarAlert}
-        />,
-        notifications: () => <NotificationsComponent
-            notifications={notifications}
-            adminNotifications={adminNotifications}
-            pendingEvents={pendingEvents}
-            currentUser={currentUser}
-            onDeleteReportedPost={handleDeleteReportedPost}
-            onApproveEvent={handleApproveEvent}
-            onRejectEvent={handleRejectEvent}
-        />,
-        profile: () => <UsersComponent
-            posts={posts}
-            currentUser={currentUser}
-            onLike={handleLikePost}
-            onShare={handleShareClick}
-            onAddComment={handleAddComment}
-            likedPosts={likedPosts}
-            openCommentPostId={openCommentPostId}
-            onOpenEventDetail={handleOpenEventDetail}
-            setOpenCommentPostId={setOpenCommentPostId}
-            onAddToCalendar={handleAddToCalendar}
-            setIsModalOpen={setIsModalOpen}
-            onDeletePost={handleDeletePost}
-            onEditPost={handleEditPost}
-            registrations={registrations}
-            onReportPost={handleOpenReportModal}
-            onEditProfile={() => setShowProfileSettingsModal(true)}
-            onShowCalendarAlert={handleShowCalendarAlert}
-            onExportData={handleExportRegistrations}
-        />,
+    const handleProfileClick = () => {
+        setActiveSection('profile');
+        setOpenCommentPostId(null);
+        setSelectedPost(null);
+        setSelectedEvent(null);
     };
 
-    const sectionSidebars = {
-        home: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
-        events: () => <EventsRightSidebar
-            posts={posts.filter(p => p.type === 'event')}
-            myCalendarEvents={myCalendarEvents}
-            onOpenEventDetail={handleOpenEventDetail}
-        />,
-        confessions: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
-        notifications: () => <NotificationsRightSidebar onShowHelpModal={() => setShowHelpModal(true)} />,
-        profile: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
+    const CurrentComponent = menuItems.find(item => item.id === activeSection)?.component || (() => null);
+    const CurrentRightSidebar = menuItems.find(item => item.id === activeSection)?.rightSidebar || (() => null);
+
+
+    const renderMainContent = () => {
+        // If a detailed view is open, render that.
+        if (selectedPost) {
+            return (
+                <div className="single-post-and-feed">
+                    <PostCard
+                        key={selectedPost._id}
+                        post={selectedPost}
+                        onLike={handleLikePost}
+                        onShare={handleShareClick}
+                        onAddComment={handleAddComment}
+                        likedPosts={likedPosts}
+                        isCommentsOpen={openCommentPostId === selectedPost._id}
+                        setOpenCommentPostId={setOpenCommentPostId}
+                        onOpenEventDetail={handleOpenEventDetail}
+                        onAddToCalendar={handleAddToCalendar}
+                        currentUser={currentUser}
+                        onDeletePost={handleDeletePost}
+                        onEditPost={handleEditPost}
+                        isProfileView={selectedPost.userId === currentUser?._id}
+                        registrationCount={registrations[selectedPost._id]}
+                        onReportPost={handleOpenReportModal}
+                        onShowCalendarAlert={handleShowCalendarAlert}
+                        isLoggedIn={isLoggedIn}
+                        onExportData={handleExportRegistrations}
+                    />
+                    <hr className="section-divider" />
+                    <h3 className="section-subtitle">More Posts</h3>
+                    <div className="posts-container">
+                        {posts
+                            .filter(p => p._id !== selectedPost._id)
+                            .map(post => (
+                                <PostCard
+                                    key={post._id}
+                                    post={post}
+                                    onLike={handleLikePost}
+                                    onShare={handleShareClick}
+                                    onAddComment={handleAddComment}
+                                    likedPosts={likedPosts}
+                                    isCommentsOpen={openCommentPostId === post._id}
+                                    setOpenCommentPostId={setOpenCommentPostId}
+                                    onOpenEventDetail={handleOpenEventDetail}
+                                    onAddToCalendar={handleAddToCalendar}
+                                    currentUser={currentUser}
+                                    isProfileView={false}
+                                    registrationCount={registrations[post._id]}
+                                    onReportPost={handleOpenReportModal}
+                                    onDeletePost={handleDeletePost}
+                                    onEditPost={handleEditPost}
+                                    onShowCalendarAlert={handleShowCalendarAlert}
+                                    isLoggedIn={isLoggedIn}
+                                    onExportData={handleExportRegistrations}
+                                />
+                            ))}
+                    </div>
+                </div>
+            );
+        }
+        if (selectedEvent) {
+            return (
+                <EventDetailPage
+                    event={selectedEvent}
+                    onClose={handleCloseEventDetail}
+                    isLoggedIn={isLoggedIn}
+                    onRequireLogin={() => setShowLoginModal(true)}
+                    onAddToCalendar={handleAddToCalendar}
+                    onRegister={(eventId, formData) => handleRegisterEvent(eventId, formData)}
+                    isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                    onShowCalendarAlert={handleShowCalendarAlert}
+                />
+            );
+        }
+
+        // Otherwise, render the component for the active section.
+        return <CurrentComponent />;
     };
 
-    const CurrentComponent = sectionComponents[activeSection] || (() => null);
-    const CurrentRightSidebar = sectionSidebars[activeSection] || (() => null);
+    const renderRightSidebar = () => {
+        if (selectedEvent) {
+            return (
+                <EventDetailSidebar
+                    events={posts}
+                    currentEvent={selectedEvent}
+                    onOpenEventDetail={handleOpenEventDetail}
+                />
+            );
+        }
+        // Otherwise, render the sidebar for the active section.
+        return <CurrentRightSidebar />;
+    };
 
     return (
         <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
-            {/* All Modals should be rendered first, but outside the main-layout-container logic */}
+            {/* All modals are rendered here to ensure they are on top of everything else */}
             <LoginModal
                 isOpen={showLoginModal}
                 onClose={() => setShowLoginModal(false)}
                 onLogin={handleLogin}
             />
-
             <ReportPostModal
                 isOpen={isReportModalOpen}
                 onClose={handleCloseReportModal}
                 onReport={handleReportPost}
                 post={reportPostData}
             />
-
             {currentUser && (
                 <ProfileSettingsModal
                     isOpen={showProfileSettingsModal}
@@ -4264,7 +4296,6 @@ const App = () => {
                     currentUser={currentUser}
                 />
             )}
-
             {currentUser && (
                 <CalendarModal
                     isOpen={showCalendarModal}
@@ -4276,20 +4307,16 @@ const App = () => {
                     }}
                 />
             )}
-
             <AddPostModal
                 isOpen={isModalOpen}
                 onClose={() => {
                     setIsModalOpen(false);
                     setPostToEdit(null);
-                    setSelectedPost(null); // FIX: Clear state on modal close
-                    setSelectedEvent(null); // FIX: Clear state on modal close
                 }}
                 onSubmit={handleAddPost}
                 postToEdit={postToEdit}
                 currentUser={currentUser}
             />
-
             <HelpAndSupportModal
                 isOpen={showHelpModal}
                 onClose={() => setShowHelpModal(false)}
@@ -4306,7 +4333,7 @@ const App = () => {
                 <div className="header-container">
                     <div className="header-content">
                         <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); }}>
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
                                 <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
                                 <span className="app-title">Confique</span>
                             </a>
@@ -4336,12 +4363,7 @@ const App = () => {
                                 <ProfileDropdown
                                     user={currentUser}
                                     onLogout={handleLogout}
-                                    onProfileClick={() => {
-                                        setActiveSection('profile');
-                                        setOpenCommentPostId(null);
-                                        setSelectedEvent(null);
-                                        setSelectedPost(null);
-                                    }}
+                                    onProfileClick={handleProfileClick} // Use the new handler function
                                 />
                             ) : (
                                 <button
@@ -4355,35 +4377,95 @@ const App = () => {
                     </div>
                 </div>
             </header>
+            
+            {/* Main content rendering is now wrapped in a single conditional block */}
+            {!isModalOpen && !selectedEvent && !selectedPost && (
+                <div className="main-layout-container">
+                    <aside className="left-sidebar">
+                        <nav className="sidebar-nav">
+                            {menuItems.filter(item => item.id !== 'profile').map(item => (
+                                <button
+                                    key={item.id}
+                                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (item.action) {
+                                            item.action();
+                                        } else {
+                                            setActiveSection(item.id);
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }
+                                    }}
+                                >
+                                    {item.icon}
+                                    <span className="nav-label">{item.label}</span>
+                                </button>
+                            ))}
+                            {currentUser && (
+                                <button
+                                    key="profile"
+                                    className={`nav-button ${activeSection === 'profile' ? 'active' : ''}`}
+                                    onClick={handleProfileClick}
+                                >
+                                    <User className="nav-icon" />
+                                    <span className="nav-label">Profile</span>
+                                </button>
+                            )}
+                        </nav>
+                    </aside>
 
-            <div className={`main-layout-container ${hasOpenModal ? 'modal-open' : ''}`}>
-                <aside className="left-sidebar">
-                    <nav className="sidebar-nav">
-                        {menuItems.map(item => (
-                            <button
-                                key={item.id}
-                                className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (item.action) {
-                                        item.action();
-                                    } else {
-                                        setActiveSection(item.id);
-                                        setOpenCommentPostId(null);
-                                        setSelectedEvent(null);
-                                        setSelectedPost(null);
-                                    }
-                                }}
-                            >
-                                {item.icon}
-                                <span className="nav-label">{item.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                </aside>
+                    <main className="main-content">
+                        <div className="content-padding">
+                            <CurrentComponent />
+                        </div>
+                    </main>
+                    <aside className="right-sidebar">
+                        <div className="right-sidebar-content">
+                            <CurrentRightSidebar />
+                        </div>
+                    </aside>
+                </div>
+            )}
 
-                <main className="main-content">
-                    <div className="content-padding">
-                        {selectedPost ? (
+            {/* This block handles the detailed view when a post or event is selected */}
+            {selectedPost && !isModalOpen && (
+                <div className="main-layout-container">
+                    <aside className="left-sidebar">
+                        <nav className="sidebar-nav">
+                             {menuItems.filter(item => item.id !== 'profile').map(item => (
+                                <button
+                                    key={item.id}
+                                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (item.action) {
+                                            item.action();
+                                        } else {
+                                            setActiveSection(item.id);
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }
+                                    }}
+                                >
+                                    {item.icon}
+                                    <span className="nav-label">{item.label}</span>
+                                </button>
+                            ))}
+                            {currentUser && (
+                                <button
+                                    key="profile"
+                                    className={`nav-button ${activeSection === 'profile' ? 'active' : ''}`}
+                                    onClick={handleProfileClick}
+                                >
+                                    <User className="nav-icon" />
+                                    <span className="nav-label">Profile</span>
+                                </button>
+                            )}
+                        </nav>
+                    </aside>
+                    <main className="main-content">
+                        <div className="content-padding">
                             <div className="single-post-and-feed">
                                 <PostCard
                                     key={selectedPost._id}
@@ -4436,7 +4518,53 @@ const App = () => {
                                         ))}
                                 </div>
                             </div>
-                        ) : selectedEvent ? (
+                        </div>
+                    </main>
+                    <aside className="right-sidebar">
+                        <div className="right-sidebar-content">
+                            <CurrentRightSidebar />
+                        </div>
+                    </aside>
+                </div>
+            )}
+            
+            {selectedEvent && !isModalOpen && (
+                 <div className="main-layout-container">
+                    <aside className="left-sidebar">
+                        <nav className="sidebar-nav">
+                             {menuItems.filter(item => item.id !== 'profile').map(item => (
+                                <button
+                                    key={item.id}
+                                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        if (item.action) {
+                                            item.action();
+                                        } else {
+                                            setActiveSection(item.id);
+                                            setOpenCommentPostId(null);
+                                            setSelectedEvent(null);
+                                            setSelectedPost(null);
+                                        }
+                                    }}
+                                >
+                                    {item.icon}
+                                    <span className="nav-label">{item.label}</span>
+                                </button>
+                            ))}
+                            {currentUser && (
+                                <button
+                                    key="profile"
+                                    className={`nav-button ${activeSection === 'profile' ? 'active' : ''}`}
+                                    onClick={handleProfileClick}
+                                >
+                                    <User className="nav-icon" />
+                                    <span className="nav-label">Profile</span>
+                                </button>
+                            )}
+                        </nav>
+                    </aside>
+                    <main className="main-content">
+                        <div className="content-padding">
                             <EventDetailPage
                                 event={selectedEvent}
                                 onClose={handleCloseEventDetail}
@@ -4447,49 +4575,20 @@ const App = () => {
                                 isRegistered={myRegisteredEvents.has(selectedEvent._id)}
                                 onShowCalendarAlert={handleShowCalendarAlert}
                             />
-                        ) : (
-                            <CurrentComponent
-                                posts={filteredPosts}
-                                onLike={handleLikePost}
-                                onShare={handleShareClick}
-                                onAddComment={handleAddComment}
-                                likedPosts={likedPosts}
-                                openCommentPostId={openCommentPostId}
-                                onOpenEventDetail={handleOpenEventDetail}
-                                setOpenCommentPostId={setOpenCommentPostId}
-                                onAddToCalendar={handleAddToCalendar}
-                                currentUser={currentUser}
-                                onDeletePost={handleDeletePost}
-                                onEditPost={handleEditPost}
-                                registrations={registrations}
-                                onReportPost={handleOpenReportModal}
-                                onShowCalendarAlert={handleShowCalendarAlert}
-                                onExportData={handleExportRegistrations}
-                            />
-                        )}
-                    </div>
-                </main>
-                <aside className="right-sidebar">
-                    <div className="right-sidebar-content">
-                        {selectedEvent ? (
-                            <EventDetailSidebar
+                        </div>
+                    </main>
+                    <aside className="right-sidebar">
+                        <div className="right-sidebar-content">
+                             <EventDetailSidebar
                                 events={posts}
                                 currentEvent={selectedEvent}
                                 onOpenEventDetail={handleOpenEventDetail}
                             />
-                        ) : (
-                            <CurrentRightSidebar
-                                posts={posts}
-                                onOpenPostDetail={handleOpenPostDetail}
-                                myCalendarEvents={myCalendarEvents}
-                                currentUser={currentUser}
-                                registrations={registrations}
-                                onShowHelpModal={() => setShowHelpModal(true)}
-                            />
-                        )}
-                    </div>
-                </aside>
-            </div>
+                        </div>
+                    </aside>
+                </div>
+            )}
+            
         </div>
     );
 };
