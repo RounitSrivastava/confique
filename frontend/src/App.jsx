@@ -489,10 +489,10 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         // Validate custom phone-like fields dynamically
         const phoneKeywords = ['phone', 'mobile', 'contact'];
-        const customPhoneFields = customFields.filter(field =>
-            phoneKeywords.some(keyword => field.toLowerCase().includes(keyword))
-        );
-
+        const customPhoneFields = customFields
+            .map(field => field.split(':')[0].trim()) // Extract only the field name before the colon
+            .filter(fieldName => phoneKeywords.some(keyword => fieldName.toLowerCase().includes(keyword)));
+            
         for (const field of customPhoneFields) {
             const fieldValue = formData[field];
             if (!/^\d{10}$/.test(fieldValue)) {
@@ -2411,7 +2411,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
