@@ -769,7 +769,7 @@ body {
 }
 
 .post-images {
-  display: flex;
+  display: grid;
   gap: 0.5rem;
   flex-wrap: wrap;
   margin-top: 0.75rem;
@@ -798,7 +798,7 @@ body {
 
 .post-image {
   width: 100%;
-  height: auto;
+  height: 250px;
   max-height: 250px;
   object-fit: contain;
   border-radius: 0.5rem;
@@ -1381,6 +1381,10 @@ body {
   .comment-section {
     padding: 4px !important;
   }
+   .post-image {
+        height: 200px; /* Adjust as needed for a better mobile view */
+        object-fit: cover;
+    }
 }
 
 .comment-section-header {
