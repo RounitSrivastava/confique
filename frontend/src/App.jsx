@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 // import confiquelogo from './assets/confiquelogo.jpg'; 
-import confiquelogo from './assets/A4 - 1 (4).png'; 
+import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png'; 
 import {
     Home,
     Calendar as CalendarIcon,
