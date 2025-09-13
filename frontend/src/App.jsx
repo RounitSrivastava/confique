@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 // import { Analytics } from "@vercel/analytics/next"
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
-// import confiquelogo from './assets/confiquelogo.jpg'; 
-import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png'; 
+// import confiquelogo from './assets/confiquelogo.jpg'; 
+import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
 import {
     Home,
     Calendar as CalendarIcon,
@@ -1609,20 +1609,20 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                                 </div>
                                 <div className="sidebar-event-time">
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="no-events-message">
-                            <CalendarPlus size={24} />
-                            <p>No upcoming events found</p>
-                        </div>
-                    )}
-                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="no-events-message">
+                        <CalendarPlus size={24} />
+                        <p>No upcoming events found</p>
+                    </div>
+                )}
             </div>
-        );
-    };
+        </div>
+    );
+};
 
 // Post Card Component - Displays a single post (confession, event, or news)
 const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
@@ -1843,6 +1843,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <button className="action-btn" onClick={handleAddToCalendarClick}>
                                     <CalendarPlus size={20} />
                                     <span>Add to Calendar</span>
+                                </button>
+                                <button
+                                    className={`action-btn registration-inline-btn ${post.registrationOpen ? '' : 'disabled'}`}
+                                    onClick={() => onOpenEventDetail(post)}
+                                    disabled={!post.registrationOpen}
+                                >
+                                    <Ticket size={20} />
+                                    <span>Register</span>
                                 </button>
                             </div>
                             {post.source && (
