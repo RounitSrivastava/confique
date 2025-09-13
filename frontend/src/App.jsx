@@ -439,7 +439,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 
 // Registration Form Modal Component for events
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
-    const initialFormData = {
+    const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
@@ -447,10 +447,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         ...(event.registrationFields ?
             Object.fromEntries(
                 event.registrationFields.split(',').map(field => [field.trim(), ''])
-            ) : {}),
-        selectedOption: '' // New state for the dropdown
-    };
-    const [formData, setFormData] = useState(initialFormData);
+            ) : {})
+    });
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     const [formSubmitted, setFormSubmitted] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -462,10 +460,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
         [];
-    
-    // NEW: Parse dropdown options from the event data
-    const dropdownOptions = event.eventOptions ? event.eventOptions.split(',').map(option => option.trim()) : [];
-
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -489,13 +483,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         // Validate the standard 'phone' field (assuming it's for a number)
         if (!/^\d{10}$/.test(formData.phone)) {
             setFormAlertMessage("Phone number must be exactly 10 digits.");
-            setShowFormAlert(true);
-            return;
-        }
-        
-        // NEW: Validate dropdown selection
-        if (dropdownOptions.length > 0 && !formData.selectedOption) {
-            setFormAlertMessage("Please select an event option.");
             setShowFormAlert(true);
             return;
         }
@@ -638,27 +625,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         required
                     />
                 </div>
-                
-                {/* NEW: Render dropdown if options exist */}
-                {dropdownOptions.length > 0 && (
-                    <div className="form-group">
-                        <label className="form-label">Select Option</label>
-                        <select
-                            name="selectedOption"
-                            className="form-input"
-                            value={formData.selectedOption}
-                            onChange={handleChange}
-                            required
-                        >
-                            <option value="">-- Select an option --</option>
-                            {dropdownOptions.map(option => (
-                                <option key={option} value={option}>
-                                    {option}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                )}
 
                 {/* Render custom fields dynamically */}
                 {customFields.map(field => (
@@ -740,7 +706,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         registrationOpen: true,
         enableRegistrationForm: false,
         registrationFields: '',
-        eventOptions: '', // NEW: Field for dropdown options
         paymentMethod: 'link',
         paymentLink: '',
         paymentQRCode: '',
@@ -778,7 +743,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
                 enableRegistrationForm: postToEdit.enableRegistrationForm || false,
                 registrationFields: postToEdit.registrationFields || '',
-                eventOptions: postToEdit.eventOptions || '', // NEW: Load event options
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
                 paymentQRCode: postToEdit.paymentQRCode || '',
@@ -842,7 +806,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: '',
                 enableRegistrationForm: false,
                 registrationFields: '',
-                eventOptions: '', // NEW: Clear event options
                 paymentMethod: 'link',
                 paymentLink: '',
                 paymentQRCode: ''
@@ -917,7 +880,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: '',
                 enableRegistrationForm: false,
                 registrationFields: '',
-                eventOptions: '', // NEW: Clear event options
                 paymentMethod: 'link',
                 paymentLink: '',
                 paymentQRCode: ''
@@ -927,7 +889,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 ...submissionData,
                 enableRegistrationForm: false,
                 registrationFields: '',
-                eventOptions: '', // NEW: Clear event options
                 paymentMethod: 'link',
                 paymentLink: '',
                 paymentQRCode: ''
@@ -1218,19 +1179,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             name="registrationFields"
                                                             placeholder="e.g., Roll Number, Branch, Semester"
                                                             required
-                                                        />
-                                                    </div>
-
-                                                    {/* NEW: Field for dropdown options */}
-                                                    <div className="form-group">
-                                                        <label className="form-label">Dropdown Options (comma-separated, optional)</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-input"
-                                                            value={formData.eventOptions}
-                                                            onChange={handleFormChange}
-                                                            name="eventOptions"
-                                                            placeholder="e.g., General, VIP, Student"
                                                         />
                                                     </div>
                                                     
@@ -1536,15 +1484,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                     <span>Add to Calendar</span>
                                 </button>
                             )}
-                            {/* Duplicate Registration button placed here */}
-                            <button
-                                className={`action-btn registration-inline-btn ${isButtonDisabled ? 'disabled' : ''}`}
-                                onClick={handleRegistrationClick}
-                                disabled={isButtonDisabled}
-                            >
-                                <Ticket size={20} />
-                                <span>{registrationButtonText()}</span>
-                            </button>
                         </div>
                         {event.source && (
                             <p className="event-source-small">
@@ -1905,9 +1844,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     <CalendarPlus size={20} />
                                     <span>Add to Calendar</span>
                                 </button>
-                                {/* NEW: Registration button on the card, inline with other actions */}
                                 <button
-                                    className={`action-btn registration-inline-btn ${!post.registrationOpen ? 'disabled' : ''}`}
+                                    className={`action-btn registration-inline-btn ${post.registrationOpen ? '' : 'disabled'}`}
                                     onClick={() => onOpenEventDetail(post)}
                                     disabled={!post.registrationOpen}
                                 >
