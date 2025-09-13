@@ -1506,7 +1506,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                     <div className="event-detail-about-section">
                         <h2>About the Event</h2>
-                        <p>
+                        <p style={{ whiteSpace: 'pre-wrap' }}>
                             {displayContent}
                             {hasMoreContent && (
                                 <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
