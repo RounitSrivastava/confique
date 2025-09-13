@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // import { Analytics } from "@vercel/analytics/next"
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
-// import confiquelogo from './assets/confiquelogo.jpg'; 
+// import confiquelogo from './assets/confiquelogo.jpg'; 
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
 import {
     Home,
@@ -446,7 +446,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         transactionId: '',
         ...(event.registrationFields ?
             Object.fromEntries(
-                event.registrationFields.split(',').map(field => [field.trim(), ''])
+                event.registrationFields.split(',').map(field => [field.split(':')[0].trim(), ''])
             ) : {})
     });
     const [showPaymentStep, setShowPaymentStep] = useState(false);
@@ -538,6 +538,54 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     };
 
     if (!isOpen) return null;
+    
+    // Renders the appropriate input or select based on the field format
+    const renderCustomField = (field) => {
+        const isDropdown = field.includes(':');
+        if (isDropdown) {
+            const [fieldName, optionsString] = field.split(':');
+            const options = optionsString.split('|'); // Use a different separator like '|' for options
+            const name = fieldName.trim();
+            return (
+                <div key={name} className="form-group">
+                    <label className="form-label">{name}</label>
+                    <select
+                        name={name}
+                        className="form-input"
+                        value={formData[name] || ''}
+                        onChange={handleChange}
+                        required
+                    >
+                        <option value="">Select an option</option>
+                        {options.map((option, index) => (
+                            <option key={index} value={option.trim()}>
+                                {option.trim()}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            );
+        } else {
+            // Existing logic for text input
+            const name = field.trim();
+            const phoneKeywords = ['phone', 'mobile', 'contact'];
+            const isPhoneField = phoneKeywords.some(keyword => name.toLowerCase().includes(keyword));
+            
+            return (
+                <div key={name} className="form-group">
+                    <label className="form-label">{name}</label>
+                    <input
+                        type={isPhoneField ? 'tel' : 'text'}
+                        name={name}
+                        className="form-input"
+                        value={formData[name] || ''}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+            );
+        }
+    };
 
     const renderFormContent = () => {
         if (showPaymentStep) {
@@ -628,20 +676,9 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
                 {/* Render custom fields dynamically */}
                 {customFields.map(field => (
-                    field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && (
-                        <div key={field} className="form-group">
-                            <label className="form-label">{field}</label>
-                            <input
-                                type="text"
-                                name={field}
-                                className="form-input"
-                                value={formData[field] || ''}
-                                onChange={handleChange}
-                                required
-                            />
-                        </div>
-                    )
+                    field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && renderCustomField(field)
                 ))}
+                
                 <div className="modal-actions">
                     <button type="button" className="btn-secondary" onClick={handleClose}>
                         Cancel
@@ -1177,7 +1214,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                             value={formData.registrationFields}
                                                             onChange={handleFormChange}
                                                             name="registrationFields"
-                                                            placeholder="e.g., Roll Number, Branch, Semester"
+                                                            placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
                                                             required
                                                         />
                                                     </div>
@@ -1258,7 +1295,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 
                             {/* Image Upload Section */}
                             <div className="form-group">
-                                <label className="form-label">Images (Max 4)</label>
+                                <label className="form-label">Images (Max 5)</label>
                                 <div className="image-upload-container">
                                     <div className="upload-btn-wrapper">
                                         <div className="upload-btn">
