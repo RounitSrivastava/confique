@@ -291,7 +291,7 @@
 
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const { Parser } = require('json2csv');
+const { Parser } = require('json2csv'); // NEW: For CSV generation
 const User = require('../models/User');
 const Post = require('../models/Post');
 const Registration = require('../models/Registration'); // NEW: Import the new model
@@ -454,7 +454,6 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         userId,
         name: req.body.name,
         email: req.body.email,
-        transactionId: req.body.transactionId || '',
     };
 
     // Conditionally add fields based on event type
@@ -462,12 +461,17 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         Object.assign(newRegistrationData, {
             phone: req.body.phone,
             customFields: req.body.customFields,
+            // transactionId and payment information are often added in a second step,
+            // so we'll handle them separately if present.
+            transactionId: req.body.transactionId,
         });
     } else if (event.type === 'culturalEvent') {
         Object.assign(newRegistrationData, {
             ticketType: req.body.ticketType,
             ticketQuantity: req.body.ticketQuantity,
             totalPrice: req.body.totalPrice,
+            // transactionId is now optional at this stage
+            transactionId: req.body.transactionId, 
         });
     }
 
@@ -583,7 +587,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
         }
     });
-    const customFields = [...customFieldsSet];
+    const customFields = [...customFields];
     fields = [...fields, ...customFields];
     fields.push('Registered At');
 
