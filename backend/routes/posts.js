@@ -528,6 +528,7 @@
 
 
 // module.exports = router;
+
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
@@ -590,10 +591,10 @@ router.get('/', asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Get all pending events and cultural events (for admin approval)
+// @desc    Get all pending events (for admin approval)
 // @route   GET /api/posts/pending-events
 // @access  Private (Admin only)
-// FIXED: Now correctly fetches both 'event' and 'culturalEvent' posts.
+// FIX: Now fetches both 'event' and 'culturalEvent' posts.
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
@@ -602,7 +603,7 @@ router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
 // @desc    Get all registrations for a specific event
 // @route   GET /api/posts/:id/registrations
 // @access  Private (Event creator or Admin only)
-// FIXED: Now allows exporting registrations for 'culturalEvent' as well.
+// FIX: Now allows viewing registrations for 'culturalEvent' as well.
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
@@ -615,7 +616,7 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
 
     if (!['event', 'culturalEvent'].includes(event.type)) {
         res.status(400);
-        throw new Error('This post is not an event or cultural event.');
+        throw new Error('This is not an event.');
     }
 
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
@@ -643,7 +644,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @desc    Create a new post
 // @route   POST /api/posts
 // @access  Private
-// FIXED: Added logic to handle the new 'culturalEvent' type and its fields.
+// FIX: Added logic to handle the new 'culturalEvent' type and its fields.
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -654,9 +655,9 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         price, language, duration, ticketsNeeded, venueAddress, registrationLink,
         registrationOpen, enableRegistrationForm, registrationFields,
         paymentMethod, paymentLink, paymentQRCode,
-        source, // For events
-        ticketOptions, // For cultural events
-        culturalPaymentMethod, culturalPaymentLink, culturalPaymentQRCode
+        source,
+        ticketOptions,
+        culturalPaymentMethod, culturalPaymentLink, culturalPaymentQRCode,
     } = req.body;
 
     let imageUrls = [];
@@ -666,7 +667,6 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         imageUrls = [await uploadImage(images)];
     }
 
-    // Determine which QR code to upload and save
     let qrCodeUrl = null;
     if (type === 'event' && paymentQRCode) {
         qrCodeUrl = await uploadImage(paymentQRCode);
@@ -674,7 +674,6 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         qrCodeUrl = await uploadImage(culturalPaymentQRCode);
     }
     
-    // Set status to pending for both event types
     const status = (type === 'event' || type === 'culturalEvent') ? 'pending' : 'approved';
 
     const postData = {
@@ -712,7 +711,6 @@ router.post('/', protect, asyncHandler(async (req, res) => {
             source,
         });
     } else if (type === 'culturalEvent') {
-        // New: Assign cultural event fields
         Object.assign(postData, {
             location,
             eventStartDate,
@@ -730,11 +728,10 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     res.status(201).json(createdPost);
 }));
 
-
 // @desc    Update a post
 // @route   PUT /api/posts/:id
 // @access  Private (Author or Admin only)
-// FIXED: Updated to handle both 'event' and 'culturalEvent' types correctly.
+// FIX: Updated to handle both 'event' and 'culturalEvent' types correctly.
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -768,10 +765,11 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.images = newImageUrls.filter(url => url !== null);
     }
 
-    // Handle old QR code deletion based on the post type
     let newQrCode = null;
-    if (rest.paymentQRCode || rest.culturalPaymentQRCode) {
-        const oldQrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
+    const oldQrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
+    const newQrCodeData = post.type === 'event' ? rest.paymentQRCode : rest.culturalPaymentQRCode;
+
+    if (newQrCodeData !== undefined) {
         if (oldQrCodeUrl && oldQrCodeUrl.includes('cloudinary')) {
             const parts = oldQrCodeUrl.split('/');
             const filename = parts[parts.length - 1];
@@ -781,7 +779,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
                 console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr);
             }
         }
-        newQrCode = await uploadImage(rest.paymentQRCode || rest.culturalPaymentQRCode);
+        newQrCode = newQrCodeData ? await uploadImage(newQrCodeData) : null;
     }
 
 
@@ -790,12 +788,10 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     post.title = title !== undefined ? title : post.title;
     post.content = content !== undefined ? content : post.content;
 
-    // Admin can change status
     if (req.user.isAdmin && status !== undefined) {
         post.status = status;
     }
 
-    // Update fields based on post type
     if (post.type === 'event') {
         post.location = rest.location !== undefined ? rest.location : post.location;
         post.eventStartDate = rest.eventStartDate !== undefined ? rest.eventStartDate : post.eventStartDate;
@@ -813,15 +809,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.paymentLink = rest.paymentLink !== undefined ? rest.paymentLink : post.paymentLink;
         post.paymentQRCode = newQrCode !== null ? newQrCode : post.paymentQRCode;
         post.source = rest.source !== undefined ? rest.source : post.source;
-
-        // Clear cultural event-specific fields
         post.ticketOptions = undefined;
         post.culturalPaymentMethod = undefined;
         post.culturalPaymentLink = undefined;
         post.culturalPaymentQRCode = undefined;
 
     } else if (post.type === 'culturalEvent') {
-        // New: Update cultural event specific fields
         post.location = rest.location !== undefined ? rest.location : post.location;
         post.eventStartDate = rest.eventStartDate !== undefined ? rest.eventStartDate : post.eventStartDate;
         post.eventEndDate = rest.eventEndDate !== undefined ? rest.eventEndDate : post.eventEndDate;
@@ -831,7 +824,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.culturalPaymentLink = rest.culturalPaymentLink !== undefined ? rest.culturalPaymentLink : post.culturalPaymentLink;
         post.culturalPaymentQRCode = newQrCode !== null ? newQrCode : post.culturalPaymentQRCode;
 
-        // Clear event-specific fields
         post.price = undefined;
         post.language = undefined;
         post.ticketsNeeded = undefined;
@@ -868,7 +860,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.culturalPaymentQRCode = undefined;
     }
 
-
     const updatedPost = await post.save();
     res.json(updatedPost);
 }));
@@ -876,7 +867,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 // @desc    Approve a pending event
 // @route   PUT /api/posts/approve-event/:id
 // @access  Private (Admin only)
-// FIXED: Now works for both 'event' and 'culturalEvent' types.
+// FIX: Now works for both 'event' and 'culturalEvent' types.
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -896,7 +887,7 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 // @desc    Reject and delete a pending event
 // @route   DELETE /api/posts/reject-event/:id
 // @access  Private (Admin only)
-// FIXED: Now works for both 'event' and 'culturalEvent' types.
+// FIX: Now works for both 'event' and 'culturalEvent' types.
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -942,7 +933,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 // @desc    Delete a post
 // @route   DELETE /api/posts/:id
 // @access  Private (Author or Admin only)
-// FIXED: Now handles cultural event QR code deletion as well.
+// FIX: Now handles cultural event QR code deletion as well.
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -1084,7 +1075,6 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
 }));
 
 // NEW ROUTE: GET /api/posts/export-registrations/:eventId
-// FIXED: Now correctly handles cultural event registrations for export.
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -1112,20 +1102,22 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     const customFields = Array.from(customFieldsSet);
     
     // Define the fields for the CSV with labels and values
-    // Use the actual field key from the database as the value, and the label as the display name
     const fields = [
         { label: 'Name', value: 'name' },
         { label: 'Email', value: 'email' },
         { label: 'Phone', value: 'phone' },
+        { label: 'Ticket Type', value: 'ticketType' },
+        { label: 'Quantity', value: 'ticketQuantity' },
+        { label: 'Total Price', value: 'totalPrice' },
+        { label: 'Transaction ID', value: 'transactionId' },
         ...customFields.map(fieldKey => ({
-            label: fieldKey, // Use the actual field key as the CSV header
-            value: (row) => row.customFields[fieldKey] || '' // Access the nested value with the correct key
+            label: fieldKey,
+            value: (row) => row.customFields[fieldKey] || ''
         })),
-        { label: 'Registered At', value: 'registeredAt' },
+        { label: 'Registered At', value: 'createdAt' },
     ];
 
     try {
-        // Prepare the data to be parsed. This is now simplified as the parser config handles the nesting.
         const json2csvParser = new Parser({ fields });
         const csv = json2csvParser.parse(registrations);
 

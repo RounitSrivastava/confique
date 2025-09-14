@@ -291,10 +291,10 @@
 
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const { Parser } = require('json2csv'); // NEW: For CSV generation
+const { Parser } = require('json2csv');
 const User = require('../models/User');
 const Post = require('../models/Post');
-const Registration = require('../models/Registration'); // NEW: Import the new model
+const Registration = require('../models/Registration');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
@@ -302,15 +302,16 @@ const cloudinary = require('cloudinary').v2;
 const router = express.Router();
 
 // Helper function to upload base64 images to Cloudinary
-const uploadImage = async (image) => {
+// FIX: This helper is now more generic to handle different folders.
+const uploadImage = async (image, folderName) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
-            folder: 'confique_avatars',
+            folder: folderName || 'confique_uploads', // Default folder
         });
         return result.secure_url;
     } catch (error) {
-        console.error('Cloudinary avatar upload failed:', error);
+        console.error('Cloudinary upload failed:', error);
         return null;
     }
 };
@@ -356,7 +357,8 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
                     console.error('Cloudinary deletion failed for old avatar:', cloudinaryErr);
                 }
             }
-            const imageUrl = await uploadImage(newAvatar);
+            // FIX: Use the generic uploadImage helper with the correct folder
+            const imageUrl = await uploadImage(newAvatar, 'confique_avatars');
             if (imageUrl) {
                 updatedAvatarUrl = imageUrl;
             } else {
@@ -397,7 +399,6 @@ router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
 // @desc    Get event IDs the current user has registered for
 // @route   GET /api/users/my-events-registrations
 // @access  Private
-// UPDATED: Now fetches from the new Registration model
 router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const registeredEvents = await Registration.find({ userId: userId }).select('eventId');
@@ -408,10 +409,8 @@ router.get('/my-events-registrations', protect, asyncHandler(async (req, res) =>
 // @desc    Get registration counts for events created by the logged-in user
 // @route   GET /api/users/my-events/registration-counts
 // @access  Private
-// UPDATED: Now gets counts from the new Registration model
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
     try {
-        // Find both 'event' and 'culturalEvent' posts created by the user
         const myEvents = await Post.find({ userId: req.user._id, type: { $in: ['event', 'culturalEvent'] } });
         const registrationCounts = {};
         
@@ -435,14 +434,12 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
     const { eventId } = req.params;
     const userId = req.user._id;
     
-    // Fetch the event to determine its type
     const event = await Post.findById(eventId);
     if (!event) {
         res.status(404);
         throw new Error('Event not found');
     }
 
-    // Prevent double registration
     const isAlreadyRegistered = await Registration.findOne({ eventId: eventId, userId: userId });
     if (isAlreadyRegistered) {
         res.status(400);
@@ -456,13 +453,10 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         email: req.body.email,
     };
 
-    // Conditionally add fields based on event type
     if (event.type === 'event') {
         Object.assign(newRegistrationData, {
             phone: req.body.phone,
             customFields: req.body.customFields,
-            // transactionId and payment information are often added in a second step,
-            // so we'll handle them separately if present.
             transactionId: req.body.transactionId,
         });
     } else if (event.type === 'culturalEvent') {
@@ -470,7 +464,6 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
             ticketType: req.body.ticketType,
             ticketQuantity: req.body.ticketQuantity,
             totalPrice: req.body.totalPrice,
-            // transactionId is now optional at this stage
             transactionId: req.body.transactionId, 
         });
     }
@@ -493,7 +486,6 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         res.status(201).json({ message: 'Registration successful', registration: newRegistration });
     } catch (error) {
         console.error('Registration failed:', error);
-        // Provide more detailed error to aid debugging on the frontend
         res.status(500).json({ message: `Server error during registration: ${error.message}` });
     }
 }));
@@ -511,7 +503,6 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
 // @desc    Admin endpoint to get all registrations for a specific event
 // @route   GET /api/users/admin/registrations/:eventId
 // @access  Private, Admin
-// UPDATED: Now fetches from the new Registration model and allows access to admins
 router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.eventId);
     
@@ -519,7 +510,6 @@ router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, re
         return res.status(404).json({ message: 'Event not found' });
     }
 
-    // Security check: Only the host or an admin can view this data
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'You are not authorized to view this data.' });
     }
@@ -538,7 +528,7 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     if (post) {
         await post.deleteOne();
         await Notification.deleteMany({ postId: postId });
-        await Registration.deleteMany({ eventId: postId }); // NEW: Delete registrations when the event is deleted
+        await Registration.deleteMany({ eventId: postId });
         res.json({ message: 'Post and associated data removed' });
     } else {
         res.status(404).json({ message: 'Post not found' });
@@ -546,8 +536,6 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
 }));
 
 // NEW ROUTE: GET /api/posts/export-registrations/:eventId
-// NOTE: For better organization, this route should ideally be in your posts.js file.
-// But it is included here for a single, comprehensive change.
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -555,17 +543,15 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     if (!event) {
         return res.status(404).json({ message: 'Event not found.' });
     }
-    // FIX: Allow both host and admin to export
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'Not authorized to export this data.' });
     }
     
-    const registrations = await Registration.find({ eventId });
+    const registrations = await Registration.find({ eventId }).lean();
     if (registrations.length === 0) {
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    // Determine CSV fields based on registration data
     const hasPhone = registrations.some(reg => reg.phone);
     const hasTicketInfo = registrations.some(reg => reg.ticketType);
     
@@ -580,17 +566,15 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     }
     if (registrations.some(reg => reg.transactionId)) fields.push('Transaction ID');
 
-    // Dynamically add custom fields from standard events
     let customFieldsSet = new Set();
     registrations.forEach(reg => {
         if (reg.customFields) {
             Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
         }
     });
-    const customFields = [...customFields];
+    const customFields = [...customFieldsSet];
     fields = [...fields, ...customFields];
     fields.push('Registered At');
-
 
     const data = registrations.map(reg => {
         const row = {
