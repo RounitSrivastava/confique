@@ -329,7 +329,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
             {isOpen && (
                 <div className="post-options-menu">
-                    {isAuthorOrAdmin && post.type === 'event' && (
+                    {isAuthorOrAdmin && (post.type === 'event' || post.type === 'culturalEvent') && (
                         <button className="post-option-item" onClick={handleEdit}>
                             <Edit3 size={16} />
                             <span>Edit</span>
@@ -724,6 +724,192 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     );
 };
 
+// NEW: Cultural Event Registration Modal
+const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+    const [selectedTicketIndex, setSelectedTicketIndex] = useState('');
+    const [ticketQuantity, setTicketQuantity] = useState(1);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [transactionId, setTransactionId] = useState('');
+    const [showFormAlert, setShowFormAlert] = useState(false);
+    const [formAlertMessage, setFormAlertMessage] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+
+    const selectedTicket = event.ticketOptions[selectedTicketIndex];
+    const totalPrice = selectedTicket ? selectedTicket.ticketPrice * ticketQuantity : 0;
+    const isFree = selectedTicket ? selectedTicket.ticketPrice === 0 : false;
+    const isPaymentMethodSet = event.paymentMethod === 'link' || event.paymentMethod === 'qr';
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!isLoggedIn) {
+            onRequireLogin();
+            return;
+        }
+        if (!name || !email || selectedTicketIndex === '') {
+            setFormAlertMessage("Please provide your name, email, and select a ticket.");
+            setShowFormAlert(true);
+            return;
+        }
+        
+        const registrationData = {
+            name,
+            email,
+            ticketQuantity,
+            totalPrice,
+            ticketType: selectedTicket.ticketType,
+            transactionId: transactionId || null,
+        };
+
+        if (!isFree && event.paymentMethod === 'qr' && (!transactionId || transactionId.length !== 4)) {
+            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+            setShowFormAlert(true);
+            return;
+        }
+
+        if (!isFree && event.paymentMethod === 'link' && !event.paymentLink) {
+             setFormAlertMessage("Payment link not provided by host. Please contact the event organizer.");
+             setShowFormAlert(true);
+             return;
+        }
+        
+        try {
+            await onRegister(event._id, registrationData);
+            setSuccessMessage(`Thank you ${name} for registering for ${event.title}!`);
+            setShowSuccessModal(true);
+        } catch (error) {
+            setFormAlertMessage(`Registration failed: ${error.message}`);
+            setShowFormAlert(true);
+        }
+    };
+    
+    const handlePaymentClick = () => {
+        if (!isFree && event.paymentMethod === 'link' && event.paymentLink) {
+            window.open(event.paymentLink, '_blank');
+        }
+    };
+
+    const handleClose = () => {
+        setShowSuccessModal(false);
+        onClose();
+    };
+
+    if (!isOpen || !event) return null;
+
+    return (
+        <div className="modal-overlay">
+            <div className="modal-content small-modal">
+                <div className="modal-header">
+                    <h2 className="modal-title">Register for {event.title}</h2>
+                    <button className="modal-close" onClick={onClose}>
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="modal-body">
+                    <form onSubmit={handleSubmit} className="modal-form">
+                        <div className="form-group">
+                            <label className="form-label">Full Name</label>
+                            <input type="text" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Email</label>
+                            <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                        </div>
+                        
+                        <div className="form-group">
+                            <label className="form-label">Select Ticket Type</label>
+                            <select className="form-input" value={selectedTicketIndex} onChange={(e) => setSelectedTicketIndex(e.target.value)} required>
+                                <option value="">Select a ticket</option>
+                                {event.ticketOptions.map((option, index) => (
+                                    <option key={index} value={index}>
+                                        {option.ticketType} (₹{option.ticketPrice})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {selectedTicket && (
+                            <div className="form-group">
+                                <label className="form-label">Quantity</label>
+                                <input
+                                    type="number"
+                                    className="form-input"
+                                    value={ticketQuantity}
+                                    onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                    min="1"
+                                    required
+                                />
+                            </div>
+                        )}
+                        
+                        <div className="total-price-display">
+                            <span>Total Price: </span>
+                            <strong>₹{totalPrice}</strong>
+                        </div>
+                        
+                        {selectedTicket && isPaymentMethodSet && !isFree && (
+                            <>
+                                {event.paymentMethod === 'link' && event.paymentLink && (
+                                    <div className="form-group">
+                                        <label className="form-label">Payment</label>
+                                        <button type="button" className="btn-secondary" onClick={handlePaymentClick}>
+                                            Pay Now
+                                        </button>
+                                    </div>
+                                )}
+                                {event.paymentMethod === 'qr' && event.paymentQRCode && (
+                                    <div className="form-group">
+                                        <label className="form-label">Payment via QR Code</label>
+                                        <img
+                                            src={event.paymentQRCode}
+                                            alt="Payment QR Code"
+                                            className="payment-qr"
+                                            loading="lazy"
+                                            decoding="async"
+                                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={transactionId}
+                                            onChange={(e) => setTransactionId(e.target.value)}
+                                            placeholder="Last 4 digits of Transaction ID"
+                                            maxLength={4}
+                                            required
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        
+                        <div className="modal-actions">
+                            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                            <button type="submit" className="btn-primary" disabled={selectedTicketIndex === ''}>
+                                {isFree ? 'Submit Registration' : 'Confirm Registration'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <CustomMessageModal
+                isOpen={showFormAlert}
+                onClose={() => setShowFormAlert(false)}
+                title="Validation Error"
+                message={formAlertMessage}
+                showConfirm={false}
+            />
+            <CustomMessageModal
+                isOpen={showSuccessModal}
+                onClose={handleClose}
+                title="Registration Successful!"
+                message={successMessage}
+                showConfirm={false}
+            />
+        </div>
+    );
+};
+
 // Add Post Modal Component (for creating/editing confessions and events)
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) => {
     // Initial form data structure
@@ -738,7 +924,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         price: 0,
         language: 'English',
         duration: '',
-        // Removed 'ticketsNeeded' from initialFormData
         registrationLink: '',
         registrationOpen: true,
         enableRegistrationForm: false,
@@ -746,8 +931,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         paymentMethod: 'link',
         paymentLink: '',
         paymentQRCode: '',
-        // NEW: Add source field for events
-        source: ''
+        source: '',
+        // NEW: Cultural Event Specific Fields
+        ticketOptions: [{ ticketType: '', ticketPrice: 0 }],
+        culturalPaymentMethod: 'link',
+        culturalPaymentLink: '',
+        culturalPaymentQRCode: '',
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -757,7 +946,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
     const [uploadAlertMessage, setUploadAlertMessage] = useState('');
     const fileInputRef = useRef(null);
     const qrFileInputRef = useRef(null);
-    // State for registration toggle and method
     const [hasRegistration, setHasRegistration] = useState(false);
     const [registrationMethod, setRegistrationMethod] = useState('');
 
@@ -774,7 +962,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 price: postToEdit.price || 0,
                 language: postToEdit.language || 'English',
                 duration: postToEdit.duration || '',
-                // Removed 'ticketsNeeded' from postToEdit mapping
                 venueAddress: postToEdit.venueAddress || '',
                 registrationLink: postToEdit.registrationLink || '',
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
@@ -783,13 +970,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
                 paymentQRCode: postToEdit.paymentQRCode || '',
-                // NEW: Load source from postToEdit
-                source: postToEdit.source || ''
+                source: postToEdit.source || '',
+                ticketOptions: postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }],
+                culturalPaymentMethod: postToEdit.culturalPaymentMethod || 'link',
+                culturalPaymentLink: postToEdit.culturalPaymentLink || '',
+                culturalPaymentQRCode: postToEdit.culturalPaymentQRCode || '',
             });
             setImagePreviews(postToEdit.images || []);
-            setPaymentQRPreview(postToEdit.paymentQRCode || '');
+            setPaymentQRPreview(postToEdit.paymentQRCode || postToEdit.culturalPaymentQRCode || '');
 
-            // Set registration state based on post data
             const requiresRegistration = !!postToEdit.registrationLink || postToEdit.enableRegistrationForm;
             setHasRegistration(requiresRegistration);
             if (postToEdit.registrationLink) {
@@ -806,7 +995,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             }));
             setImagePreviews([]);
             setPaymentQRPreview('');
-            // Initial state for new posts is now false for registration
             setHasRegistration(false);
             setRegistrationMethod('');
         }
@@ -820,6 +1008,28 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }));
     };
 
+    const handleTicketOptionChange = (index, e) => {
+        const { name, value } = e.target;
+        const newTicketOptions = [...formData.ticketOptions];
+        newTicketOptions[index] = {
+            ...newTicketOptions[index],
+            [name]: name === 'ticketPrice' ? parseFloat(value) || 0 : value,
+        };
+        setFormData(prev => ({ ...prev, ticketOptions: newTicketOptions }));
+    };
+
+    const addTicketOption = () => {
+        setFormData(prev => ({
+            ...prev,
+            ticketOptions: [...prev.ticketOptions, { ticketType: '', ticketPrice: 0 }]
+        }));
+    };
+
+    const removeTicketOption = (index) => {
+        const newTicketOptions = formData.ticketOptions.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, ticketOptions: newTicketOptions }));
+    };
+
     const handleTypeChange = (e) => {
         const newType = e.target.value;
         setFormData(prev => ({
@@ -827,12 +1037,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             type: newType,
             author: currentUser?.name || ''
         }));
-        // Reset registration state when switching post types
         setHasRegistration(false);
         setRegistrationMethod('');
     };
-
-    // Handle the registration toggle
+    
     const handleRegistrationToggle = () => {
         const newHasRegistration = !hasRegistration;
         setHasRegistration(newHasRegistration);
@@ -850,7 +1058,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }
     };
 
-    // Handle the registration method selection
     const handleRegistrationMethodChange = (method) => {
         setRegistrationMethod(method);
         setFormData(prev => ({
@@ -873,12 +1080,26 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
-        // Removed 'ticketsNeeded' from validation
-        if (formData.type === 'event' && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration)) {
-            setUploadAlertMessage("Please fill in all required event details (Location, Venue, Start Date, Duration).");
+        if (formData.type === 'event' && (!formData.location || !formData.eventStartDate || !formData.duration)) {
+            setUploadAlertMessage("Please fill in all required event details (Location, Start Date, Duration).");
             setShowUploadAlert(true);
             return;
         }
+
+        if (formData.type === 'culturalEvent') {
+            const hasEmptyTicketFields = formData.ticketOptions.some(option => !option.ticketType || option.ticketPrice < 0);
+            if (!formData.location || !formData.eventStartDate || !formData.duration || hasEmptyTicketFields) {
+                setUploadAlertMessage("Please fill in all required cultural event details (Location, Start Date, Duration, and all ticket options).");
+                setShowUploadAlert(true);
+                return;
+            }
+            if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
+                setUploadAlertMessage("Please upload a QR Code image for payment.");
+                setShowUploadAlert(true);
+                return;
+            }
+        }
+
 
         // Validate registration fields based on user selection
         if (formData.type === 'event' && hasRegistration) {
@@ -910,7 +1131,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         }
     
         let submissionData = { ...formData };
-        // Clear registration data if registration is not required
         if (!hasRegistration) {
             submissionData = {
                 ...submissionData,
@@ -941,14 +1161,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         submissionData = {
             ...submissionData,
             price: parseFloat(submissionData.price) || 0,
+            ticketOptions: formData.ticketOptions,
             registrationOpen: submissionData.registrationOpen === 'true' || submissionData.registrationOpen === true,
             images: imagePreviews,
             paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            // Add approval status based on post type
-            status: formData.type === 'event' ? 'pending' : 'approved'
+            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved'
         };
 
         onSubmit(submissionData);
@@ -1004,7 +1224,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 <div className="modal-content">
                     <div className="modal-header">
                         <h2 className="modal-title">
-                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Consights' : 'Event'}`}
+                            {postToEdit ? 'Edit Post' : `Add New ${formData.type === 'confession' ? 'Consights' : formData.type === 'event' ? 'Event' : 'Cultural Event'}`}
                         </h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
@@ -1023,6 +1243,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                 >
                                     <option value="confession">Consights</option>
                                     <option value="event">Event</option>
+                                    <option value="culturalEvent">Cultural Event</option>
                                 </select>
                             </div>
 
@@ -1054,7 +1275,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                             {/* Author name bar removed as it's set automatically */}
 
                             {/* Event-specific fields */}
-                            {formData.type === 'event' && (
+                            {(formData.type === 'event' || formData.type === 'culturalEvent') && (
                                 <div className="event-form-section">
                                     <div className="form-group">
                                         <label className="form-label">Location</label>
@@ -1065,29 +1286,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             onChange={handleFormChange}
                                             name="location"
                                             required
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Venue Address</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={formData.venueAddress}
-                                            onChange={handleFormChange}
-                                            name="venueAddress"
-                                            required
-                                        />
-                                    </div>
-
-                                    <div className="form-group">
-                                        <label className="form-label">Source Name</label>
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={formData.source}
-                                            onChange={handleFormChange}
-                                            name="source"
-                                            placeholder="e.g., Department of CS"
                                         />
                                     </div>
 
@@ -1126,165 +1324,267 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-                                    <div className="form-group">
-                                        <label className="form-label">Price (₹)</label>
-                                        <input
-                                            type="number"
-                                            className="form-input"
-                                            value={formData.price}
-                                            onChange={handleFormChange}
-                                            name="price"
-                                            min="0"
-                                            required
-                                        />
-                                    </div>
-                                    
-                                    {/* Registration Options Section */}
-                                    <div className="form-group">
-                                        <label className="form-label">Registration Required?</label>
-                                        <div className="registration-toggle-group">
-                                            <button
-                                                type="button"
-                                                className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
-                                                onClick={() => setHasRegistration(false)}
-                                            >
-                                                No
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
-                                                onClick={() => setHasRegistration(true)}
-                                            >
-                                                Yes
-                                            </button>
-                                        </div>
-                                    </div>
 
-                                    {/* Registration Method option, appears only if registration is required */}
-                                    {hasRegistration && (
-                                        <>
+                                    {/* Cultural Event Specific Fields */}
+                                    {formData.type === 'culturalEvent' && (
+                                        <div className="cultural-event-section">
                                             <div className="form-group">
-                                                <label className="form-label">Registration Method</label>
-                                                <div className="registration-method-options">
-                                                    <label className="radio-option">
-                                                        <input
-                                                            type="radio"
-                                                            name="registrationMethod"
-                                                            value="link"
-                                                            checked={registrationMethod === 'link'}
-                                                            onChange={() => handleRegistrationMethodChange('link')}
-                                                        />
-                                                        <span>External Link</span>
-                                                    </label>
-                                                    <label className="radio-option">
-                                                        <input
-                                                            type="radio"
-                                                            name="registrationMethod"
-                                                            value="form"
-                                                            checked={registrationMethod === 'form'}
-                                                            onChange={() => handleRegistrationMethodChange('form')}
-                                                        />
-                                                        <span>In-App Form</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            {registrationMethod === 'link' && (
-                                                <div className="form-group">
-                                                    <label className="form-label">Registration Link</label>
-                                                    <input
-                                                        type="url"
-                                                        className="form-input"
-                                                        value={formData.registrationLink}
-                                                        onChange={handleFormChange}
-                                                        name="registrationLink"
-                                                        placeholder="https://example.com/register"
-                                                        required
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {registrationMethod === 'form' && (
-                                                <>
-                                                    <div className="form-group">
-                                                        <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                <label className="form-label">Ticket Options</label>
+                                                {formData.ticketOptions.map((option, index) => (
+                                                    <div key={index} className="ticket-option-row">
                                                         <input
                                                             type="text"
+                                                            name="ticketType"
+                                                            placeholder="e.g., Adult Ticket"
+                                                            value={option.ticketType}
+                                                            onChange={(e) => handleTicketOptionChange(index, e)}
+                                                            required
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            name="ticketPrice"
+                                                            placeholder="Price (₹)"
+                                                            value={option.ticketPrice}
+                                                            onChange={(e) => handleTicketOptionChange(index, e)}
+                                                            min="0"
+                                                            required
+                                                        />
+                                                        <button type="button" onClick={() => removeTicketOption(index)}>
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                <button type="button" className="btn-secondary add-ticket-option" onClick={addTicketOption}>
+                                                    Add Ticket Option
+                                                </button>
+                                            </div>
+                                            <div className="form-group">
+                                                <label className="form-label">Payment Method</label>
+                                                <select
+                                                    className="form-select"
+                                                    value={formData.culturalPaymentMethod}
+                                                    onChange={handleFormChange}
+                                                    name="culturalPaymentMethod"
+                                                >
+                                                    <option value="link">Payment Link</option>
+                                                    <option value="qr">QR Code</option>
+                                                </select>
+                                                {formData.culturalPaymentMethod === 'link' && (
+                                                    <div className="form-group">
+                                                        <label className="form-label">Payment Link</label>
+                                                        <input
+                                                            type="url"
                                                             className="form-input"
-                                                            value={formData.registrationFields}
+                                                            value={formData.culturalPaymentLink}
                                                             onChange={handleFormChange}
-                                                            name="registrationFields"
-                                                            placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
+                                                            name="culturalPaymentLink"
+                                                            placeholder="https://example.com/payment"
                                                             required
                                                         />
                                                     </div>
-                                                    
-                                                    {formData.price > 0 && (
-                                                        <div className="form-group">
-                                                            <label className="form-label">Payment Method</label>
-                                                            <select
-                                                                className="form-select"
-                                                                value={formData.paymentMethod}
-                                                                onChange={handleFormChange}
-                                                                name="paymentMethod"
-                                                            >
-                                                                <option value="link">Payment Link</option>
-                                                                <option value="qr">QR Code</option>
-                                                            </select>
-
-                                                            {formData.paymentMethod === 'link' && (
-                                                                <div className="form-group">
-                                                                    <label className="form-label">Payment Link</label>
+                                                )}
+                                                {formData.culturalPaymentMethod === 'qr' && (
+                                                    <div className="form-group">
+                                                        <label className="form-label">QR Code Image</label>
+                                                        <div className="image-upload-container">
+                                                            {paymentQRPreview ? (
+                                                                <div className="payment-qr-preview">
+                                                                    <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                    <button
+                                                                        type="button"
+                                                                        className="remove-image-btn"
+                                                                        onClick={removeQRImage}
+                                                                    >
+                                                                        <ArrowLeft size={14} /> 
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                        <div className="upload-btn">
+                                                                            <ImageIcon size={16} />
+                                                                            <span>Upload QR Code</span>
+                                                                        </div>
+                                                                    </label>
                                                                     <input
-                                                                        type="url"
-                                                                        className="form-input"
-                                                                        value={formData.paymentLink}
-                                                                        onChange={handleFormChange}
-                                                                        name="paymentLink"
-                                                                        placeholder="https://example.com/payment"
-                                                                        required
+                                                                        id="qr-file-input"
+                                                                        ref={qrFileInputRef}
+                                                                        type="file"
+                                                                        accept="image/*"
+                                                                        onChange={handlePaymentQRUpload}
+                                                                        style={{ display: 'none' }}
                                                                     />
-                                                                </div>
-                                                            )}
-
-                                                            {formData.paymentMethod === 'qr' && (
-                                                                <div className="form-group">
-                                                                    <label className="form-label">QR Code Image</label>
-                                                                    <div className="image-upload-container">
-                                                                        {paymentQRPreview ? (
-                                                                            <div className="payment-qr-preview">
-                                                                                <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                                <button
-                                                                                    type="button"
-                                                                                    className="remove-image-btn"
-                                                                                    onClick={removeQRImage}
-                                                                                >
-                                                                                    {/* CHANGED: Icon from X to ArrowLeft */}
-                                                                                    <ArrowLeft size={14} /> 
-                                                                                </button>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <>
-                                                                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                                    <div className="upload-btn">
-                                                                                        <ImageIcon size={16} />
-                                                                                        <span>Upload QR Code</span>
-                                                                                    </div>
-                                                                                </label>
-                                                                                <input
-                                                                                    id="qr-file-input"
-                                                                                    ref={qrFileInputRef}
-                                                                                    type="file"
-                                                                                    accept="image/*"
-                                                                                    onChange={handlePaymentQRUpload}
-                                                                                    style={{ display: 'none' }}
-                                                                                />
-                                                                            </>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
+                                                                </>
                                                             )}
                                                         </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Event-specific fields */}
+                                    {formData.type === 'event' && (
+                                        <>
+                                            <div className="form-group">
+                                                <label className="form-label">Price (₹)</label>
+                                                <input
+                                                    type="number"
+                                                    className="form-input"
+                                                    value={formData.price}
+                                                    onChange={handleFormChange}
+                                                    name="price"
+                                                    min="0"
+                                                    required
+                                                />
+                                            </div>
+                                            
+                                            {/* Registration Options Section */}
+                                            <div className="form-group">
+                                                <label className="form-label">Registration Required?</label>
+                                                <div className="registration-toggle-group">
+                                                    <button
+                                                        type="button"
+                                                        className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
+                                                        onClick={() => setHasRegistration(false)}
+                                                    >
+                                                        No
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
+                                                        onClick={() => setHasRegistration(true)}
+                                                    >
+                                                        Yes
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Registration Method option, appears only if registration is required */}
+                                            {hasRegistration && (
+                                                <>
+                                                    <div className="form-group">
+                                                        <label className="form-label">Registration Method</label>
+                                                        <div className="registration-method-options">
+                                                            <label className="radio-option">
+                                                                <input
+                                                                    type="radio"
+                                                                    name="registrationMethod"
+                                                                    value="link"
+                                                                    checked={registrationMethod === 'link'}
+                                                                    onChange={() => handleRegistrationMethodChange('link')}
+                                                                />
+                                                                <span>External Link</span>
+                                                            </label>
+                                                            <label className="radio-option">
+                                                                <input
+                                                                    type="radio"
+                                                                    name="registrationMethod"
+                                                                    value="form"
+                                                                    checked={registrationMethod === 'form'}
+                                                                    onChange={() => handleRegistrationMethodChange('form')}
+                                                                />
+                                                                <span>In-App Form</span>
+                                                            </label>
+                                                        </div>
+                                                    </div>
+
+                                                    {registrationMethod === 'link' && (
+                                                        <div className="form-group">
+                                                            <label className="form-label">Registration Link</label>
+                                                            <input
+                                                                type="url"
+                                                                className="form-input"
+                                                                value={formData.registrationLink}
+                                                                onChange={handleFormChange}
+                                                                name="registrationLink"
+                                                                placeholder="https://example.com/register"
+                                                                required
+                                                            />
+                                                        </div>
+                                                    )}
+
+                                                    {registrationMethod === 'form' && (
+                                                        <>
+                                                            <div className="form-group">
+                                                                <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-input"
+                                                                    value={formData.registrationFields}
+                                                                    onChange={handleFormChange}
+                                                                    name="registrationFields"
+                                                                    placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
+                                                                    required
+                                                                />
+                                                            </div>
+                                                            
+                                                            {formData.price > 0 && (
+                                                                <div className="form-group">
+                                                                    <label className="form-label">Payment Method</label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={formData.paymentMethod}
+                                                                        onChange={handleFormChange}
+                                                                        name="paymentMethod"
+                                                                    >
+                                                                        <option value="link">Payment Link</option>
+                                                                        <option value="qr">QR Code</option>
+                                                                    </select>
+
+                                                                    {formData.paymentMethod === 'link' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">Payment Link</label>
+                                                                            <input
+                                                                                type="url"
+                                                                                className="form-input"
+                                                                                value={formData.paymentLink}
+                                                                                onChange={handleFormChange}
+                                                                                name="paymentLink"
+                                                                                placeholder="https://example.com/payment"
+                                                                                required
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {formData.paymentMethod === 'qr' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">QR Code Image</label>
+                                                                            <div className="image-upload-container">
+                                                                                {paymentQRPreview ? (
+                                                                                    <div className="payment-qr-preview">
+                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="remove-image-btn"
+                                                                                            onClick={removeQRImage}
+                                                                                        >
+                                                                                            <ArrowLeft size={14} /> 
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                                            <div className="upload-btn">
+                                                                                                <ImageIcon size={16} />
+                                                                                            </div>
+                                                                                        </label>
+                                                                                        <input
+                                                                                            id="qr-file-input"
+                                                                                            ref={qrFileInputRef}
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            onChange={handlePaymentQRUpload}
+                                                                                            style={{ display: 'none' }}
+                                                                                        />
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </>
                                             )}
@@ -1321,8 +1621,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                         className="remove-image-btn"
                                                         onClick={() => removeImage(index)}
                                                     >
-                                                        {/* CHANGED: Icon from X to ArrowLeft */}
-                                                        <ArrowLeft size={14} /> 
+                                                        <X size={14} /> 
                                                     </button>
                                                 </div>
                                             ))}
@@ -1662,7 +1961,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 };
 
 // Post Card Component - Displays a single post (confession, event, or news)
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -1688,6 +1987,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             case 'confession': return 'Consights';
             case 'event': return 'Event';
             case 'news': return 'News';
+            case 'culturalEvent': return 'Cultural Event';
             default: return 'Post';
         }
     };
@@ -1749,7 +2049,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             return;
         }
 
-        if (post.type === 'event' && post.eventStartDate) {
+        if (post.eventStartDate) {
             onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
         }
@@ -1817,7 +2117,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         {getPostTypeLabel(post.type)}
                     </span>
                     {/* Display PENDING badge for admin view */}
-                    {post.type === 'event' && post.status === 'pending' && currentUser?.isAdmin && (
+                    {(post.type === 'event' || post.type === 'culturalEvent') && post.status === 'pending' && currentUser?.isAdmin && (
                         <span className="post-status-badge pending">Pending</span>
                     )}
                     <PostOptions
@@ -1897,6 +2197,21 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             )}
                         </>
                     )}
+                    {post.type === 'culturalEvent' && (
+                        <div className="cultural-event-details">
+                            <ul className="ticket-options-list">
+                                {post.ticketOptions.map((option, index) => (
+                                    <li key={index} className="ticket-option-item">
+                                        <Ticket size={16} />
+                                        <span>{option.ticketType}: ₹{option.ticketPrice}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                            <button className="action-btn btn-primary" onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}>
+                                <Ticket size={18} /> Register Now
+                            </button>
+                        </div>
+                    )}
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
@@ -1964,7 +2279,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 };
 
 // Home Component - Displays a feed of posts
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -2003,7 +2318,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             )}
 
             <div className="posts-container">
-                {posts.filter(p => p.type !== 'news').map(post => (
+                {posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent').map(post => (
                     <PostCard
                         key={post._id}
                         post={post}
@@ -2100,6 +2415,48 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
         </div>
     );
 };
+
+// Cultural Events Component - Displays only cultural event posts
+const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
+    const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
+
+    return (
+        <div>
+            <div className="posts-container">
+                {culturalEventPosts.length > 0 ? (
+                    culturalEventPosts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            onShowRegistrationModal={onShowRegistrationModal}
+                            isProfileView={false}
+                            onReportPost={onReportPost}
+                            onDeletePost={onDeletePost}
+                            onEditPost={onEditPost}
+                            onShowCalendarAlert={onShowCalendarAlert}
+                            isLoggedIn={!!currentUser}
+                            onExportData={onExportData}
+                        />
+                    ))
+                ) : (
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">No cultural events found.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 // Notifications Component - Displays user notifications or admin reported posts
 const NotificationsComponent = ({ notifications, adminNotifications, pendingEvents, currentUser, onDeleteReportedPost, onApproveEvent, onRejectEvent }) => {
@@ -2322,7 +2679,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
 
 // Users Component - Displays user's profile and their posts
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
     if (!currentUser) {
         return (
             <div>
@@ -2414,6 +2771,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
+                            onShowRegistrationModal={onShowRegistrationModal}
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                         />
@@ -2481,9 +2839,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //       .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //       .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //       .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -2942,6 +3300,9 @@ const App = () => {
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [reportPostData, setReportPostData] = useState(null);
     const [showProfileSettingsModal, setShowProfileSettingsModal] = useState(false);
+    const [showCulturalEventRegistration, setShowCulturalEventRegistration] = useState(false);
+    const [selectedCulturalEvent, setSelectedCulturalEvent] = useState(null);
+
 
     // The state variable for managing modal visibility
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert;
@@ -3019,7 +3380,7 @@ const App = () => {
             // Filter posts based on user role
             const filteredData = data.filter(post => {
                 // If it's an event, only show it if it's approved OR the user is an admin and the post is pending.
-                if (post.type === 'event') {
+                if (post.type === 'event' || post.type === 'culturalEvent') {
                     return post.status === 'approved' || (currentUser?.isAdmin && post.status === 'pending');
                 }
                 // For other post types (consights, news), always show them
@@ -3207,7 +3568,8 @@ const App = () => {
     const filteredPosts = posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (post.type === 'culturalEvent' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleShowCalendarAlert = () => {
@@ -3245,7 +3607,7 @@ const App = () => {
 
             if (isDuplicate) {
                 console.log("4. Event is a duplicate. Not adding."); // DEBUG LOG
-                 setNotifications(notificationPrev => [
+                    setNotifications(notificationPrev => [
                     {
                         _id: `notif-${Date.now()}`,
                         message: `Event "${event.title}" is already in your calendar.`,
@@ -3368,28 +3730,25 @@ const App = () => {
                 setPostToEdit(null);
 
                 if (method === 'POST') {
-                    if (newPost.type === 'event' && newPost.status === 'pending') {
-                        // For events, we do not add to the main feed immediately
+                    if ((newPost.type === 'event' || newPost.type === 'culturalEvent') && newPost.status === 'pending') {
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
-                                message: `Your new event "${newPost.title}" has been submitted for admin approval.`,
+                                message: `Your new ${newPost.type} "${newPost.title}" has been submitted for admin approval.`,
                                 timestamp: new Date(),
                                 type: 'info'
                             },
                             ...prev
                         ]);
                         if (currentUser.isAdmin) {
-                            // If the user is an admin, fetch the updated list of pending events
                             fetchPendingEvents();
                         }
                     } else {
-                        // Consights posts are added directly
                         setPosts(prev => [formattedResponsePost, ...prev]);
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
-                                message: `Your new consights "${newPost.title}" has been posted successfully!`,
+                                message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
                                 timestamp: new Date(),
                                 type: 'success'
                             },
@@ -3397,7 +3756,6 @@ const App = () => {
                         ]);
                     }
                 } else {
-                    // Update post logic remains the same
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
                         {
@@ -3472,7 +3830,7 @@ const App = () => {
                 ]);
             }
         } catch (error) {
-            console.error('Error approving event:', error);
+            console.log('Error approving event:', error);
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
@@ -4116,9 +4474,39 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
+                isLoggedIn={!!currentUser}
                 onExportData={handleExportRegistrations}
             />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
+        },
+        {
+            id: 'cultural-events',
+            label: 'Cultural Events',
+            icon: <Ticket className="nav-icon" />,
+            action: () => setActiveSection('cultural-events'),
+            component: () => <CulturalEventsComponent
+                posts={filteredPosts.filter(post => post.type === 'culturalEvent')}
+                onLike={handleLikePost}
+                onShare={handleShareClick}
+                onAddComment={handleAddComment}
+                likedPosts={likedPosts}
+                openCommentPostId={openCommentPostId}
+                setOpenCommentPostId={setOpenCommentPostId}
+                onOpenEventDetail={handleOpenEventDetail}
+                onAddToCalendar={handleAddToCalendar}
+                currentUser={currentUser}
+                onShowRegistrationModal={(event) => {
+                    setSelectedCulturalEvent(event);
+                    setShowCulturalEventRegistration(true);
+                }}
+                onReportPost={handleOpenReportModal}
+                onDeletePost={handleDeletePost}
+                onEditPost={handleEditPost}
+                onShowCalendarAlert={handleShowCalendarAlert}
+                isLoggedIn={!!currentUser}
+                onExportData={handleExportRegistrations}
+            />,
+            rightSidebar: () => <EventsRightSidebar posts={posts.filter(p => p.type === 'culturalEvent')} myCalendarEvents={myCalendarEvents} onOpenEventDetail={handleOpenEventDetail} />,
         },
         {
             id: 'notifications',
@@ -4149,8 +4537,8 @@ const App = () => {
                 onAddComment={handleAddComment}
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
                 setOpenCommentPostId={setOpenCommentPostId}
+                onOpenEventDetail={handleOpenEventDetail}
                 onAddToCalendar={handleAddToCalendar}
                 setIsModalOpen={setIsModalOpen}
                 onDeletePost={handleDeletePost}
@@ -4159,6 +4547,11 @@ const App = () => {
                 onReportPost={handleOpenReportModal}
                 onEditProfile={() => setShowProfileSettingsModal(true)}
                 onShowCalendarAlert={handleShowCalendarAlert}
+                onShowRegistrationModal={(event) => {
+                    setSelectedCulturalEvent(event);
+                    setShowCulturalEventRegistration(true);
+                }}
+                isLoggedIn={!!currentUser}
                 onExportData={handleExportRegistrations}
             />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
@@ -4336,6 +4729,38 @@ const App = () => {
                 message="Your event has been saved. You can view it by opening the calendar."
                 showConfirm={false}
             />
+            {selectedCulturalEvent && (
+                <CulturalEventRegistrationModal
+                    isOpen={showCulturalEventRegistration}
+                    onClose={() => setShowCulturalEventRegistration(false)}
+                    event={selectedCulturalEvent}
+                    isLoggedIn={isLoggedIn}
+                    onRequireLogin={() => setShowLoginModal(true)}
+                    onRegister={async (eventId, data) => {
+                        console.log("Cultural event registration data:", data);
+                        try {
+                            const res = await callApi(`/users/register-event/${eventId}`, {
+                                method: 'POST',
+                                body: JSON.stringify(data),
+                            });
+                            if (!res.ok) {
+                                const errorData = await res.json();
+                                throw new Error(errorData.message || 'Unknown error');
+                            }
+                            setNotifications(prev => [
+                                { _id: Date.now().toString(), message: `You are now registered for "${selectedCulturalEvent.title}". See you there!`, timestamp: new Date(), type: 'success' },
+                                ...prev
+                            ]);
+                        } catch (err) {
+                            setNotifications(prev => [
+                                { _id: Date.now().toString(), message: `Registration for "${selectedCulturalEvent.title}" failed: ${err.message}`, timestamp: new Date(), type: 'error' },
+                                ...prev
+                            ]);
+                            throw err; 
+                        }
+                    }}
+                />
+            )}
 
             <header className="header">
                 <div className="header-container">
