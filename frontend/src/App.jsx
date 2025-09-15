@@ -509,7 +509,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             setShowPaymentStep(true);
         } else {
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
-            onRegister(event._id, formData);
+            onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
             setShowSuccessModal(true);
         }
     };
@@ -523,7 +523,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
         setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-        onRegister(event._id, formData);
+        onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
         setShowSuccessModal(true);
     };
 
@@ -835,6 +835,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             selectedTickets,
             totalPrice,
             transactionId: transactionId || null,
+            eventTitle: event.title,
+            type: event.type,
         };
 
         if (!isFree && event.culturalPaymentMethod === 'qr' && (!transactionId || transactionId.length < 4)) {
@@ -2512,7 +2514,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2895,7 +2897,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                                 onShowRegistrationModal(event);
                             }}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
@@ -3767,7 +3769,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `You are already registered for "${registrationData.title}".`,
+                    message: `You are already registered for "${registrationData.eventTitle}".`,
                     timestamp: new Date(),
                     type: 'info'
                 },
@@ -3786,7 +3788,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `You are now registered for "${registrationData.title}". See you there!`,
+                        message: `You are now registered for "${registrationData.eventTitle}". See you there!`,
                         timestamp: new Date(),
                         type: 'success'
                     },
@@ -3799,7 +3801,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${registrationData.title}" failed: ${errorData.message || 'Unknown error.'}`,
+                        message: `Registration for "${registrationData.eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3811,7 +3813,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Registration for "${registrationData.title}" failed due to network error.`,
+                    message: `Registration for "${registrationData.eventTitle}" failed due to network error.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -4813,7 +4815,7 @@ const App = () => {
                     isLoggedIn={isLoggedIn}
                     onRequireLogin={() => setShowLoginModal(true)}
                     onAddToCalendar={handleAddToCalendar}
-                    onRegister={(eventId, formData) => handleRegisterEvent(eventId, { ...formData, title: selectedEvent.title })}
+                    onRegister={(eventId, formData) => handleRegisterEvent(eventId, { ...formData, eventTitle: selectedEvent.title })}
                     isRegistered={myRegisteredEvents.has(selectedEvent._id)}
                     onShowCalendarAlert={handleShowCalendarAlert}
                 />
@@ -4900,7 +4902,6 @@ const App = () => {
                     isLoggedIn={isLoggedIn}
                     onRequireLogin={() => setShowLoginModal(true)}
                     onRegister={async (eventId, data) => {
-                        console.log("Cultural event registration data:", data);
                         try {
                             const res = await callApi(`/users/register-event/${eventId}`, {
                                 method: 'POST',
