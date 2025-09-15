@@ -778,8 +778,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
             numberOfDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
         }
-        numberOfDays = numberOfDays > 0 ? numberOfDays : 1; // Default to 1 day if no date is selected
-        
+
         return formData.ticketSelections.reduce((total, selection, index) => {
             const price = event.ticketOptions[index].ticketPrice;
             return total + (price * selection.quantity * numberOfDays);
@@ -1560,106 +1559,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 
                                                     {registrationMethod === 'form' && (
                                                         <>
-                                                            <div className="form-group">
-                                                                <label className="form-label">Custom Registration Fields (comma-separated)</label>
-                                                                <input
-                                                                    type="text"
-                                                                    className="form-input"
-                                                                    value={formData.registrationFields}
-                                                                    onChange={handleFormChange}
-                                                                    name="registrationFields"
-                                                                    placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
-                                                                    required
-                                                                />
-                                                            </div>
-
-                                                            {/* Payment options now live inside the form section for events */}
-                                                            {formData.type === 'event' && (
-                                                                <>
-                                                                    <div className="form-group">
-                                                                        <label className="form-label">Price (₹)</label>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="form-input"
-                                                                            value={formData.price}
-                                                                            onChange={handleFormChange}
-                                                                            name="price"
-                                                                            min="0"
-                                                                            required
-                                                                        />
-                                                                    </div>
-                                                                    {formData.price > 0 && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">Payment Method</label>
-                                                                            <select
-                                                                                className="form-select"
-                                                                                value={formData.paymentMethod}
-                                                                                onChange={handleFormChange}
-                                                                                name="paymentMethod"
-                                                                            >
-                                                                                <option value="link">Payment Link</option>
-                                                                                <option value="qr">QR Code</option>
-                                                                            </select>
-
-                                                                            {formData.paymentMethod === 'link' && (
-                                                                                <div className="form-group">
-                                                                                    <label className="form-label">Payment Link</label>
-                                                                                    <input
-                                                                                        type="url"
-                                                                                        className="form-input"
-                                                                                        value={formData.paymentLink}
-                                                                                        onChange={handleFormChange}
-                                                                                        name="paymentLink"
-                                                                                        placeholder="https://example.com/payment"
-                                                                                        required
-                                                                                    />
-                                                                                </div>
-                                                                            )}
-
-                                                                            {formData.paymentMethod === 'qr' && (
-                                                                                <div className="form-group">
-                                                                                    <label className="form-label">QR Code Image</label>
-                                                                                    <div className="image-upload-container">
-                                                                                        {paymentQRPreview ? (
-                                                                                            <div className="payment-qr-preview">
-                                                                                                <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                                                <button
-                                                                                                    type="button"
-                                                                                                    className="remove-image-btn"
-                                                                                                    onClick={removeQRImage}
-                                                                                                >
-                                                                                                    <X size={14} />
-                                                                                                </button>
-                                                                                            </div>
-                                                                                        ) : (
-                                                                                            <>
-                                                                                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                                                    <div className="upload-btn">
-                                                                                                        <ImageIcon size={16} />
-                                                                                                        <span>Upload QR Code</span>
-                                                                                                    </div>
-                                                                                                </label>
-                                                                                                <input
-                                                                                                    id="qr-file-input"
-                                                                                                    ref={qrFileInputRef}
-                                                                                                    type="file"
-                                                                                                    accept="image/*"
-                                                                                                    onChange={handlePaymentQRUpload}
-                                                                                                    style={{ display: 'none' }}
-                                                                                                />
-                                                                                            </>
-                                                                                        )}
-                                                                                    </div>
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-                                                                    )}
-                                                                </>
-                                                            )}
-                                                            {/* Cultural Event Specific Fields, if using in-app form */}
+                                                            {/* Cultural Event Specific Fields */}
                                                             {formData.type === 'culturalEvent' && (
                                                                 <div className="cultural-event-section">
-                                                                    <div className="form-group checkbox-group">
+                                                                     <div className="form-group checkbox-group">
                                                                         <input
                                                                             type="checkbox"
                                                                             id="isDateSelectionEnabled"
@@ -1763,11 +1666,92 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                     </div>
                                                                 </div>
                                                             )}
+
+                                                            {/* Custom fields for both types of in-app forms */}
+                                                            <div className="form-group">
+                                                                <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    className="form-input"
+                                                                    value={formData.registrationFields}
+                                                                    onChange={handleFormChange}
+                                                                    name="registrationFields"
+                                                                    placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
+                                                                    required
+                                                                />
+                                                            </div>
+
+                                                            {formData.type === 'event' && formData.price > 0 && (
+                                                                <div className="form-group">
+                                                                    <label className="form-label">Payment Method</label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={formData.paymentMethod}
+                                                                        onChange={handleFormChange}
+                                                                        name="paymentMethod"
+                                                                    >
+                                                                        <option value="link">Payment Link</option>
+                                                                        <option value="qr">QR Code</option>
+                                                                    </select>
+
+                                                                    {formData.paymentMethod === 'link' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">Payment Link</label>
+                                                                            <input
+                                                                                type="url"
+                                                                                className="form-input"
+                                                                                value={formData.paymentLink}
+                                                                                onChange={handleFormChange}
+                                                                                name="paymentLink"
+                                                                                placeholder="https://example.com/payment"
+                                                                                required
+                                                                            />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {formData.paymentMethod === 'qr' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">QR Code Image</label>
+                                                                            <div className="image-upload-container">
+                                                                                {paymentQRPreview ? (
+                                                                                    <div className="payment-qr-preview">
+                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                        <button
+                                                                                            type="button"
+                                                                                            className="remove-image-btn"
+                                                                                            onClick={removeQRImage}
+                                                                                        >
+                                                                                            <X size={14} />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                                            <div className="upload-btn">
+                                                                                                <ImageIcon size={16} />
+                                                                                                <span>Upload QR Code</span>
+                                                                                            </div>
+                                                                                        </label>
+                                                                                        <input
+                                                                                            id="qr-file-input"
+                                                                                            ref={qrFileInputRef}
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            onChange={handlePaymentQRUpload}
+                                                                                            style={{ display: 'none' }}
+                                                                                        />
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                         </>
                                                     )}
                                                 </>
                                             )}
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             )}
@@ -3355,8 +3339,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
             const hasEvent = myCalendarEvents.some(event =>
-                event.eventStartDate &&
-                new Date(event.eventStartDate).toDateString() === date.toDateString()
+                event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
             return hasEvent ? <div className="event-dot"></div> : null;
         }
