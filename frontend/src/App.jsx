@@ -729,6 +729,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState(''); // NEW: Phone number state
+    const [bookingDate, setBookingDate] = useState(''); // NEW: Booking date state
     const [transactionId, setTransactionId] = useState('');
     const [ticketSelections, setTicketSelections] = useState(() => event.ticketOptions.map(() => ({ quantity: 0 })));
     
@@ -737,11 +739,14 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
+    const [selectedDate, setSelectedDate] = useState(event.eventStartDate ? new Date(event.eventStartDate) : new Date()); // State for date selection
 
     useEffect(() => {
         if (isOpen) {
             setName('');
             setEmail('');
+            setPhone(''); // Reset phone number
+            setBookingDate(''); // Reset booking date
             setTransactionId('');
             setTicketSelections(event.ticketOptions.map(() => ({ quantity: 0 })));
             setShowPaymentStep(false);
@@ -749,6 +754,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
+            setSelectedDate(event.eventStartDate ? new Date(event.eventStartDate) : new Date()); // Set initial date
         }
     }, [isOpen, event]);
 
@@ -776,8 +782,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             onRequireLogin();
             return;
         }
-        if (!name || !email) {
-            setFormAlertMessage("Please provide your name and email.");
+        if (!name || !email || !phone || !bookingDate) {
+            setFormAlertMessage("Please provide your name, email, phone number, and a booking date.");
             setShowFormAlert(true);
             return;
         }
@@ -808,6 +814,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         const registrationData = {
             name,
             email,
+            phone, // NEW: Include phone number
+            bookingDate: bookingDate, // NEW: Include booking date
             selectedTickets,
             totalPrice,
             transactionId: transactionId || null,
@@ -852,6 +860,27 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             <div className="form-group">
                 <label className="form-label">Email</label>
                 <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div className="form-group">
+                <label className="form-label">Phone Number</label>
+                <input
+                    type="tel"
+                    className="form-input"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g., 9876543210"
+                    required
+                />
+            </div>
+            <div className="form-group">
+                <label className="form-label">Date of Booking</label>
+                <input
+                    type="date"
+                    className="form-input"
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    required
+                />
             </div>
             
             <div className="ticket-options-container">
@@ -2899,18 +2928,18 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //        .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //        .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
             <div className="calendar-widget">
                 <div className="widget-content calendar-container">
                     <Calendar
-                        onChange={onChange}
+                        onChange={onChange} // Updates the selected date
                         value={value}
-                        tileContent={tileContent}
+                        tileContent={tileContent} // Renders event ticks
                         className="react-calendar"
                         prev2Label={null}
                         next2Label={null}
