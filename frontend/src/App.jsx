@@ -3756,7 +3756,7 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
-    const handleRegisterEvent = async (eventId, formData) => {
+    const handleRegisterEvent = async (eventId, registrationData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
             setShowLoginModal(true);
@@ -3767,7 +3767,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `You are already registered for "${formData.title}".`,
+                    message: `You are already registered for "${registrationData.title}".`,
                     timestamp: new Date(),
                     type: 'info'
                 },
@@ -3777,17 +3777,16 @@ const App = () => {
         }
 
         try {
-            // Correctly passing the formData in the request body
             const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
-                body: JSON.stringify(formData),
+                body: JSON.stringify(registrationData),
             });
             if (res.ok) {
                 setMyRegisteredEvents(prev => new Set(prev).add(eventId));
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `You are now registered for "${formData.title}". See you there!`,
+                        message: `You are now registered for "${registrationData.title}". See you there!`,
                         timestamp: new Date(),
                         type: 'success'
                     },
@@ -3800,7 +3799,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${formData.title}" failed: ${errorData.message || 'Unknown error.'}`,
+                        message: `Registration for "${registrationData.title}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3812,7 +3811,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Registration for "${formData.title}" failed due to network error.`,
+                    message: `Registration for "${registrationData.title}" failed due to network error.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
