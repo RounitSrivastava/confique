@@ -438,25 +438,23 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
     );
 };
 
-// Registration Form Modal Component for events
+// Registration Form Modal Component for standard events
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         phone: '',
         transactionId: '',
-        ...(event.registrationFields ?
+        ...event.registrationFields ?
             Object.fromEntries(
                 event.registrationFields.split(',').map(field => [field.split(':')[0].trim(), ''])
-            ) : {})
+            ) : {}
     });
     const [showPaymentStep, setShowPaymentStep] = useState(false);
-    const [formSubmitted, setFormSubmitted] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showFormAlert, setShowFormAlert] = useState(false);
     const [formAlertMessage, setFormAlertMessage] = useState('');
-    const qrCodeRef = useRef(null);
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -481,14 +479,12 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
 
-        // Validate the standard 'phone' field (assuming it's for a number)
         if (!/^\d{10}$/.test(formData.phone)) {
             setFormAlertMessage("Phone number must be exactly 10 digits.");
             setShowFormAlert(true);
             return;
         }
 
-        // Validate custom phone-like fields dynamically
         const phoneKeywords = ['phone', 'mobile', 'contact'];
         const customPhoneFields = customFields
             .map(field => field.split(':')[0].trim())
@@ -503,9 +499,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             }
         }
 
-        setFormSubmitted(true);
-
-        if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
+        if (event.price > 0 && event.paymentMethod === 'qr') {
             setShowPaymentStep(true);
         } else {
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -516,7 +510,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
     const handlePaymentConfirm = (e) => {
         e.preventDefault();
-
         if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
@@ -529,7 +522,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
     const handleClose = () => {
         setShowPaymentStep(false);
-        setFormSubmitted(false);
         onClose();
     };
 
@@ -540,12 +532,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
     if (!isOpen) return null;
 
-    // Renders the appropriate input or select based on the field format
     const renderCustomField = (field) => {
         const isDropdown = field.includes(':');
         if (isDropdown) {
             const [fieldName, optionsString] = field.split(':');
-            const options = optionsString.split('|'); // Use a different separator like '|' for options
+            const options = optionsString.split('|');
             const name = fieldName.trim();
             return (
                 <div key={name} className="form-group">
@@ -567,7 +558,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                 </div>
             );
         } else {
-            // Existing logic for text input
             const name = field.trim();
             const phoneKeywords = ['phone', 'mobile', 'contact'];
             const isPhoneField = phoneKeywords.some(keyword => name.toLowerCase().includes(keyword));
@@ -595,7 +585,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                     <div className="payment-step">
                         <h3>Complete Your Payment</h3>
                         <p>Please scan the QR code to make your payment and enter the transaction details below.</p>
-                        <div className="qr-payment-section" ref={qrCodeRef}>
+                        <div className="qr-payment-section">
                             <img
                                 src={event.paymentQRCode}
                                 alt="Payment QR Code"
@@ -675,7 +665,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                     />
                 </div>
 
-                {/* Render custom fields dynamically */}
                 {customFields.map(field => (
                     field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && renderCustomField(field)
                 ))}
@@ -725,12 +714,12 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     );
 };
 
-// NEW: Cultural Event Registration Modal
+// Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
-    const [selectedDates, setSelectedDates] = useState([]); // Array to store multiple dates
+    const [selectedDates, setSelectedDates] = useState([]);
     const [transactionId, setTransactionId] = useState('');
     const [ticketSelections, setTicketSelections] = useState(() => event.ticketOptions.map(() => ({ quantity: 0 })));
 
@@ -740,7 +729,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
 
-    // Convert event start/end dates to Date objects
     const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
     const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
@@ -767,7 +755,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const calculateTotalPrice = () => {
-        // Calculate number of days in the selected range
         let numberOfDays = 0;
         if (selectedDates.length > 0) {
             const startDate = selectedDates[0];
@@ -777,7 +764,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
         return ticketSelections.reduce((total, selection, index) => {
             const price = event.ticketOptions[index].ticketPrice;
-            // Total price is now (price * quantity) * number of days
             return total + (price * selection.quantity * numberOfDays);
         }, 0);
     };
@@ -2444,7 +2430,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2514,7 +2500,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2550,7 +2536,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={onAddComment}
+                            onAddComment={handleAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2897,7 +2883,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                                 onShowRegistrationModal(event);
                             }}
                             isLoggedIn={!!currentUser}
-                            onExportData={handleExportRegistrations}
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
@@ -3764,12 +3750,18 @@ const App = () => {
             setShowLoginModal(true);
             return;
         }
-
+    
+        const post = posts.find(p => p._id === eventId);
+        if (!post) {
+            console.error('Post not found for registration.');
+            return;
+        }
+    
         if (myRegisteredEvents.has(eventId)) {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `You are already registered for "${registrationData.eventTitle}".`,
+                    message: `You are already registered for "${post.title}".`,
                     timestamp: new Date(),
                     type: 'info'
                 },
@@ -3777,7 +3769,7 @@ const App = () => {
             ]);
             return;
         }
-
+    
         try {
             const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
@@ -3788,7 +3780,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `You are now registered for "${registrationData.eventTitle}". See you there!`,
+                        message: `You are now registered for "${post.title}". See you there!`,
                         timestamp: new Date(),
                         type: 'success'
                     },
@@ -3801,7 +3793,7 @@ const App = () => {
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
-                        message: `Registration for "${registrationData.eventTitle}" failed: ${errorData.message || 'Unknown error.'}`,
+                        message: `Registration for "${post.title}" failed: ${errorData.message || 'Unknown error.'}`,
                         timestamp: new Date(),
                         type: 'error'
                     },
@@ -3813,7 +3805,7 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Registration for "${registrationData.eventTitle}" failed due to network error.`,
+                    message: `Registration for "${post.title}" failed due to network error.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
@@ -3821,7 +3813,8 @@ const App = () => {
             ]);
         }
     };
-
+    
+    
     const handleAddPost = async (newPost) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for posting.');
@@ -4581,6 +4574,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
+                isLoggedIn={!!currentUser}
                 onExportData={handleExportRegistrations}
                 onShowRegistrationModal={(event) => {
                     setSelectedCulturalEvent(event);
@@ -4610,6 +4604,7 @@ const App = () => {
                 onDeletePost={handleDeletePost}
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
+                isLoggedIn={!!currentUser}
                 onExportData={handleExportRegistrations}
             />,
             rightSidebar: () => <EventsRightSidebar
@@ -4808,20 +4803,37 @@ const App = () => {
             );
         }
         if (selectedEvent) {
+            const isCultural = selectedEvent.type === 'culturalEvent';
             return (
-                <EventDetailPage
-                    event={selectedEvent}
-                    onClose={handleCloseEventDetail}
-                    isLoggedIn={isLoggedIn}
-                    onRequireLogin={() => setShowLoginModal(true)}
-                    onAddToCalendar={handleAddToCalendar}
-                    onRegister={(eventId, formData) => handleRegisterEvent(eventId, { ...formData, eventTitle: selectedEvent.title })}
-                    isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                    onShowCalendarAlert={handleShowCalendarAlert}
-                />
+                <div className="main-content-detail-view">
+                    <button className="back-to-feed-btn" onClick={handleCloseEventDetail}>
+                        <ArrowLeft /> Back to Feed
+                    </button>
+                    {isCultural ? (
+                        <CulturalEventRegistrationModal
+                            isOpen={true}
+                            onClose={handleCloseEventDetail}
+                            event={selectedEvent}
+                            isLoggedIn={isLoggedIn}
+                            onRequireLogin={() => setShowLoginModal(true)}
+                            onRegister={(eventId, data) => handleRegisterEvent(eventId, { ...data, type: 'culturalEvent' })}
+                        />
+                    ) : (
+                        <EventDetailPage
+                            event={selectedEvent}
+                            onClose={handleCloseEventDetail}
+                            isLoggedIn={isLoggedIn}
+                            onRequireLogin={() => setShowLoginModal(true)}
+                            onAddToCalendar={handleAddToCalendar}
+                            onRegister={(eventId, data) => handleRegisterEvent(eventId, { ...data, type: 'event' })}
+                            isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                            onShowCalendarAlert={handleShowCalendarAlert}
+                        />
+                    )}
+                </div>
             );
         }
-
+        
         // Otherwise, render the component for the active section.
         return <CurrentComponent />;
     };
