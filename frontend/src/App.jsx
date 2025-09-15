@@ -2229,15 +2229,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         style={{ whiteSpace: 'pre-wrap' }} 
                     >
                         {post.content}
+                        {needsShowMore && (
+                            <button
+                                className="show-more-button"
+                                onClick={() => setShowFullContent(!showFullContent)}
+                            >
+                                {showFullContent ? 'Show Less' : 'Show More'}
+                            </button>
+                        )}
                     </p>
-                    {needsShowMore && (
-                        <button
-                            className="show-more-button"
-                            onClick={() => setShowFullContent(!showFullContent)}
-                        >
-                            {showFullContent ? 'Show Less' : 'Show More'}
-                        </button>
-                    )}
                 </div>
 
                 {post.images && post.images.length > 0 && (
@@ -2399,6 +2399,9 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onShowCalendarAlert={onShowCalendarAlert}
                                 isLoggedIn={!!currentUser}
                                 onExportData={onExportData}
+                                onShowRegistrationModal={(event) => {
+                                    onShowRegistrationModal(event);
+                                }}
                             />
                         ))}
                     </div>
@@ -2526,7 +2529,9 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             onOpenEventDetail={onOpenEventDetail}
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
-                            onShowRegistrationModal={onShowRegistrationModal}
+                            onShowRegistrationModal={(event) => {
+                                onShowRegistrationModal(event);
+                            }}
                             isProfileView={false}
                             onReportPost={onReportPost}
                             onDeletePost={onDeletePost}
@@ -2860,7 +2865,9 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             registrationCount={registrations[post._id]}
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
-                            onShowRegistrationModal={onShowRegistrationModal}
+                            onShowRegistrationModal={(event) => {
+                                onShowRegistrationModal(event);
+                            }}
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                         />
@@ -2928,9 +2935,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
