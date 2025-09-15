@@ -1210,6 +1210,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: '',
             };
         }
+        
+        // FIX: Correctly set the QR code field based on post type
+        if (submissionData.type === 'culturalEvent') {
+            submissionData.culturalPaymentQRCode = paymentQRPreview;
+        } else {
+            submissionData.paymentQRCode = paymentQRPreview;
+        }
 
         submissionData = {
             ...submissionData,
@@ -1217,7 +1224,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             ticketOptions: formData.ticketOptions,
             registrationOpen: submissionData.registrationOpen === 'true' || submissionData.registrationOpen === true,
             images: imagePreviews,
-            paymentQRCode: paymentQRPreview,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
@@ -2811,7 +2817,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onShowCalendarAlert={onShowCalendarAlert}
                             onShowRegistrationModal={onShowRegistrationModal}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData} // Corrected line
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
@@ -4521,7 +4527,7 @@ const App = () => {
                 posts={filteredPosts.filter(post => post.type === 'culturalEvent')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
-                onAddComment={handleAddComment} // Corrected line
+                onAddComment={handleAddComment}
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
                 setOpenCommentPostId={setOpenCommentPostId}
