@@ -1093,7 +1093,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 source: postToEdit.source || '',
                 ticketOptions: postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }],
                 culturalPaymentMethod: postToEdit.culturalPaymentMethod || 'link',
-                culturalPaymentLink: postToedit.culturalPaymentLink || '',
+                culturalPaymentLink: postToEdit.culturalPaymentLink || '',
                 culturalPaymentQRCode: postToEdit.culturalPaymentQRCode || '',
                 isDateSelectionEnabled: postToEdit.isDateSelectionEnabled || false,
             });
@@ -2547,7 +2547,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={onAddComment}
+                            onAddComment={handleAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
