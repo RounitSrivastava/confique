@@ -740,8 +740,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     
-    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : new Date();
-    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : new Date();
+    // Convert event start/end dates to Date objects
+    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
+    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
     useEffect(() => {
         if (isOpen) {
@@ -766,7 +767,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const calculateTotalPrice = () => {
-        const numberOfDays = selectedDates.length;
+        // Calculate number of days in the selected range
+        let numberOfDays = 0;
+        if (selectedDates.length > 0) {
+            const startDate = selectedDates[0];
+            const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
+            numberOfDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
+        }
 
         return ticketSelections.reduce((total, selection, index) => {
             const price = event.ticketOptions[index].ticketPrice;
@@ -886,7 +893,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <div className="form-group">
                     <label className="form-label">Select Booking Date(s)</label>
                     <Calendar
-                        onChange={(dates) => setSelectedDates(Array.isArray(dates) ? dates : [dates])}
+                        onChange={setSelectedDates}
                         value={selectedDates}
                         minDate={eventStartDate}
                         maxDate={eventEndDate}
@@ -1457,7 +1464,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                     checked={formData.isDateSelectionEnabled}
                                                     onChange={handleFormChange}
                                                 />
-                                                <label htmlFor="isDateSelectionEnabled">Allow users to select dates from a calendar</label>
+                                                <label htmlFor="isDateSelectionEnabled">Allow users to select date from a calendar</label>
                                             </div>
                                             <div className="form-group">
                                                 <label className="form-label">Ticket Options</label>
@@ -2115,11 +2122,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
-        if (!isLoggedIn) {
+        if (isLoggedIn) {
+            setOpenCommentPostId(isCommentsOpen ? null : post._id);
+        } else {
+            // Show a login prompt if not logged in
             alert("Please log in to comment.");
-            return;
         }
-        setOpenCommentPostId(isCommentsOpen ? null : post._id);
     };
 
     const handleBackArrowClick = (e) => {
@@ -2145,16 +2153,19 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     }, [isCommentsOpen, setOpenCommentPostId]);
 
     const handleAddToCalendarClick = () => {
+        console.log("Button clicked. Attempting to add event:", post); // DEBUG LOG
         if (!isLoggedIn) {
             alert("Please log in to add events to your calendar.");
             return;
         }
+        // NEW: Check if event or eventStartDate is missing before adding
         if (!post || !post.eventStartDate) {
+            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             return;
         }
 
         if (post.eventStartDate) {
-            onAddToCalendar(post);
+            onAddToCalendar(post); // This saves the event
             onShowCalendarAlert();
         }
     };
@@ -2443,7 +2454,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onReportPost={onReportPost}
                         onDeletePost={onDeletePost} 
                         onEditPost={onEditPost}
-                        onShowCalendarAlert={handleShowCalendarAlert}
+                        onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
                         onExportData={onExportData}
                     />
