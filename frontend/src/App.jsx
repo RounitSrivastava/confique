@@ -1457,15 +1457,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     {formData.type === 'culturalEvent' && (
                                         <div className="cultural-event-section">
                                              <div className="form-group checkbox-group">
-                                                <input
-                                                    type="checkbox"
-                                                    id="isDateSelectionEnabled"
-                                                    name="isDateSelectionEnabled"
-                                                    checked={formData.isDateSelectionEnabled}
-                                                    onChange={handleFormChange}
-                                                />
-                                                <label htmlFor="isDateSelectionEnabled">Allow users to select date from a calendar</label>
-                                            </div>
+                                                 <input
+                                                     type="checkbox"
+                                                     id="isDateSelectionEnabled"
+                                                     name="isDateSelectionEnabled"
+                                                     checked={formData.isDateSelectionEnabled}
+                                                     onChange={handleFormChange}
+                                                 />
+                                                 <label htmlFor="isDateSelectionEnabled">Allow users to select date from a calendar</label>
+                                             </div>
                                             <div className="form-group">
                                                 <label className="form-label">Ticket Options</label>
                                                 {formData.ticketOptions.map((option, index) => (
@@ -1533,7 +1533,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                         className="remove-image-btn"
                                                                         onClick={removeQRImage}
                                                                     >
-                                                                        <ArrowLeft size={14} /> 
+                                                                        <X size={14} /> 
                                                                     </button>
                                                                 </div>
                                                             ) : (
@@ -1697,7 +1697,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                             className="remove-image-btn"
                                                                                             onClick={removeQRImage}
                                                                                         >
-                                                                                            <ArrowLeft size={14} /> 
+                                                                                            <X size={14} /> 
                                                                                         </button>
                                                                                     </div>
                                                                                 ) : (
@@ -2961,9 +2961,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -3826,24 +3826,70 @@ const App = () => {
             console.error('User not authenticated for posting.');
             return;
         }
-
+        
         try {
             const endpoint = postToEdit ? `/posts/${postToEdit._id}` : `/posts`;
             const method = postToEdit ? 'PUT' : 'POST';
 
+            // Start with a clean slate for event-specific fields to avoid sending old data
+            const baseData = {
+                type: newPost.type,
+                title: newPost.title,
+                content: newPost.content,
+                author: currentUser?.name || 'Anonymous',
+                authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+                images: newPost.images,
+                userId: currentUser?._id,
+                status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
+                timestamp: method === 'POST' ? new Date().toISOString() : newPost.timestamp,
+            };
+
+            let submissionData = {};
+            if (newPost.type === 'event') {
+                submissionData = {
+                    ...baseData,
+                    location: newPost.location,
+                    eventStartDate: newPost.eventStartDate,
+                    eventEndDate: newPost.eventEndDate,
+                    duration: newPost.duration,
+                    price: newPost.price,
+                    registrationLink: newPost.registrationLink,
+                    registrationOpen: newPost.registrationOpen,
+                    enableRegistrationForm: newPost.enableRegistrationForm,
+                    registrationFields: newPost.registrationFields,
+                    paymentMethod: newPost.paymentMethod,
+                    paymentLink: newPost.paymentLink,
+                    paymentQRCode: newPost.paymentQRCode,
+                };
+            } else if (newPost.type === 'culturalEvent') {
+                submissionData = {
+                    ...baseData,
+                    location: newPost.location,
+                    eventStartDate: newPost.eventStartDate,
+                    eventEndDate: newPost.eventEndDate,
+                    duration: newPost.duration,
+                    ticketOptions: newPost.ticketOptions,
+                    culturalPaymentMethod: newPost.culturalPaymentMethod,
+                    culturalPaymentLink: newPost.culturalPaymentLink,
+                    culturalPaymentQRCode: newPost.culturalPaymentQRCode,
+                    isDateSelectionEnabled: newPost.isDateSelectionEnabled,
+                    registrationOpen: true, // Cultural events always have registration open
+                };
+            } else {
+                submissionData = baseData;
+            }
+
             const res = await callApi(endpoint, {
                 method,
-                body: JSON.stringify(newPost),
+                body: JSON.stringify(submissionData),
             });
 
             if (res.ok) {
                 const responseData = await res.json();
                 const formattedResponsePost = formatPostDates(responseData);
-
                 setPostToEdit(null);
-
                 if (method === 'POST') {
-                    if ((newPost.type === 'event' || newPost.type === 'culturalEvent') && newPost.status === 'pending') {
+                    if (formattedResponsePost.status === 'pending') {
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
@@ -3906,6 +3952,7 @@ const App = () => {
             ]);
         }
     };
+
 
     const handleApproveEvent = async (postId) => {
         if (!currentUser || !currentUser.isAdmin) {
