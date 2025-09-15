@@ -727,7 +727,22 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
-    // Reset state when the modal opens
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
+    const [selectedDates, setSelectedDates] = useState([]);
+    const [transactionId, setTransactionId] = useState('');
+    const [ticketSelections, setTicketSelections] = useState(() => event.ticketOptions.map(() => ({ quantity: 0 })));
+
+    const [showFormAlert, setShowFormAlert] = useState(false);
+    const [formAlertMessage, setFormAlertMessage] = useState('');
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    const [showPaymentStep, setShowPaymentStep] = useState(false);
+
+    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
+    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
+
     useEffect(() => {
         if (isOpen) {
             setName('');
@@ -743,22 +758,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setSuccessMessage('');
         }
     }, [isOpen, event]);
-
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState('');
-    const [selectedDates, setSelectedDates] = useState([]);
-    const [transactionId, setTransactionId] = useState('');
-    const [ticketSelections, setTicketSelections] = useState(event.ticketOptions.map(() => ({ quantity: 0 })));
-
-    const [showFormAlert, setShowFormAlert] = useState(false);
-    const [formAlertMessage, setFormAlertMessage] = useState('');
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
-    const [showPaymentStep, setShowPaymentStep] = useState(false);
-
-    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
-    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
     const handleQuantityChange = (index, newQuantity) => {
         const updatedSelections = [...ticketSelections];
@@ -1541,7 +1540,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                     <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                         <div className="upload-btn">
                                                                             <ImageIcon size={16} />
-                                                                            <span>Upload QR Code</span>
                                                                         </div>
                                                                     </label>
                                                                     <input
@@ -2410,7 +2408,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 post={post}
                                 onLike={onLike}
                                 onShare={onShare}
-                                onAddComment={handleAddComment}
+                                onAddComment={onAddComment}
                                 likedPosts={likedPosts}
                                 isCommentsOpen={openCommentPostId === post._id}
                                 setOpenCommentPostId={setOpenCommentPostId}
@@ -2476,7 +2474,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2877,7 +2875,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={handleAddComment}
+                            onAddComment={onAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2894,7 +2892,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                                 onShowRegistrationModal(event);
                             }}
                             isLoggedIn={!!currentUser}
-                            onExportData={handleExportRegistrations}
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
@@ -4563,6 +4561,32 @@ const App = () => {
             ]);
         }
     };
+    
+    // Add these props to the PostCard component calls in all relevant components
+    // This is the key fix for the ReferenceError
+    const postCardProps = {
+        onLike: handleLikePost,
+        onShare: handleShareClick,
+        onAddComment: handleAddComment,
+        likedPosts,
+        openCommentPostId,
+        setOpenCommentPostId,
+        onOpenEventDetail: handleOpenEventDetail,
+        onAddToCalendar: handleAddToCalendar,
+        currentUser,
+        registrations,
+        onReportPost: handleOpenReportModal,
+        onDeletePost: handleDeletePost,
+        onEditPost: handleEditPost,
+        onShowCalendarAlert: handleShowCalendarAlert,
+        isLoggedIn,
+        onExportData: handleExportRegistrations,
+        onShowRegistrationModal: (event) => {
+            setSelectedCulturalEvent(event);
+            setShowCulturalEventRegistration(true);
+        }
+    };
+
 
     const menuItems = [
         {
@@ -4570,29 +4594,7 @@ const App = () => {
             label: 'Home',
             icon: <Home className="nav-icon" />,
             action: () => setActiveSection('home'),
-            component: () => <HomeComponent
-                posts={filteredPosts}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
-                onAddToCalendar={handleAddToCalendar}
-                currentUser={currentUser}
-                registrations={registrations}
-                onReportPost={handleOpenReportModal}
-                onDeletePost={handleDeletePost}
-                onEditPost={handleEditPost}
-                onShowCalendarAlert={handleShowCalendarAlert}
-                isLoggedIn={!!currentUser}
-                onExportData={handleExportRegistrations}
-                onShowRegistrationModal={(event) => {
-                    setSelectedCulturalEvent(event);
-                    setShowCulturalEventRegistration(true);
-                }}
-            />,
+            component: () => <HomeComponent posts={filteredPosts} {...postCardProps} />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
@@ -4600,25 +4602,7 @@ const App = () => {
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
             action: () => setActiveSection('events'),
-            component: () => <EventsComponent
-                posts={filteredPosts.filter(post => post.type === 'event')}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
-                onAddToCalendar={handleAddToCalendar}
-                currentUser={currentUser}
-                registrations={registrations}
-                onReportPost={handleOpenReportModal}
-                onDeletePost={handleDeletePost}
-                onEditPost={handleEditPost}
-                onShowCalendarAlert={handleShowCalendarAlert}
-                isLoggedIn={!!currentUser}
-                onExportData={handleExportRegistrations}
-            />,
+            component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} {...postCardProps} />,
             rightSidebar: () => <EventsRightSidebar
                 posts={posts.filter(p => p.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
@@ -4630,25 +4614,7 @@ const App = () => {
             label: 'Consights',
             icon: <MessageCircle className="nav-icon" />,
             action: () => setActiveSection('confessions'),
-            component: () => <ConfessionsComponent
-                posts={filteredPosts.filter(post => post.type === 'confession')}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
-                onAddToCalendar={handleAddToCalendar}
-                currentUser={currentUser}
-                registrations={registrations}
-                onReportPost={handleOpenReportModal}
-                onDeletePost={handleDeletePost}
-                onEditPost={handleEditPost}
-                onShowCalendarAlert={handleShowCalendarAlert}
-                isLoggedIn={!!currentUser}
-                onExportData={handleExportRegistrations}
-            />,
+            component: () => <ConfessionsComponent posts={filteredPosts.filter(post => post.type === 'confession')} {...postCardProps} />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
@@ -4656,28 +4622,7 @@ const App = () => {
             label: 'Cultural Events',
             icon: <Ticket className="nav-icon" />,
             action: () => setActiveSection('cultural-events'),
-            component: () => <CulturalEventsComponent
-                posts={filteredPosts.filter(post => post.type === 'culturalEvent')}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
-                onAddToCalendar={handleAddToCalendar}
-                currentUser={currentUser}
-                onShowRegistrationModal={(event) => {
-                    setSelectedCulturalEvent(event);
-                    setShowCulturalEventRegistration(true);
-                }}
-                onReportPost={handleOpenReportModal}
-                onDeletePost={handleDeletePost}
-                onEditPost={handleEditPost}
-                onShowCalendarAlert={handleShowCalendarAlert}
-                isLoggedIn={!!currentUser}
-                onExportData={handleExportRegistrations}
-            />,
+            component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} {...postCardProps} />,
             rightSidebar: () => <EventsRightSidebar posts={posts.filter(p => p.type === 'culturalEvent')} myCalendarEvents={myCalendarEvents} onOpenEventDetail={handleOpenEventDetail} />,
         },
         {
@@ -4701,31 +4646,7 @@ const App = () => {
             label: 'Profile',
             icon: <User className="nav-icon" />,
             action: () => setActiveSection('profile'),
-            component: () => <UsersComponent
-                posts={posts}
-                currentUser={currentUser}
-                onLike={handleLikePost}
-                onShare={handleShareClick}
-                onAddComment={handleAddComment}
-                likedPosts={likedPosts}
-                openCommentPostId={openCommentPostId}
-                setOpenCommentPostId={setOpenCommentPostId}
-                onOpenEventDetail={handleOpenEventDetail}
-                onAddToCalendar={handleAddToCalendar}
-                setIsModalOpen={setIsModalOpen}
-                onDeletePost={handleDeletePost}
-                onEditPost={handleEditPost}
-                registrations={registrations}
-                onReportPost={handleOpenReportModal}
-                onEditProfile={() => setShowProfileSettingsModal(true)}
-                onShowCalendarAlert={handleShowCalendarAlert}
-                onShowRegistrationModal={(event) => {
-                    setSelectedCulturalEvent(event);
-                    setShowCulturalEventRegistration(true);
-                }}
-                isLoggedIn={!!currentUser}
-                onExportData={handleExportRegistrations}
-            />,
+            component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
