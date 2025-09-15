@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-// import { Analytics } from "@vercel/analytics/next"
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
-// import confiquelogo from './assets/confiquelogo.jpg';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
 import {
     Home,
@@ -19,7 +17,7 @@ import {
     Share2,
     Bell,
     Search,
-    ArrowLeft, // Used for the new "cut" icon
+    ArrowLeft,
     Info,
     CalendarPlus,
     Landmark,
@@ -29,7 +27,7 @@ import {
     LogOut,
     ArrowRight,
     Edit3,
-    Trash2, // More conventional for deletion/removal
+    Trash2,
     Mail,
     Flag,
     Check,
@@ -136,7 +134,10 @@ const CustomMessageModal = ({ isOpen, onClose, title, message, showConfirm = fal
         </div>
     );
 };
+
+// Vercel Analytics integration
 <Analytics />
+
 // Help & Support Modal Component
 const HelpAndSupportModal = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
@@ -735,13 +736,29 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [showPaymentStep, setShowPaymentStep] = useState(false);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedTicketIndex('');
+            setTicketQuantity(1);
+            setName('');
+            setEmail('');
+            setTransactionId('');
+            setShowPaymentStep(false);
+            setShowFormAlert(false);
+            setFormAlertMessage('');
+            setShowSuccessModal(false);
+            setSuccessMessage('');
+        }
+    }, [isOpen]);
 
     const selectedTicket = event.ticketOptions[selectedTicketIndex];
     const totalPrice = selectedTicket ? selectedTicket.ticketPrice * ticketQuantity : 0;
     const isFree = selectedTicket ? selectedTicket.ticketPrice === 0 : false;
-    const isPaymentMethodSet = event.paymentMethod === 'link' || event.paymentMethod === 'qr';
+    const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
 
-    const handleSubmit = async (e) => {
+    const handleProceedToPayment = (e) => {
         e.preventDefault();
         if (!isLoggedIn) {
             onRequireLogin();
@@ -753,6 +770,17 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return;
         }
         
+        if (!isFree) {
+            setShowPaymentStep(true);
+        } else {
+            // No payment needed, proceed to register
+            handleFinalRegistration();
+        }
+    };
+    
+    const handleFinalRegistration = async (e) => {
+        if (e) e.preventDefault();
+
         const registrationData = {
             name,
             email,
@@ -762,16 +790,10 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             transactionId: transactionId || null,
         };
 
-        if (!isFree && event.paymentMethod === 'qr' && (!transactionId || transactionId.length !== 4)) {
+        if (!isFree && event.culturalPaymentMethod === 'qr' && (!transactionId || transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
-        }
-
-        if (!isFree && event.paymentMethod === 'link' && !event.paymentLink) {
-             setFormAlertMessage("Payment link not provided by host. Please contact the event organizer.");
-             setShowFormAlert(true);
-             return;
         }
         
         try {
@@ -784,18 +806,127 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
     };
     
-    const handlePaymentClick = () => {
-        if (!isFree && event.paymentMethod === 'link' && event.paymentLink) {
-            window.open(event.paymentLink, '_blank');
+    const handlePaymentLinkClick = () => {
+        if (event.culturalPaymentMethod === 'link' && event.culturalPaymentLink) {
+            window.open(event.culturalPaymentLink, '_blank');
         }
     };
 
     const handleClose = () => {
+        setShowPaymentStep(false);
         setShowSuccessModal(false);
         onClose();
     };
 
     if (!isOpen || !event) return null;
+
+    const renderRegistrationForm = () => (
+        <form onSubmit={handleProceedToPayment} className="modal-form">
+            <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input type="text" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="form-group">
+                <label className="form-label">Email</label>
+                <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            
+            <div className="form-group">
+                <label className="form-label">Select Ticket Type</label>
+                <select className="form-input" value={selectedTicketIndex} onChange={(e) => setSelectedTicketIndex(e.target.value)} required>
+                    <option value="">Select a ticket</option>
+                    {event.ticketOptions.map((option, index) => (
+                        <option key={index} value={index}>
+                            {option.ticketType} (₹{option.ticketPrice})
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {selectedTicket && (
+                <div className="form-group">
+                    <label className="form-label">Quantity</label>
+                    <input
+                        type="number"
+                        className="form-input"
+                        value={ticketQuantity}
+                        onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                        min="1"
+                        required
+                    />
+                </div>
+            )}
+            
+            <div className="total-price-display">
+                <span>Total Price: </span>
+                <strong>₹{totalPrice}</strong>
+            </div>
+            
+            <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
+                <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={selectedTicketIndex === ''}
+                >
+                    {isFree ? 'Submit Registration' : 'Proceed to Payment'}
+                </button>
+            </div>
+        </form>
+    );
+
+    const renderPaymentStep = () => (
+        <form onSubmit={handleFinalRegistration} className="modal-form">
+            <div className="payment-step">
+                <h3>Complete Your Payment</h3>
+                <p>Please use the method below to complete your payment.</p>
+
+                {event.culturalPaymentMethod === 'link' && event.culturalPaymentLink && (
+                    <div className="form-group">
+                        <label className="form-label">Payment Link</label>
+                        <button type="button" className="btn-secondary" onClick={handlePaymentLinkClick}>
+                            <ArrowRight size={18} /> Open Payment Link
+                        </button>
+                    </div>
+                )}
+                
+                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode && (
+                    <div className="form-group">
+                        <label className="form-label">Payment via QR Code</label>
+                        <img
+                            src={event.culturalPaymentQRCode}
+                            alt="Payment QR Code"
+                            className="payment-qr"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                        />
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
+                            placeholder="Last 4 digits of Transaction ID"
+                            maxLength={4}
+                            required
+                        />
+                    </div>
+                )}
+            </div>
+            <div className="modal-actions">
+                <button type="button" className="btn-secondary" onClick={() => setShowPaymentStep(false)}>
+                    Back
+                </button>
+                <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && !transactionId)}
+                >
+                    Confirm Registration
+                </button>
+            </div>
+        </form>
+    );
 
     return (
         <div className="modal-overlay">
@@ -807,89 +938,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </button>
                 </div>
                 <div className="modal-body">
-                    <form onSubmit={handleSubmit} className="modal-form">
-                        <div className="form-group">
-                            <label className="form-label">Full Name</label>
-                            <input type="text" className="form-input" value={name} onChange={(e) => setName(e.target.value)} required />
-                        </div>
-                        <div className="form-group">
-                            <label className="form-label">Email</label>
-                            <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                        </div>
-                        
-                        <div className="form-group">
-                            <label className="form-label">Select Ticket Type</label>
-                            <select className="form-input" value={selectedTicketIndex} onChange={(e) => setSelectedTicketIndex(e.target.value)} required>
-                                <option value="">Select a ticket</option>
-                                {event.ticketOptions.map((option, index) => (
-                                    <option key={index} value={index}>
-                                        {option.ticketType} (₹{option.ticketPrice})
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        {selectedTicket && (
-                            <div className="form-group">
-                                <label className="form-label">Quantity</label>
-                                <input
-                                    type="number"
-                                    className="form-input"
-                                    value={ticketQuantity}
-                                    onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                                    min="1"
-                                    required
-                                />
-                            </div>
-                        )}
-                        
-                        <div className="total-price-display">
-                            <span>Total Price: </span>
-                            <strong>₹{totalPrice}</strong>
-                        </div>
-                        
-                        {selectedTicket && isPaymentMethodSet && !isFree && (
-                            <>
-                                {event.paymentMethod === 'link' && event.paymentLink && (
-                                    <div className="form-group">
-                                        <label className="form-label">Payment</label>
-                                        <button type="button" className="btn-secondary" onClick={handlePaymentClick}>
-                                            Pay Now
-                                        </button>
-                                    </div>
-                                )}
-                                {event.paymentMethod === 'qr' && event.paymentQRCode && (
-                                    <div className="form-group">
-                                        <label className="form-label">Payment via QR Code</label>
-                                        <img
-                                            src={event.paymentQRCode}
-                                            alt="Payment QR Code"
-                                            className="payment-qr"
-                                            loading="lazy"
-                                            decoding="async"
-                                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="form-input"
-                                            value={transactionId}
-                                            onChange={(e) => setTransactionId(e.target.value)}
-                                            placeholder="Last 4 digits of Transaction ID"
-                                            maxLength={4}
-                                            required
-                                        />
-                                    </div>
-                                )}
-                            </>
-                        )}
-                        
-                        <div className="modal-actions">
-                            <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-                            <button type="submit" className="btn-primary" disabled={selectedTicketIndex === ''}>
-                                {isFree ? 'Submit Registration' : 'Confirm Registration'}
-                            </button>
-                        </div>
-                    </form>
+                    {showPaymentStep ? renderPaymentStep() : renderRegistrationForm()}
                 </div>
             </div>
             <CustomMessageModal
@@ -1567,6 +1616,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                         <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                                             <div className="upload-btn">
                                                                                                 <ImageIcon size={16} />
+                                                                                                <span>Upload QR Code</span>
                                                                                             </div>
                                                                                         </label>
                                                                                         <input
@@ -1742,20 +1792,13 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
     const handleAddToCalendarClick = () => {
         console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
         if (!isLoggedIn) {
+            console.log("User not logged in, requiring login.");
             onRequireLogin();
             return;
         }
         // NEW: Check if event or eventStartDate is missing before adding
         if (!event || !event.eventStartDate) {
-            setNotifications(prev => [
-                {
-                    _id: `notif-${Date.now()}`,
-                    message: `Cannot add event to calendar. Event data is incomplete.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
+            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
             return;
         }
 
@@ -2037,15 +2080,6 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         // NEW: Check if event or eventStartDate is missing before adding
         if (!post || !post.eventStartDate) {
             console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
-            setNotifications(prev => [
-                {
-                    _id: `notif-${Date.now()}`,
-                    message: `Cannot add event to calendar. Event data is incomplete.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
             return;
         }
 
@@ -2137,7 +2171,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     <p
                         ref={contentRef}
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
-                         style={{ whiteSpace: 'pre-wrap' }} 
+                        style={{ whiteSpace: 'pre-wrap' }} 
                     >
                         {post.content}
                     </p>
@@ -2334,7 +2368,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
+                        onDeletePost={onDeletePost} // Corrected line
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
@@ -2430,7 +2464,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={onAddComment}
+                            onAddComment={onAddComment} // Corrected line
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2773,7 +2807,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onShowCalendarAlert={onShowCalendarAlert}
                             onShowRegistrationModal={onShowRegistrationModal}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
@@ -2839,9 +2873,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //       .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //       .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //       .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //        .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //        .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -3305,7 +3339,7 @@ const App = () => {
 
 
     // The state variable for managing modal visibility
-    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert;
+    const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert || showCulturalEventRegistration;
 
 
     const formatPostDates = (post) => {
@@ -3588,15 +3622,6 @@ const App = () => {
         
         if (!event || !event.eventStartDate) {
             console.log("2. Event data is incomplete. Not adding."); // DEBUG LOG
-            setNotifications(prev => [
-                {
-                    _id: `notif-${Date.now()}`,
-                    message: `Cannot add event to calendar. Event data is incomplete.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
             return;
         }
 
@@ -4421,6 +4446,10 @@ const App = () => {
                 onEditPost={handleEditPost}
                 onShowCalendarAlert={handleShowCalendarAlert}
                 onExportData={handleExportRegistrations}
+                onShowRegistrationModal={(event) => {
+                    setSelectedCulturalEvent(event);
+                    setShowCulturalEventRegistration(true);
+                }}
             />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
@@ -4488,7 +4517,7 @@ const App = () => {
                 posts={filteredPosts.filter(post => post.type === 'culturalEvent')}
                 onLike={handleLikePost}
                 onShare={handleShareClick}
-                onAddComment={handleAddComment}
+                onAddComment={handleAddComment} // Corrected line
                 likedPosts={likedPosts}
                 openCommentPostId={openCommentPostId}
                 setOpenCommentPostId={setOpenCommentPostId}
