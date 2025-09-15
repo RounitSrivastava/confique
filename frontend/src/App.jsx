@@ -440,7 +440,6 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 
 // Registration Form Modal Component for standard events
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
-    // Reset formData based on the event's registration fields
     const initialFormData = {
         name: '',
         email: '',
@@ -1092,7 +1091,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentQRCode: postToEdit.paymentQRCode || '',
                 source: postToEdit.source || '',
                 ticketOptions: postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }],
-                culturalPaymentMethod: postToEdit.culturalPaymentMethod || 'link',
+                culturalPaymentMethod: postToedit.culturalPaymentMethod || 'link',
                 culturalPaymentLink: postToEdit.culturalPaymentLink || '',
                 culturalPaymentQRCode: postToEdit.culturalPaymentQRCode || '',
                 isDateSelectionEnabled: postToEdit.isDateSelectionEnabled || false,
@@ -1704,337 +1703,335 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                         <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                                             <div className="upload-btn">
                                                                                                 <ImageIcon size={16} />
-                                                                                                <span>Upload QR Code</span>
                                                                                             </div>
                                                                                         </label>
                                                                                         <input
                                                                                             id="qr-file-input"
                                                                                             ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                </>
-                                            )}
-                                        </>
+                                                             
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={handlePaymentQRUpload}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             )}
+                        </>
+                    )}
+                </>
+            )}
+        </div>
+    </div>
 
-                            {/* Image Upload Section */}
-                            <div className="form-group">
-                                <label className="form-label">Images (Max 5)</label>
-                                <div className="image-upload-container">
-                                    <div className="upload-btn-wrapper">
-                                        <div className="upload-btn">
-                                            <ImageIcon size={16} />
-                                            <span>Upload Images</span>
-                                        </div>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handleImageUpload}
-                                        />
-                                    </div>
-
-                                    {imagePreviews.length > 0 && (
-                                        <div className="image-upload-preview">
-                                            {imagePreviews.map((preview, index) => (
-                                                <div key={index} className="image-preview-item">
-                                                    <img src={preview} alt={`Preview ${index + 1}`} loading="lazy" decoding="async" />
-                                                    <button
-                                                        type="button"
-                                                        className="remove-image-btn"
-                                                        onClick={() => removeImage(index)}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Modal Action Buttons */}
-                            <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={onClose}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn-primary">
-                                    {postToEdit ? 'Update' : 'Post'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+    {/* Image Upload Section */}
+    <div className="form-group">
+        <label className="form-label">Images (Max 5)</label>
+        <div className="image-upload-container">
+            <div className="upload-btn-wrapper">
+                <div className="upload-btn">
+                    <ImageIcon size={16} />
+                    <span>Upload Images</span>
                 </div>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                />
             </div>
-            <CustomMessageModal
-                isOpen={showUploadAlert}
-                onClose={() => setShowUploadAlert(false)}
-                title="Input Error"
-                message={uploadAlertMessage}
-                showConfirm={false}
-            />
-        </ErrorBoundary>
-    );
+
+            {imagePreviews.length > 0 && (
+                <div className="image-upload-preview">
+                    {imagePreviews.map((preview, index) => (
+                        <div key={index} className="image-preview-item">
+                            <img src={preview} alt={`Preview ${index + 1}`} loading="lazy" decoding="async" />
+                            <button
+                                type="button"
+                                className="remove-image-btn"
+                                onClick={() => removeImage(index)}
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    </div>
+
+    {/* Modal Action Buttons */}
+    <div className="modal-actions">
+        <button type="button" className="btn-secondary" onClick={onClose}>
+            Cancel
+        </button>
+        <button type="submit" className="btn-primary">
+            {postToEdit ? 'Update' : 'Post'}
+        </button>
+    </div>
+</form>
+</div>
+</div>
+</div>
+<CustomMessageModal
+isOpen={showUploadAlert}
+onClose={() => setShowUploadAlert(false)}
+title="Input Error"
+message={uploadAlertMessage}
+showConfirm={false}
+/>
+</ErrorBoundary>
+);
 };
 
 // Event Detail Page Component - Displays detailed information about an event
 const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered, onShowCalendarAlert }) => {
-    const [showFullContent, setShowFullContent] = useState(false);
-    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-    const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
-    const [geolocationError, setGeolocationError] = useState('');
+const [showFullContent, setShowFullContent] = useState(false);
+const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
+const [geolocationError, setGeolocationError] = useState('');
 
-    const hasMoreContent = event.content.length > 200;
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
-    const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
-    const isRegistrationOpen = event.registrationOpen;
-    const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
+const hasMoreContent = event.content.length > 200;
+const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
+const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
+const isRegistrationOpen = event.registrationOpen;
+const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
 
-    const formatDateRange = () => {
-        if (!event.eventStartDate) return "N/A";
+const formatDateRange = () => {
+    if (!event.eventStartDate) return "N/A";
 
-        const start = new Date(event.eventStartDate);
-        const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
+    const start = new Date(event.eventStartDate);
+    const end = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
-        if (end && start.toDateString() !== end.toDateString()) {
-            const startDate = start.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric'
-            });
-            const endDate = end.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric'
-            });
-            const startTime = start.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-            const endTime = end.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit'
-            });
+    if (end && start.toDateString() !== end.toDateString()) {
+        const startDate = start.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+        const endDate = end.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+        });
+        const startTime = start.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        const endTime = end.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
-            return `${startDate} - ${endDate}, ${startTime} to ${endTime}`;
-        }
+        return `${startDate} - ${endDate}, ${startTime} to ${endTime}`;
+    }
 
-        const date = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        const startTime = start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-        const endTime = end ? end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+    const date = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const startTime = start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const endTime = end ? end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 
-        return `${date}, ${startTime}${endTime ? ` to ${endTime}` : ''}`;
-    };
+    return `${date}, ${startTime}${endTime ? ` to ${endTime}` : ''}`;
+};
 
-    const handleGetDirections = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const { latitude, longitude } = position.coords;
-                const destination = encodeURIComponent(event.venueAddress);
-                const origin = `${latitude},${longitude}`;
+const handleGetDirections = () => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+            const destination = encodeURIComponent(event.venueAddress);
+            const origin = `${latitude},${longitude}`;
 
-                window.open(
-                    `https://www.google.com/maps/dir/?api=1&destination=${destination}&origin=${origin}`,
-                    '_blank'
-                );
-            }, (error) => {
-                setGeolocationError('Could not get your location. Please enable location services and try again.');
-                setShowGeolocationAlert(true);
-            });
-        } else {
-            setGeolocationError('Geolocation is not supported by your browser.');
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${destination}&origin=${origin}`,
+                '_blank'
+            );
+        }, (error) => {
+            setGeolocationError('Could not get your location. Please enable location services and try again.');
             setShowGeolocationAlert(true);
-        }
-    };
+        });
+    } else {
+        setGeolocationError('Geolocation is not supported by your browser.');
+        setShowGeolocationAlert(true);
+    }
+};
 
-    const handleRegistrationClick = () => {
-        if (!isLoggedIn) {
-            onRequireLogin();
-            return;
-        }
+const handleRegistrationClick = () => {
+    if (!isLoggedIn) {
+        onRequireLogin();
+        return;
+    }
 
-        if (isRegistered) {
-            return;
-        }
+    if (isRegistered) {
+        return;
+    }
 
-        if (event.enableRegistrationForm) {
-            setShowRegistrationForm(true);
-        } else if (event.registrationLink) {
-            window.open(event.registrationLink, '_blank');
-        }
-    };
+    if (event.enableRegistrationForm) {
+        setShowRegistrationForm(true);
+    } else if (event.registrationLink) {
+        window.open(event.registrationLink, '_blank');
+    }
+};
 
-    const handleAddToCalendarClick = () => {
-        console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
-        if (!isLoggedIn) {
-            console.log("User not logged in, requiring login.");
-            onRequireLogin();
-            return;
-        }
-        // NEW: Check if event or eventStartDate is missing before adding
-        if (!event || !event.eventStartDate) {
-            console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
-            return;
-        }
+const handleAddToCalendarClick = () => {
+    console.log("Button clicked. Attempting to add event:", event); // DEBUG LOG
+    if (!isLoggedIn) {
+        console.log("User not logged in, requiring login.");
+        onRequireLogin();
+        return;
+    }
+    // NEW: Check if event or eventStartDate is missing before adding
+    if (!event || !event.eventStartDate) {
+        console.log("Event data is incomplete. Not adding to calendar."); // DEBUG LOG
+        return;
+    }
 
-        if (event.eventStartDate) {
-            onAddToCalendar(event); // This saves the event
-            onShowCalendarAlert();
-        }
-    };
+    if (event.eventStartDate) {
+        onAddToCalendar(event); // This saves the event
+        onShowCalendarAlert();
+    }
+};
 
-    const registrationButtonText = () => {
-        if (isRegistered) return "REGISTERED";
-        if (isEventPast) return "EVENT ENDED";
-        if (!isRegistrationOpen) return "REGISTRATION CLOSED";
-        if (!hasRegistrationMethod) return "NO REGISTRATION REQUIRED";
-        return "REGISTER NOW";
-    };
+const registrationButtonText = () => {
+    if (isRegistered) return "REGISTERED";
+    if (isEventPast) return "EVENT ENDED";
+    if (!isRegistrationOpen) return "REGISTRATION CLOSED";
+    if (!hasRegistrationMethod) return "NO REGISTRATION REQUIRED";
+    return "REGISTER NOW";
+};
 
-    const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
+const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
 
-    return (
-        <ErrorBoundary>
-            <div className="event-detail-page-container">
-                <div className="event-detail-header">
-                    {event.images && event.images.length > 0 ? (
-                        <img
-                            src={event.images[0]}
-                            alt={event.title}
-                            onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
-                            loading="lazy"
-                            decoding="async"
-                        />
-                    ) : (
-                        <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
+return (
+    <ErrorBoundary>
+        <div className="event-detail-page-container">
+            <div className="event-detail-header">
+                {event.images && event.images.length > 0 ? (
+                    <img
+                        src={event.images[0]}
+                        alt={event.title}
+                        onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Event+Image"}
+                        loading="lazy"
+                        decoding="async"
+                    />
+                ) : (
+                    <img src="https://placehold.co/800x450/cccccc/000000?text=No+Event+Image" alt="Placeholder" loading="lazy" decoding="async" />
+                )}
+                <div className="event-detail-header-overlay">
+                    <button onClick={onClose} className="event-detail-back-button">
+
+                        <ArrowLeft size={24} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="event-detail-content-section">
+                <div className="event-detail-title-card">
+                    <h1>{event.title}</h1>
+                    <div className="event-detail-meta-item">
+                        <Landmark size={18} />
+                        <span>{event.location}</span>
+                    </div>
+                    <div className="event-detail-meta-item">
+                        <CalendarIcon size={18} />
+                        <span>{formatDateRange()}</span>
+                    </div>
+                    <div className="event-detail-meta-item">
+                        <MapPin size={18} />
+                        <span>{event.venueAddress}</span>
+                    </div>
+                    <div className="event-detail-action-buttons-top">
+                        {event.eventStartDate && (
+                            <button className="action-btn" onClick={handleAddToCalendarClick}>
+                                <CalendarPlus size={20} />
+                                <span>Add to Calendar</span>
+                            </button>
+                        )}
+                    </div>
+                    {event.source && (
+                        <p className="event-source-small">
+                            Source: {event.source}
+                        </p>
                     )}
-                    <div className="event-detail-header-overlay">
-                        <button onClick={onClose} className="event-detail-back-button">
-
-                            <ArrowLeft size={24} />
+                    <div className="event-detail-price-book">
+                        <span className="event-detail-price">
+                            {event.price === 0 ? 'FREE' : `₹${event.price}`}
+                        </span>
+                        <button
+                            className={`event-detail-book-button ${isButtonDisabled ? 'disabled' : ''}`}
+                            onClick={handleRegistrationClick}
+                            disabled={isButtonDisabled}
+                        >
+                            {registrationButtonText()}
                         </button>
                     </div>
                 </div>
 
-                <div className="event-detail-content-section">
-                    <div className="event-detail-title-card">
-                        <h1>{event.title}</h1>
-                        <div className="event-detail-meta-item">
-                            <Landmark size={18} />
-                            <span>{event.location}</span>
-                        </div>
-                        <div className="event-detail-meta-item">
-                            <CalendarIcon size={18} />
-                            <span>{formatDateRange()}</span>
-                        </div>
-                        <div className="event-detail-meta-item">
-                            <MapPin size={18} />
-                            <span>{event.venueAddress}</span>
-                        </div>
-                        <div className="event-detail-action-buttons-top">
-                            {event.eventStartDate && (
-                                <button className="action-btn" onClick={handleAddToCalendarClick}>
-                                    <CalendarPlus size={20} />
-                                    <span>Add to Calendar</span>
-                                </button>
-                            )}
-                        </div>
-                        {event.source && (
-                            <p className="event-source-small">
-                                Source: {event.source}
-                            </p>
+                <div className="event-detail-about-section">
+                    <h2>About the Event</h2>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>
+                        {displayContent}
+                        {hasMoreContent && (
+                            <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
+                                {showFullContent ? 'Show Less' : 'Show More'}
+                            </button>
                         )}
-                        <div className="event-detail-price-book">
-                            <span className="event-detail-price">
-                                {event.price === 0 ? 'FREE' : `₹${event.price}`}
-                            </span>
-                            <button
-                                className={`event-detail-book-button ${isButtonDisabled ? 'disabled' : ''}`}
-                                onClick={handleRegistrationClick}
-                                disabled={isButtonDisabled}
-                            >
-                                {registrationButtonText()}
-                            </button>
+                    </p>
+                </div>
+
+                <div className="event-detail-info-grid">
+                    <div className="info-grid-item">
+                        <Languages size={20} />
+                        <div>
+                            <strong>Language</strong>
+                            <p>{event.language || 'N/A'}</p>
                         </div>
                     </div>
-
-                    <div className="event-detail-about-section">
-                        <h2>About the Event</h2>
-                        <p style={{ whiteSpace: 'pre-wrap' }}>
-                            {displayContent}
-                            {hasMoreContent && (
-                                <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
-                                    {showFullContent ? 'Show Less' : 'Show More'}
-                                </button>
-                            )}
-                        </p>
-                    </div>
-
-                    <div className="event-detail-info-grid">
-                        <div className="info-grid-item">
-                            <Languages size={20} />
-                            <div>
-                                <strong>Language</strong>
-                                <p>{event.language || 'N/A'}</p>
-                            </div>
-                        </div>
-                        <div className="info-grid-item">
-                            <Timer size={20} />
-                            <div>
-                                <strong>Duration</strong>
-                                <p>{event.duration || 'N/A'}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="event-detail-venue-section">
-                        <h2>Venue</h2>
-                        <div className="venue-info">
-                            <div>
-                                <p><strong>{event.location}</strong></p>
-                                <p>{event.venueAddress}</p>
-                            </div>
-                            <button className="get-directions-button" onClick={handleGetDirections}>
-                                <MapPin size={16} /> GET DIRECTIONS
-                            </button>
+                    <div className="info-grid-item">
+                        <Timer size={20} />
+                        <div>
+                            <strong>Duration</strong>
+                            <p>{event.duration || 'N/A'}</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Modals for registration, geolocation error, and calendar confirmation */}
-                {showRegistrationForm && (
-                    <RegistrationFormModal
-                        isOpen={showRegistrationForm}
-                        onClose={() => setShowRegistrationForm(false)}
-                        event={event}
-                        isLoggedIn={isLoggedIn}
-                        onRequireLogin={onRequireLogin}
-                        onRegister={onRegister}
-                    />
-                )}
-                <CustomMessageModal
-                    isOpen={showGeolocationAlert}
-                    onClose={() => setShowGeolocationAlert(false)}
-                    title="Geolocation Error"
-                    message={geolocationError}
-                    showConfirm={false}
-                />
+                <div className="event-detail-venue-section">
+                    <h2>Venue</h2>
+                    <div className="venue-info">
+                        <div>
+                            <p><strong>{event.location}</strong></p>
+                            <p>{event.venueAddress}</p>
+                        </div>
+                        <button className="get-directions-button" onClick={handleGetDirections}>
+                            <MapPin size={16} /> GET DIRECTIONS
+                        </button>
+                    </div>
+                </div>
             </div>
-        </ErrorBoundary>
-    );
+
+            {/* Modals for registration, geolocation error, and calendar confirmation */}
+            {showRegistrationForm && (
+                <RegistrationFormModal
+                    isOpen={showRegistrationForm}
+                    onClose={() => setShowRegistrationForm(false)}
+                    event={event}
+                    isLoggedIn={isLoggedIn}
+                    onRequireLogin={onRequireLogin}
+                    onRegister={onRegister}
+                />
+            )}
+            <CustomMessageModal
+                isOpen={showGeolocationAlert}
+                onClose={() => setShowGeolocationAlert(false)}
+                title="Geolocation Error"
+                message={geolocationError}
+                showConfirm={false}
+            />
+        </div>
+    </ErrorBoundary>
+);
 };
 
 // Event Detail Sidebar Component - Displays upcoming events related to the current event
@@ -2511,7 +2508,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={onAddComment}
+                        onAddComment={handleAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
