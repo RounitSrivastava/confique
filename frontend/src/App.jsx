@@ -889,11 +889,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     <label className="form-label">Select Booking Date</label>
                     <Calendar
                         onChange={handleDateChange}
-                        value={bookingDate ? new Date(bookingDate) : new Date()}
+                        value={bookingDate ? new Date(bookingDate) : new Date(eventStartDate)} // Set initial value to event start date
                         minDate={eventStartDate ? new Date(eventStartDate) : new Date()}
                         maxDate={eventEndDate ? new Date(eventEndDate) : null}
                         tileDisabled={({ date, view }) =>
-                            view === 'month' && date < new Date(eventStartDate) || date > new Date(eventEndDate)
+                            view === 'month' && (date < new Date(eventStartDate) || (eventEndDate && date > new Date(eventEndDate)))
                         }
                     />
                 </div>
@@ -2458,7 +2458,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportData={handleExportRegistrations}
+                        onExportData={onExportData}
                     />
                 ))}
             </div>
@@ -2897,7 +2897,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                                 onShowRegistrationModal(event);
                             }}
                             isLoggedIn={!!currentUser}
-                            onExportData={handleExportRegistrations}
+                            onExportData={onExportData}
                         />
                     ))}
                 </div>
