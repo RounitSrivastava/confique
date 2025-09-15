@@ -739,7 +739,15 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
-    const [selectedDate, setSelectedDate] = useState(event.eventStartDate ? new Date(event.eventStartDate) : new Date()); // State for date selection
+    
+    // Convert event start/end dates to local date strings for the calendar
+    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate).toISOString().slice(0, 10) : '';
+    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate).toISOString().slice(0, 10) : '';
+
+    const handleDateChange = (date) => {
+        const formattedDate = date.toISOString().slice(0, 10);
+        setBookingDate(formattedDate);
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -754,7 +762,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
-            setSelectedDate(event.eventStartDate ? new Date(event.eventStartDate) : new Date()); // Set initial date
         }
     }, [isOpen, event]);
 
@@ -782,8 +789,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             onRequireLogin();
             return;
         }
-        if (!name || !email || !phone || !bookingDate) {
-            setFormAlertMessage("Please provide your name, email, phone number, and a booking date.");
+        if (!name || !email || !phone) {
+            setFormAlertMessage("Please provide your name, email, and phone number.");
+            setShowFormAlert(true);
+            return;
+        }
+        if (event.isDateSelectionEnabled && !bookingDate) {
+            setFormAlertMessage("Please select a booking date.");
             setShowFormAlert(true);
             return;
         }
@@ -815,7 +827,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             name,
             email,
             phone, // NEW: Include phone number
-            bookingDate: bookingDate, // NEW: Include booking date
+            bookingDate: event.isDateSelectionEnabled ? bookingDate : null, // NEW: Include booking date if enabled
             selectedTickets,
             totalPrice,
             transactionId: transactionId || null,
@@ -872,16 +884,20 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     required
                 />
             </div>
-            <div className="form-group">
-                <label className="form-label">Date of Booking</label>
-                <input
-                    type="date"
-                    className="form-input"
-                    value={bookingDate}
-                    onChange={(e) => setBookingDate(e.target.value)}
-                    required
-                />
-            </div>
+            {event.isDateSelectionEnabled && (
+                <div className="form-group">
+                    <label className="form-label">Select Booking Date</label>
+                    <Calendar
+                        onChange={handleDateChange}
+                        value={bookingDate ? new Date(bookingDate) : new Date()}
+                        minDate={eventStartDate ? new Date(eventStartDate) : new Date()}
+                        maxDate={eventEndDate ? new Date(eventEndDate) : null}
+                        tileDisabled={({ date, view }) =>
+                            view === 'month' && date < new Date(eventStartDate) || date > new Date(eventEndDate)
+                        }
+                    />
+                </div>
+            )}
             
             <div className="ticket-options-container">
                 <label className="form-label">Select Tickets</label>
@@ -1035,6 +1051,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         culturalPaymentMethod: 'link',
         culturalPaymentLink: '',
         culturalPaymentQRCode: '',
+        isDateSelectionEnabled: false, // NEW: Field for date selection
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -1073,6 +1090,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 culturalPaymentMethod: postToEdit.culturalPaymentMethod || 'link',
                 culturalPaymentLink: postToEdit.culturalPaymentLink || '',
                 culturalPaymentQRCode: postToEdit.culturalPaymentQRCode || '',
+                isDateSelectionEnabled: postToEdit.isDateSelectionEnabled || false,
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || postToEdit.culturalPaymentQRCode || '');
@@ -1432,6 +1450,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                     {/* Cultural Event Specific Fields */}
                                     {formData.type === 'culturalEvent' && (
                                         <div className="cultural-event-section">
+                                             <div className="form-group checkbox-group">
+                                                <input
+                                                    type="checkbox"
+                                                    id="isDateSelectionEnabled"
+                                                    name="isDateSelectionEnabled"
+                                                    checked={formData.isDateSelectionEnabled}
+                                                    onChange={handleFormChange}
+                                                />
+                                                <label htmlFor="isDateSelectionEnabled">Allow users to select date from a calendar</label>
+                                            </div>
                                             <div className="form-group">
                                                 <label className="form-label">Ticket Options</label>
                                                 {formData.ticketOptions.map((option, index) => (
@@ -2430,7 +2458,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
+                        onExportData={handleExportRegistrations}
                     />
                 ))}
             </div>
@@ -2869,7 +2897,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                                 onShowRegistrationModal(event);
                             }}
                             isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
+                            onExportData={handleExportRegistrations}
                         />
                     ))}
                 </div>
