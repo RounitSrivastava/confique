@@ -491,7 +491,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         // Validate custom phone-like fields dynamically
         const phoneKeywords = ['phone', 'mobile', 'contact'];
         const customPhoneFields = customFields
-            .map(field => field.split(':')[0].trim()) // Extract only the field name before the colon
+            .map(field => field.split(':')[0].trim())
             .filter(fieldName => phoneKeywords.some(keyword => fieldName.toLowerCase().includes(keyword)));
             
         for (const field of customPhoneFields) {
@@ -729,8 +729,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState(''); // NEW: Phone number state
-    const [bookingDate, setBookingDate] = useState(''); // NEW: Booking date state
+    const [phone, setPhone] = useState('');
+    const [selectedDates, setSelectedDates] = useState([]); // Array to store multiple dates
     const [transactionId, setTransactionId] = useState('');
     const [ticketSelections, setTicketSelections] = useState(() => event.ticketOptions.map(() => ({ quantity: 0 })));
     
@@ -740,21 +740,16 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     
-    // Convert event start/end dates to local date strings for the calendar
-    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate).toISOString().slice(0, 10) : '';
-    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate).toISOString().slice(0, 10) : '';
-
-    const handleDateChange = (date) => {
-        const formattedDate = date.toISOString().slice(0, 10);
-        setBookingDate(formattedDate);
-    };
+    // Convert event start/end dates to Date objects
+    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
+    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
 
     useEffect(() => {
         if (isOpen) {
             setName('');
             setEmail('');
-            setPhone(''); // Reset phone number
-            setBookingDate(''); // Reset booking date
+            setPhone('');
+            setSelectedDates([]);
             setTransactionId('');
             setTicketSelections(event.ticketOptions.map(() => ({ quantity: 0 })));
             setShowPaymentStep(false);
@@ -772,9 +767,18 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const calculateTotalPrice = () => {
+        // Calculate number of days in the selected range
+        let numberOfDays = 0;
+        if (selectedDates.length > 0) {
+            const startDate = selectedDates[0];
+            const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
+            numberOfDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
+        }
+
         return ticketSelections.reduce((total, selection, index) => {
             const price = event.ticketOptions[index].ticketPrice;
-            return total + (price * selection.quantity);
+            // Total price is now (price * quantity) * number of days
+            return total + (price * selection.quantity * numberOfDays);
         }, 0);
     };
     
@@ -794,8 +798,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        if (event.isDateSelectionEnabled && !bookingDate) {
-            setFormAlertMessage("Please select a booking date.");
+        if (event.isDateSelectionEnabled && selectedDates.length === 0) {
+            setFormAlertMessage("Please select at least one booking date.");
             setShowFormAlert(true);
             return;
         }
@@ -805,7 +809,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return;
         }
         
-        if (!isFree) {
+        if (!isFree && isPaymentMethodSet) {
             setShowPaymentStep(true);
         } else {
             handleFinalRegistration();
@@ -826,8 +830,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         const registrationData = {
             name,
             email,
-            phone, // NEW: Include phone number
-            bookingDate: event.isDateSelectionEnabled ? bookingDate : null, // NEW: Include booking date if enabled
+            phone,
+            bookingDates: event.isDateSelectionEnabled ? selectedDates.map(d => d.toISOString().slice(0, 10)) : [],
             selectedTickets,
             totalPrice,
             transactionId: transactionId || null,
@@ -884,16 +888,18 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     required
                 />
             </div>
+            
             {event.isDateSelectionEnabled && (
                 <div className="form-group">
-                    <label className="form-label">Select Booking Date</label>
+                    <label className="form-label">Select Booking Date(s)</label>
                     <Calendar
-                        onChange={handleDateChange}
-                        value={bookingDate ? new Date(bookingDate) : new Date(eventStartDate)} // Set initial value to event start date
-                        minDate={eventStartDate ? new Date(eventStartDate) : new Date()}
-                        maxDate={eventEndDate ? new Date(eventEndDate) : null}
+                        onChange={setSelectedDates}
+                        value={selectedDates}
+                        minDate={eventStartDate}
+                        maxDate={eventEndDate}
+                        selectRange={true}
                         tileDisabled={({ date, view }) =>
-                            view === 'month' && (date < new Date(eventStartDate) || (eventEndDate && date > new Date(eventEndDate)))
+                            view === 'month' && (date < eventStartDate || (eventEndDate && date > eventEndDate))
                         }
                     />
                 </div>
@@ -928,9 +934,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected}
+                    disabled={!hasTicketsSelected || (event.isDateSelectionEnabled && selectedDates.length === 0)}
                 >
-                    {isFree ? 'Submit Registration' : 'Proceed to Payment'}
+                    {isFree || !isPaymentMethodSet ? 'Submit Registration' : 'Proceed to Payment'}
                 </button>
             </div>
         </form>
@@ -1051,7 +1057,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         culturalPaymentMethod: 'link',
         culturalPaymentLink: '',
         culturalPaymentQRCode: '',
-        isDateSelectionEnabled: false, // NEW: Field for date selection
+        isDateSelectionEnabled: false,
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -1245,7 +1251,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 }
             }
         }
-    
+        
         let submissionData = { ...formData };
         if (!hasRegistration) {
             submissionData = {
@@ -1993,14 +1999,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                                 <p>{event.duration || 'N/A'}</p>
                             </div>
                         </div>
-                        {/* Removed "Tickets Needed For" from Event Detail Page */}
-                        {/* <div className="info-grid-item">
-                            <Ticket size={20} />
-                            <div>
-                                <strong>Tickets Needed For</strong>
-                                <p>{event.ticketsNeeded || 'N/A'}</p>
-                            </div>
-                        </div> */}
                     </div>
 
                     <div className="event-detail-venue-section">
@@ -2345,7 +2343,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span>{registrationCount || 0}</span>
                             </div>
                         )}
-                        {isUserPost && isProfileView && post.type === 'event' && (
+                        {isUserPost && isProfileView && (post.type === 'event' || post.type === 'culturalEvent') && (
                             <button
                                 className="action-btn export-data-btn"
                                 onClick={(e) => { e.stopPropagation(); onExportData(post._id, post.title); }}
@@ -2822,7 +2820,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
         }, 0)
     };
 
@@ -2963,9 +2961,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //     .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //     .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //     .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -3058,7 +3056,7 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
         likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' ? sum + (registrations[post._id] || 0) : sum;
+            return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
         }, 0)
     };
 
