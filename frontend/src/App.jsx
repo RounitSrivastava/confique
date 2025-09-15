@@ -1540,6 +1540,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                     <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                         <div className="upload-btn">
                                                                             <ImageIcon size={16} />
+                                                                            <span>Upload QR Code</span>
                                                                         </div>
                                                                     </label>
                                                                     <input
@@ -1703,6 +1704,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                         <label htmlFor="qr-file-input" className="upload-btn-wrapper">
                                                                                             <div className="upload-btn">
                                                                                                 <ImageIcon size={16} />
+                                                                                                <span>Upload QR Code</span>
                                                                                             </div>
                                                                                         </label>
                                                                                         <input
@@ -2300,94 +2302,94 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 >
                                     <Ticket size={20} />
                                     <span>Register</span>
-                                </button>
-                            </div>
-                            {post.source && (
-                                <p className="event-source-display">
-                                    Source: {post.source}
-                                </p>
-                            )}
-                        </>
-                    )}
-                    {post.type === 'culturalEvent' && (
-                        <div className="cultural-event-details">
-                            <ul className="ticket-options-list">
-                                {post.ticketOptions.map((option, index) => (
-                                    <li key={index} className="ticket-option-item">
-                                        <Ticket size={16} />
-                                        <span>{option.ticketType}: ₹{option.ticketPrice}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                            <button className="action-btn btn-primary" onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}>
-                                <Ticket size={18} /> Register Now
                             </button>
                         </div>
-                    )}
-
-                    <div className="post-actions">
-                        <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
-                            <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
-                            <span>{post.likes}</span>
-                        </button>
-                        <button className="action-btn" onClick={handleCommentIconClick}>
-                            <MessageIcon size={20} />
-                            <span>{post.commentData ? post.commentData.length : 0}</span>
-                        </button>
-                        {isUserPost && isProfileView && (
-                            <div className="post-stat">
-                                <Ticket size={20} />
-                                <span>{registrationCount || 0}</span>
-                            </div>
+                        {post.source && (
+                            <p className="event-source-display">
+                                Source: {post.source}
+                            </p>
                         )}
-                        {isUserPost && isProfileView && (post.type === 'event' || post.type === 'culturalEvent') && (
-                            <button
-                                className="action-btn export-data-btn"
-                                onClick={(e) => { e.stopPropagation(); onExportData(post._id, post.title); }}
-                            >
-                                <ArrowDownToLine size={20} />
-                                <span className="export-text">Export Data</span>
-                            </button>
-                        )}
-                        <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
-                            <Share2 size={20} />
-                            <span className="share-text">Share</span>
+                    </>
+                )}
+                {post.type === 'culturalEvent' && (
+                    <div className="cultural-event-details">
+                        <ul className="ticket-options-list">
+                            {post.ticketOptions.map((option, index) => (
+                                <li key={index} className="ticket-option-item">
+                                    <Ticket size={16} />
+                                    <span>{option.ticketType}: ₹{option.ticketPrice}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <button className="action-btn btn-primary" onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}>
+                            <Ticket size={18} /> Register Now
                         </button>
                     </div>
+                )}
 
-                    {isCommentsOpen && (
-                        <CommentSection
-                            comments={post.commentData || []}
-                            onAddComment={(commentText) => onAddComment(post._id, commentText)}
-                            onCloseComments={handleBackArrowClick}
-                            currentUser={currentUser}
-                        />
+                <div className="post-actions">
+                    <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                        <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
+                        <span>{post.likes}</span>
+                    </button>
+                    <button className="action-btn" onClick={handleCommentIconClick}>
+                        <MessageIcon size={20} />
+                        <span>{post.commentData ? post.commentData.length : 0}</span>
+                    </button>
+                    {isUserPost && isProfileView && (
+                        <div className="post-stat">
+                            <Ticket size={20} />
+                            <span>{registrationCount || 0}</span>
+                        </div>
                     )}
-                </>
-            )}
-            <CustomMessageModal
-                isOpen={showShareAlert}
-                onClose={() => setShowShareAlert(false)}
-                title="Link Copied!"
-                message="The link has been copied to your clipboard."
-                showConfirm={false}
-            />
-        </>
-    );
-
-    return (
-        isCommentsOpen ? (
-            <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
-                <div className="post-card comments-open-fixed">
-                    {renderPostCardContent()}
+                    {isUserPost && isProfileView && (post.type === 'event' || post.type === 'culturalEvent') && (
+                        <button
+                            className="action-btn export-data-btn"
+                            onClick={(e) => { e.stopPropagation(); onExportData(post._id, post.title); }}
+                        >
+                            <ArrowDownToLine size={20} />
+                            <span className="export-text">Export Data</span>
+                        </button>
+                    )}
+                    <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                        <Share2 size={20} />
+                        <span className="share-text">Share</span>
+                    </button>
                 </div>
-            </div>
-        ) : (
-            <div className="post-card">
+
+                {isCommentsOpen && (
+                    <CommentSection
+                        comments={post.commentData || []}
+                        onAddComment={(commentText) => onAddComment(post._id, commentText)}
+                        onCloseComments={handleBackArrowClick}
+                        currentUser={currentUser}
+                    />
+                )}
+            </>
+        )}
+        <CustomMessageModal
+            isOpen={showShareAlert}
+            onClose={() => setShowShareAlert(false)}
+            title="Link Copied!"
+            message="The link has been copied to your clipboard."
+            showConfirm={false}
+        />
+    </>
+);
+
+return (
+    isCommentsOpen ? (
+        <div className={`post-card-overlay ${isCommentsOpen ? 'active' : ''}`} ref={overlayRef}>
+            <div className="post-card comments-open-fixed">
                 {renderPostCardContent()}
             </div>
-        )
-    );
+        </div>
+    ) : (
+        <div className="post-card">
+            {renderPostCardContent()}
+        </div>
+    )
+);
 };
 
 // Home Component - Displays a feed of posts
@@ -2439,7 +2441,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2474,7 +2476,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2509,7 +2511,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2545,7 +2547,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={handleAddComment}
+                            onAddComment={onAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -3335,8 +3337,8 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                         value={value}
                         tileContent={tileContent} // Renders event ticks
                         className="react-calendar"
-                        prev2Label={null} // Hide double arrow navigation
-                        next2Label={null} // Hide double arrow navigation
+                        prev2Label={null}
+                        next2Label={null}
                         locale="en-US"
                     />
                     <div className="events-for-date">
@@ -4623,7 +4625,11 @@ const App = () => {
             icon: <Ticket className="nav-icon" />,
             action: () => setActiveSection('cultural-events'),
             component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} {...postCardProps} />,
-            rightSidebar: () => <EventsRightSidebar posts={posts.filter(p => p.type === 'culturalEvent')} myCalendarEvents={myCalendarEvents} onOpenEventDetail={handleOpenEventDetail} />,
+            rightSidebar: () => <EventsRightSidebar
+                posts={posts.filter(p => p.type === 'culturalEvent')}
+                myCalendarEvents={myCalendarEvents}
+                onOpenEventDetail={handleOpenEventDetail}
+            />,
         },
         {
             id: 'notifications',
