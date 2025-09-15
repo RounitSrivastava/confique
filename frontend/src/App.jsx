@@ -2458,7 +2458,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
-                        onExportData={handleExportRegistrations}
+                        onExportData={onExportData}
                     />
                 ))}
             </div>
