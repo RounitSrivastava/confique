@@ -727,11 +727,11 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // NEW: Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
-    const [selectedTicketIndex, setSelectedTicketIndex] = useState('');
-    const [ticketQuantity, setTicketQuantity] = useState(1);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [transactionId, setTransactionId] = useState('');
+    const [ticketSelections, setTicketSelections] = useState(() => event.ticketOptions.map(() => ({ quantity: 0 })));
+    
     const [showFormAlert, setShowFormAlert] = useState(false);
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -740,22 +740,34 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedTicketIndex('');
-            setTicketQuantity(1);
             setName('');
             setEmail('');
             setTransactionId('');
+            setTicketSelections(event.ticketOptions.map(() => ({ quantity: 0 })));
             setShowPaymentStep(false);
             setShowFormAlert(false);
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
         }
-    }, [isOpen]);
+    }, [isOpen, event]);
 
-    const selectedTicket = event.ticketOptions[selectedTicketIndex];
-    const totalPrice = selectedTicket ? selectedTicket.ticketPrice * ticketQuantity : 0;
-    const isFree = selectedTicket ? selectedTicket.ticketPrice === 0 : false;
+    const handleQuantityChange = (index, newQuantity) => {
+        const updatedSelections = [...ticketSelections];
+        updatedSelections[index] = { ...updatedSelections[index], quantity: Math.max(0, parseInt(newQuantity) || 0) };
+        setTicketSelections(updatedSelections);
+    };
+
+    const calculateTotalPrice = () => {
+        return ticketSelections.reduce((total, selection, index) => {
+            const price = event.ticketOptions[index].ticketPrice;
+            return total + (price * selection.quantity);
+        }, 0);
+    };
+    
+    const totalPrice = calculateTotalPrice();
+    const hasTicketsSelected = ticketSelections.some(selection => selection.quantity > 0);
+    const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
 
     const handleProceedToPayment = (e) => {
@@ -764,8 +776,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             onRequireLogin();
             return;
         }
-        if (!name || !email || selectedTicketIndex === '') {
-            setFormAlertMessage("Please provide your name, email, and select a ticket.");
+        if (!name || !email) {
+            setFormAlertMessage("Please provide your name and email.");
+            setShowFormAlert(true);
+            return;
+        }
+        if (!hasTicketsSelected) {
+            setFormAlertMessage("Please select at least one ticket.");
             setShowFormAlert(true);
             return;
         }
@@ -773,7 +790,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         if (!isFree) {
             setShowPaymentStep(true);
         } else {
-            // No payment needed, proceed to register
             handleFinalRegistration();
         }
     };
@@ -781,12 +797,19 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
 
+        const selectedTickets = ticketSelections
+            .filter(selection => selection.quantity > 0)
+            .map((selection, index) => ({
+                ticketType: event.ticketOptions[index].ticketType,
+                ticketPrice: event.ticketOptions[index].ticketPrice,
+                quantity: selection.quantity,
+            }));
+
         const registrationData = {
             name,
             email,
-            ticketQuantity,
+            selectedTickets,
             totalPrice,
-            ticketType: selectedTicket.ticketType,
             transactionId: transactionId || null,
         };
 
@@ -831,31 +854,24 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             
-            <div className="form-group">
-                <label className="form-label">Select Ticket Type</label>
-                <select className="form-input" value={selectedTicketIndex} onChange={(e) => setSelectedTicketIndex(e.target.value)} required>
-                    <option value="">Select a ticket</option>
-                    {event.ticketOptions.map((option, index) => (
-                        <option key={index} value={index}>
-                            {option.ticketType} (₹{option.ticketPrice})
-                        </option>
-                    ))}
-                </select>
+            <div className="ticket-options-container">
+                <label className="form-label">Select Tickets</label>
+                {event.ticketOptions.map((option, index) => (
+                    <div key={index} className="ticket-selection-item">
+                        <div className="ticket-info">
+                            <span className="ticket-type">{option.ticketType}</span>
+                            <span className="ticket-price">₹{option.ticketPrice}</span>
+                        </div>
+                        <input
+                            type="number"
+                            className="ticket-quantity-input"
+                            value={ticketSelections[index]?.quantity || 0}
+                            onChange={(e) => handleQuantityChange(index, e.target.value)}
+                            min="0"
+                        />
+                    </div>
+                ))}
             </div>
-
-            {selectedTicket && (
-                <div className="form-group">
-                    <label className="form-label">Quantity</label>
-                    <input
-                        type="number"
-                        className="form-input"
-                        value={ticketQuantity}
-                        onChange={(e) => setTicketQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                        min="1"
-                        required
-                    />
-                </div>
-            )}
             
             <div className="total-price-display">
                 <span>Total Price: </span>
@@ -867,7 +883,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={selectedTicketIndex === ''}
+                    disabled={!hasTicketsSelected}
                 >
                     {isFree ? 'Submit Registration' : 'Proceed to Payment'}
                 </button>
