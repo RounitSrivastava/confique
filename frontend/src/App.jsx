@@ -734,9 +734,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     
     const [showFormAlert, setShowFormAlert] = useState(false);
     const [formAlertMessage, setFormAlertMessage] = useState('');
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
+    const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         if (isOpen) {
@@ -745,9 +745,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setTransactionId('');
             setTicketSelections(event.ticketOptions.map(() => ({ quantity: 0 })));
             setShowPaymentStep(false);
+            setShowSuccessScreen(false);
             setShowFormAlert(false);
             setFormAlertMessage('');
-            setShowSuccessModal(false);
             setSuccessMessage('');
         }
     }, [isOpen, event]);
@@ -821,8 +821,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         
         try {
             await onRegister(event._id, registrationData);
-            setSuccessMessage(`Thank you ${name} for registering for ${event.title}!`);
-            setShowSuccessModal(true);
+            setSuccessMessage(`Thank you ${name} for your payment! Registration confirmed.`);
+            setShowSuccessScreen(true);
         } catch (error) {
             setFormAlertMessage(`Registration failed: ${error.message}`);
             setShowFormAlert(true);
@@ -837,7 +837,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleClose = () => {
         setShowPaymentStep(false);
-        setShowSuccessModal(false);
+        setShowSuccessScreen(false);
         onClose();
     };
 
@@ -948,31 +948,41 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         </form>
     );
 
+    const renderSuccessScreen = () => (
+        <div className="success-screen">
+            <div className="modal-header">
+                <h2 className="modal-title">Registration Successful!</h2>
+                <button className="modal-close" onClick={onClose}>
+                    <X size={24} />
+                </button>
+            </div>
+            <div className="modal-body">
+                <p className="modal-message">{successMessage}</p>
+            </div>
+        </div>
+    );
+
+    // Conditional rendering for the main modal content
+    const renderModalContent = () => {
+        if (showSuccessScreen) {
+            return renderSuccessScreen();
+        } else if (showPaymentStep) {
+            return renderPaymentStep();
+        } else {
+            return renderRegistrationForm();
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="modal-content small-modal">
-                <div className="modal-header">
-                    <h2 className="modal-title">Register for {event.title}</h2>
-                    <button className="modal-close" onClick={onClose}>
-                        <X size={24} />
-                    </button>
-                </div>
-                <div className="modal-body">
-                    {showPaymentStep ? renderPaymentStep() : renderRegistrationForm()}
-                </div>
+                {renderModalContent()}
             </div>
             <CustomMessageModal
                 isOpen={showFormAlert}
                 onClose={() => setShowFormAlert(false)}
                 title="Validation Error"
                 message={formAlertMessage}
-                showConfirm={false}
-            />
-            <CustomMessageModal
-                isOpen={showSuccessModal}
-                onClose={handleClose}
-                title="Registration Successful!"
-                message={successMessage}
                 showConfirm={false}
             />
         </div>
