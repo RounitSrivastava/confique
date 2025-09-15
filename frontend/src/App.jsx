@@ -890,7 +890,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </div>
                 )}
                 
-                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode && (
+                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode ? (
                     <div className="form-group">
                         <label className="form-label">Payment via QR Code</label>
                         <img
@@ -911,6 +911,10 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             required
                         />
                     </div>
+                ) : (
+                    <p className="placeholder-text error-message">
+                        The event host has not provided a QR code for this event. Please contact them for payment details.
+                    </p>
                 )}
             </div>
             <div className="modal-actions">
@@ -2368,7 +2372,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={onReportPost}
-                        onDeletePost={onDeletePost} // Corrected line
+                        onDeletePost={onDeletePost} 
                         onEditPost={onEditPost}
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
@@ -2464,7 +2468,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={onAddComment} // Corrected line
+                            onAddComment={onAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
@@ -2807,7 +2811,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onShowCalendarAlert={onShowCalendarAlert}
                             onShowRegistrationModal={onShowRegistrationModal}
                             isLoggedIn={!!currentUser}
-                            onExportData={handleExportRegistrations}
+                            onExportData={onExportData} // Corrected line
                         />
                     ))}
                 </div>
