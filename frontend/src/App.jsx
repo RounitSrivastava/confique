@@ -785,10 +785,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const handleDateSelect = (date) => {
         const dateString = new Date(date).toLocaleDateString();
         setFormData(prev => {
-            // FIX: The error originated here. The previous code didn't handle the case where `prev.selectedDates` was undefined. 
-            // This new check ensures it's always an array.
-            const currentDates = prev.selectedDates || []; 
-            const newDates = new Set(currentDates);
+            // FIX: Check if prev.selectedDates is defined before using it
+            const newDates = new Set(prev.selectedDates || []); 
             if (newDates.has(dateString)) {
                 newDates.delete(dateString);
             } else {
@@ -993,7 +991,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             <button
                                 key={index}
                                 type="button"
-                                className={`date-selection-btn ${formData.selectedDates.includes(dateStr) ? 'selected' : ''}`}
+                                className={`date-selection-btn ${(formData.selectedDates || []).includes(dateStr) ? 'selected' : ''}`}
                                 onClick={() => handleDateSelect(dateStr)}
                             >
                                 {dateStr}
@@ -1032,7 +1030,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected || !hasDatesSelected}
+                    disabled={!hasTicketsSelected || (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected)}
                 >
                     {isProceedToPaymentEnabled ? 'Proceed to Payment' : 'Submit Registration'}
                 </button>
