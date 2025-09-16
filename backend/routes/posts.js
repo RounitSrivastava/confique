@@ -532,8 +532,8 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const Post = require('../models/Post');
-const Registration = require('../models/Registration');
+// FIX: Correctly import both Post and Registration models from the consolidated file
+const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -1006,7 +1006,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const customFieldsSet = new Set();
     const headers = new Set(['Name', 'Email']);
 
     // Gather all possible custom fields and other headers
@@ -1025,6 +1024,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         }
     });
 
+    headers.add('Registered At');
     const finalHeaders = Array.from(headers);
     
     const data = registrations.flatMap(reg => {
@@ -1057,6 +1057,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             // For registrations without ticket details (e.g., free events)
             return [{
                 ...baseRow,
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
                 'Registered At': reg.createdAt.toISOString(),
             }];
         }
