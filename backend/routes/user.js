@@ -293,8 +293,8 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
 const User = require('../models/User');
-const Post = require('../models/Post');
-const Registration = require('../models/Registration');
+// FIX: Correctly import both Post and Registration models from the consolidated file
+const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
