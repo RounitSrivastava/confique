@@ -809,7 +809,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        if (event.isDateSelectionEnabled && !hasDatesSelected) {
+        if (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected) {
             setFormAlertMessage("Please select at least one booking date.");
             setShowFormAlert(true);
             return;
@@ -842,7 +842,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            bookingDates: event.isDateSelectionEnabled ? Array.from(formData.selectedDates) : [],
+            bookingDates: event.availableDates && event.availableDates.length > 0 ? Array.from(formData.selectedDates) : [],
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
@@ -2621,7 +2621,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         post={post}
                         onLike={onLike}
                         onShare={onShare}
-                        onAddComment={handleAddComment}
+                        onAddComment={onAddComment}
                         likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
                         setOpenCommentPostId={setOpenCommentPostId}
@@ -2657,7 +2657,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             post={post}
                             onLike={onLike}
                             onShare={onShare}
-                            onAddComment={handleAddComment}
+                            onAddComment={onAddComment}
                             likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
                             setOpenCommentPostId={setOpenCommentPostId}
