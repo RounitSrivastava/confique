@@ -58,27 +58,28 @@ const registrationSchema = mongoose.Schema({
         type: String,
         required: true,
     },
-    // FIX: Made the phone field optional for cultural events
     phone: {
         type: String,
-    },
-    // NEW: Cultural event specific fields are added here
-    ticketType: {
-        type: String,
-    },
-    ticketQuantity: {
-        type: Number,
-    },
-    totalPrice: {
-        type: Number,
     },
     // The transaction ID field is useful for both types of paid events
     transactionId: {
         type: String,
     },
-    // General custom fields for standard events
+    // NEW: Cultural event specific fields are now added here
+    bookingDates: [{
+        type: String,
+    }],
+    selectedTickets: [{
+        ticketType: { type: String },
+        ticketPrice: { type: Number },
+        quantity: { type: Number },
+    }],
+    totalPrice: {
+        type: Number,
+    },
+    // FIXED: Use Mixed type for dynamic custom fields
     customFields: {
-        type: Object,
+        type: mongoose.Schema.Types.Mixed,
         default: {}
     },
     createdAt: {

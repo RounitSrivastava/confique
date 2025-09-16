@@ -5,41 +5,37 @@ const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
-    email: { 
-        type: String, 
-        required: true, 
+    email: {
+        type: String,
+        required: true,
         unique: true,
-        sparse: true 
+        sparse: true
     },
-    password: { 
-        type: String, 
-        sparse: true 
+    password: {
+        type: String,
+        sparse: true
     },
-    phone: { 
-        type: String, 
+    phone: {
+        type: String,
         sparse: true,
-        default: null 
+        default: null
     },
-    avatar: { 
-        type: String, 
-        default: null 
+    avatar: {
+        type: String,
+        default: null
     },
-    isAdmin: { 
-        type: Boolean, 
-        default: false 
+    isAdmin: {
+        type: Boolean,
+        default: false
     },
-    googleId: { 
-        type: String, 
-        unique: true, 
-        sparse: true 
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
     },
-    // REMOVED: The registrations field is moved to the Post model for better data modeling.
-    // ADDED: This is the critical field for tracking which posts a user has liked.
-    likedPosts: [{ 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Post' 
-    }],
-}, { 
+    // The likedPosts field is managed from the Post model's likedBy array for efficiency.
+    // This field is no longer needed here.
+}, {
     timestamps: true,
     collation: { locale: 'en', strength: 2 }
 });

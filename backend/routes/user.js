@@ -302,12 +302,11 @@ const cloudinary = require('cloudinary').v2;
 const router = express.Router();
 
 // Helper function to upload base64 images to Cloudinary
-// FIX: This helper is now more generic to handle different folders.
 const uploadImage = async (image, folderName) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
-            folder: folderName || 'confique_uploads', // Default folder
+            folder: folderName || 'confique_uploads',
         });
         return result.secure_url;
     } catch (error) {
@@ -316,9 +315,9 @@ const uploadImage = async (image, folderName) => {
     }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 router.get('/profile', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
@@ -335,9 +334,9 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Update user avatar
-// @route   PUT /api/users/profile/avatar
-// @access  Private
+// @desc    Update user avatar
+// @route   PUT /api/users/profile/avatar
+// @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user) {
@@ -357,7 +356,6 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
                     console.error('Cloudinary deletion failed for old avatar:', cloudinaryErr);
                 }
             }
-            // FIX: Use the generic uploadImage helper with the correct folder
             const imageUrl = await uploadImage(newAvatar, 'confique_avatars');
             if (imageUrl) {
                 updatedAvatarUrl = imageUrl;
@@ -387,18 +385,18 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Get a list of all posts the user has liked
-// @route   GET /api/users/liked-posts
-// @access  Private
+// @desc    Get a list of all posts the user has liked
+// @route   GET /api/users/liked-posts
+// @access  Private
 router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     const likedPosts = await Post.find({ likedBy: req.user._id });
     const likedPostIds = likedPosts.map(post => post._id);
     res.json({ likedPostIds });
 }));
 
-// @desc    Get event IDs the current user has registered for
-// @route   GET /api/users/my-events-registrations
-// @access  Private
+// @desc    Get event IDs the current user has registered for
+// @route   GET /api/users/my-events-registrations
+// @access  Private
 router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const registeredEvents = await Registration.find({ userId: userId }).select('eventId');
@@ -406,9 +404,9 @@ router.get('/my-events-registrations', protect, asyncHandler(async (req, res) =>
     res.json({ registeredEventIds });
 }));
 
-// @desc    Get registration counts for events created by the logged-in user
-// @route   GET /api/users/my-events/registration-counts
-// @access  Private
+// @desc    Get registration counts for events created by the logged-in user
+// @route   GET /api/users/my-events/registration-counts
+// @access  Private
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
     try {
         const myEvents = await Post.find({ userId: req.user._id, type: { $in: ['event', 'culturalEvent'] } });
@@ -426,14 +424,13 @@ router.get('/my-events/registration-counts', protect, asyncHandler(async (req, r
     }
 }));
 
-// @desc    Register for an event
-// @route   POST /api/users/register-event/:eventId
-// @access  Private
-// FIX: This route is now dynamic to handle both event types
+// @desc    Register for an event
+// @route   POST /api/users/register-event/:eventId
+// @access  Private
 router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user._id;
-    
+
     const event = await Post.findById(eventId);
     if (!event) {
         res.status(404);
@@ -446,27 +443,29 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         throw new Error('You are already registered for this event');
     }
 
+    const { 
+        name, 
+        email, 
+        phone, 
+        transactionId,
+        bookingDates,
+        selectedTickets,
+        totalPrice,
+        ...customFields
+    } = req.body;
+
     const newRegistrationData = {
         eventId,
         userId,
-        name: req.body.name,
-        email: req.body.email,
+        name,
+        email,
+        phone,
+        transactionId,
+        customFields,
+        bookingDates,
+        selectedTickets,
+        totalPrice
     };
-
-    if (event.type === 'event') {
-        Object.assign(newRegistrationData, {
-            phone: req.body.phone,
-            customFields: req.body.customFields,
-            transactionId: req.body.transactionId,
-        });
-    } else if (event.type === 'culturalEvent') {
-        Object.assign(newRegistrationData, {
-            ticketType: req.body.ticketType,
-            ticketQuantity: req.body.ticketQuantity,
-            totalPrice: req.body.totalPrice,
-            transactionId: req.body.transactionId, 
-        });
-    }
 
     try {
         const newRegistration = await Registration.create(newRegistrationData);
@@ -490,9 +489,9 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
     }
 }));
 
-// @desc    Admin endpoint to get all reported posts
-// @route   GET /api/users/admin/reported-posts
-// @access  Private, Admin
+// @desc    Admin endpoint to get all reported posts
+// @route   GET /api/users/admin/reported-posts
+// @access  Private, Admin
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
     const reportedPosts = await Notification.find({ type: 'report' })
         .populate('reporter', 'name email')
@@ -500,9 +499,9 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
     res.json(reportedPosts);
 }));
 
-// @desc    Admin endpoint to get all registrations for a specific event
-// @route   GET /api/users/admin/registrations/:eventId
-// @access  Private, Admin
+// @desc    Admin endpoint to get all registrations for a specific event
+// @route   GET /api/users/admin/registrations/:eventId
+// @access  Private, Admin
 router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.eventId);
     
@@ -518,9 +517,9 @@ router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, re
     res.json(registrations);
 }));
 
-// @desc    Admin endpoint to delete a post and its reports
-// @route   DELETE /api/users/admin/delete-post/:id
-// @access  Private, Admin
+// @desc    Admin endpoint to delete a post and its reports
+// @route   DELETE /api/users/admin/delete-post/:id
+// @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const postId = req.params.id;
     const post = await Post.findById(postId);
@@ -535,7 +534,7 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     }
 }));
 
-// NEW ROUTE: GET /api/posts/export-registrations/:eventId
+// NEW ROUTE: GET /api/users/export-registrations/:eventId
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -552,54 +551,65 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const hasPhone = registrations.some(reg => reg.phone);
-    const hasTicketInfo = registrations.some(reg => reg.ticketType);
-    
-    let fields = [
-        'Name', 
-        'Email', 
-    ];
+    const headers = new Set(['Name', 'Email']);
 
-    if (hasPhone) fields.push('Phone');
-    if (hasTicketInfo) {
-        fields.push('Ticket Type', 'Quantity', 'Total Price');
-    }
-    if (registrations.some(reg => reg.transactionId)) fields.push('Transaction ID');
-
-    let customFieldsSet = new Set();
+    // Gather all possible custom fields and other headers
     registrations.forEach(reg => {
+        if (reg.phone) headers.add('Phone');
+        if (reg.transactionId) headers.add('Transaction ID');
         if (reg.customFields) {
-            Object.keys(reg.customFields).forEach(field => customFieldsSet.add(field));
+            Object.keys(reg.customFields).forEach(key => headers.add(key));
+        }
+        if (reg.bookingDates && reg.bookingDates.length > 0) {
+             headers.add('Booking Dates');
+        }
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
+            headers.add('Total Price');
         }
     });
-    const customFields = [...customFieldsSet];
-    fields = [...fields, ...customFields];
-    fields.push('Registered At');
 
-    const data = registrations.map(reg => {
-        const row = {
+    headers.add('Registered At');
+    const finalHeaders = Array.from(headers);
+    
+    const data = registrations.flatMap(reg => {
+        const baseRow = {
             'Name': reg.name,
             'Email': reg.email,
-            'Registered At': reg.createdAt.toISOString(),
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
         };
-
-        if (hasPhone) row['Phone'] = reg.phone || '';
-        if (hasTicketInfo) {
-            row['Ticket Type'] = reg.ticketType || '';
-            row['Quantity'] = reg.ticketQuantity || '';
-            row['Total Price'] = reg.totalPrice || '';
-        }
-        if (reg.transactionId) row['Transaction ID'] = reg.transactionId;
-
-        for (const field of customFields) {
-            row[field] = reg.customFields[field] || '';
-        }
         
-        return row;
+        // Add all custom fields dynamically to the base row
+        if (reg.customFields) {
+            for (const key of Object.keys(reg.customFields)) {
+                baseRow[key] = reg.customFields[key] || '';
+            }
+        }
+
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            return reg.selectedTickets.map(ticket => ({
+                ...baseRow,
+                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                'Ticket Type': ticket.ticketType || '',
+                'Ticket Quantity': ticket.quantity || '',
+                'Ticket Price': ticket.ticketPrice || '',
+                'Total Price': reg.totalPrice || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }));
+        } else {
+            return [{
+                ...baseRow,
+                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }];
+        }
     });
 
     try {
-        const json2csvParser = new Parser({ fields });
+        const json2csvParser = new Parser({ fields: finalHeaders });
         const csv = json2csvParser.parse(data);
 
         res.header('Content-Type', 'text/csv');
@@ -610,6 +620,5 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
-
 
 module.exports = router;
