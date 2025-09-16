@@ -727,21 +727,18 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
-    // Correctly initialize formData with a function to avoid shared state across renders
     const getInitialFormData = () => {
         const base = {
             name: '',
             email: '',
             phone: '',
             transactionId: '',
-            // Use an array of strings for dates to simplify comparison
             selectedDates: [],
         };
 
         if (event.registrationFields) {
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
             customFields.forEach(field => {
-                // Initialize custom fields, avoiding overwriting base fields
                 if (!base.hasOwnProperty(field.toLowerCase().replace(/ /g, ''))) {
                     base[field] = '';
                 }
@@ -762,8 +759,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
 
-    // Ensure availableDates are processed correctly from event object
-    // Map them to a consistent string format for comparison
     const availableDates = event.availableDates ? event.availableDates.map(d => new Date(d).toLocaleDateString()) : [];
 
     useEffect(() => {
@@ -786,7 +781,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // FIX: Updated handleDateSelect logic to use toLocaleDateString for a consistent string format
     const handleDateSelect = (date) => {
         const dateString = new Date(date).toLocaleDateString();
         setFormData(prev => {
@@ -806,7 +800,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         setFormData(prev => ({ ...prev, ticketSelections: updatedSelections }));
     };
 
-    // FIX: Corrected calculation logic to multiply total ticket price by selected dates
     const calculateTotalPrice = () => {
         const totalTicketPrice = (formData.ticketSelections || []).reduce((total, selection, index) => {
             const price = event.ticketOptions[index]?.ticketPrice || 0;
@@ -868,7 +861,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            // FIX: Pass the correct array of selected date strings
             bookingDates: formData.selectedDates,
             selectedTickets,
             totalPrice,
@@ -877,7 +869,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             type: event.type,
         };
 
-        // Add custom form fields
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -888,7 +879,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             });
         }
 
-        // FIX: Add payment validation for QR code step
         if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
@@ -991,7 +981,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && renderCustomField(field)
             ))}
 
-            {/* FIX: Use the `availableDates` array from state to render date selection buttons */}
             {availableDates.length > 0 && (
                 <div className="form-group">
                     <label className="form-label">Select Booking Dates</label>
@@ -1000,7 +989,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             <button
                                 key={index}
                                 type="button"
-                                // FIX: Check against the standardized string format
                                 className={`date-selection-btn ${formData.selectedDates.includes(dateStr) ? 'selected' : ''}`}
                                 onClick={() => handleDateSelect(dateStr)}
                             >
@@ -1410,7 +1398,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
-        // Specific handling for each post type to ensure only relevant data is sent
         if (formData.type === 'event') {
             submissionData = {
                 ...submissionData,
@@ -1421,7 +1408,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentMethod: hasRegistration && registrationMethod === 'form' && formData.price > 0 ? formData.paymentMethod : '',
                 paymentLink: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'link' ? formData.paymentLink : '',
                 paymentQRCode: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'qr' ? paymentQRPreview : '',
-                // Clear cultural-event specific fields
                 ticketOptions: undefined,
                 culturalPaymentMethod: undefined,
                 culturalPaymentLink: undefined,
@@ -1431,7 +1417,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         } else if (formData.type === 'culturalEvent') {
             submissionData = {
                 ...submissionData,
-                // price field is not used for cultural events as it's part of ticketOptions
                 price: undefined,
                 registrationLink: hasRegistration && registrationMethod === 'link' ? formData.registrationLink : '',
                 enableRegistrationForm: hasRegistration && registrationMethod === 'form',
@@ -1441,15 +1426,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 culturalPaymentLink: hasRegistration && formData.culturalPaymentMethod === 'link' ? formData.culturalPaymentLink : '',
                 culturalPaymentQRCode: hasRegistration && formData.culturalPaymentMethod === 'qr' ? paymentQRPreview : '',
                 availableDates: formData.availableDates,
-                // Clear regular-event specific fields
                 paymentMethod: undefined,
                 paymentLink: undefined,
                 paymentQRCode: undefined,
             };
-        } else { // 'confession'
+        } else {
             submissionData = {
                 ...submissionData,
-                // Clear all event-specific fields
                 location: undefined,
                 eventStartDate: undefined,
                 eventEndDate: undefined,
@@ -3958,9 +3941,7 @@ const App = () => {
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
-                // Ensure number fields are correctly formatted
                 price: parseFloat(newPost.price) || 0,
-                // Ensure boolean fields are correctly formatted
                 registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
             };
 
