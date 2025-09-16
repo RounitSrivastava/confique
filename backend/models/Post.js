@@ -156,7 +156,7 @@ const postSchema = new mongoose.Schema({
     culturalPaymentMethod: { type: String, enum: ['link', 'qr'] },
     culturalPaymentLink: { type: String },
     culturalPaymentQRCode: { type: String },
-    availableDates: [{ type: String }], // NEW: Added to store cultural event dates
+    availableDates: [{ type: String }],
 }, { timestamps: true });
 
 // Pre-save hook to automatically update the comments count
