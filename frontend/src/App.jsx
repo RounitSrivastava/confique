@@ -729,7 +729,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const getInitialFormData = () => {
-        const base = { name: '', email: '', phone: '', transactionId: '' };
+        const base = { name: '', email: '', phone: '', transactionId: '', selectedDates: new Set() };
         if (event.registrationFields) {
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
             customFields.forEach(field => {
@@ -745,20 +745,17 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
     
     const [formData, setFormData] = useState(getInitialFormData);
-    const [selectedDates, setSelectedDates] = useState([]);
     const [showFormAlert, setShowFormAlert] = useState(false);
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
-
-    const eventStartDate = event.eventStartDate ? new Date(event.eventStartDate) : null;
-    const eventEndDate = event.eventEndDate ? new Date(event.eventEndDate) : null;
+    
+    const availableDates = event.availableDates ? event.availableDates.map(d => new Date(d)) : [];
 
     useEffect(() => {
         if (isOpen) {
             setFormData(getInitialFormData());
-            setSelectedDates([]);
             setShowPaymentStep(false);
             setShowFormAlert(false);
             setFormAlertMessage('');
@@ -766,6 +763,19 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setSuccessMessage('');
         }
     }, [isOpen, event]);
+    
+    const handleDateSelect = (date) => {
+        setFormData(prev => {
+            const newDates = new Set(prev.selectedDates);
+            const dateStr = date.toISOString();
+            if (newDates.has(dateStr)) {
+                newDates.delete(dateStr);
+            } else {
+                newDates.add(dateStr);
+            }
+            return { ...prev, selectedDates: newDates };
+        });
+    };
 
     const handleQuantityChange = (index, newQuantity) => {
         const updatedSelections = [...formData.ticketSelections];
@@ -774,21 +784,17 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const calculateTotalPrice = () => {
-        let numberOfDays = 0;
-        if (selectedDates.length > 0) {
-            const startDate = selectedDates[0];
-            const endDate = selectedDates.length > 1 ? selectedDates[1] : selectedDates[0];
-            numberOfDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24) + 1;
-        }
-
-        return formData.ticketSelections.reduce((total, selection, index) => {
+        const numberOfDays = formData.selectedDates.size;
+        const totalTicketPrice = formData.ticketSelections.reduce((total, selection, index) => {
             const price = event.ticketOptions[index].ticketPrice;
-            return total + (price * selection.quantity * numberOfDays);
+            return total + (price * selection.quantity);
         }, 0);
+        return totalTicketPrice * numberOfDays;
     };
 
     const totalPrice = calculateTotalPrice();
     const hasTicketsSelected = formData.ticketSelections.some(selection => selection.quantity > 0);
+    const hasDatesSelected = formData.selectedDates.size > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
 
@@ -803,7 +809,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        if (event.isDateSelectionEnabled && selectedDates.length === 0) {
+        if (event.isDateSelectionEnabled && !hasDatesSelected) {
             setFormAlertMessage("Please select at least one booking date.");
             setShowFormAlert(true);
             return;
@@ -836,13 +842,24 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            bookingDates: event.isDateSelectionEnabled ? selectedDates.map(d => d.toISOString().slice(0, 10)) : [],
+            bookingDates: event.isDateSelectionEnabled ? Array.from(formData.selectedDates) : [],
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
             eventTitle: event.title,
             type: event.type,
         };
+        
+        // Add custom form fields
+        if (event.registrationFields) {
+            event.registrationFields.split(',').forEach(field => {
+                const fieldName = field.split(':')[0].trim();
+                const fieldValue = formData[fieldName];
+                if (fieldValue) {
+                    registrationData[fieldName] = fieldValue;
+                }
+            });
+        }
 
         if (!isFree && event.culturalPaymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
@@ -873,6 +890,53 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     if (!isOpen || !event) return null;
+    
+    // Render Custom Fields Logic
+    const renderCustomField = (field) => {
+        const isDropdown = field.includes(':');
+        if (isDropdown) {
+            const [fieldName, optionsString] = field.split(':');
+            const options = optionsString.split('|');
+            const name = fieldName.trim();
+            return (
+                <div key={name} className="form-group">
+                    <label className="form-label">{name}</label>
+                    <select
+                        name={name}
+                        className="form-input"
+                        value={formData[name] || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
+                        required
+                    >
+                        <option value="">Select an option</option>
+                        {options.map((option, index) => (
+                            <option key={index} value={option.trim()}>
+                                {option.trim()}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            );
+        } else {
+            const name = field.trim();
+            const phoneKeywords = ['phone', 'mobile', 'contact'];
+            const isPhoneField = phoneKeywords.some(keyword => name.toLowerCase().includes(keyword));
+
+            return (
+                <div key={name} className="form-group">
+                    <label className="form-label">{name}</label>
+                    <input
+                        type={isPhoneField ? 'tel' : 'text'}
+                        name={name}
+                        className="form-input"
+                        value={formData[name] || ''}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
+                        required
+                    />
+                </div>
+            );
+        }
+    };
 
     const renderRegistrationForm = () => (
         <form onSubmit={handleProceedToPayment} className="modal-form">
@@ -896,61 +960,25 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     required
                 />
             </div>
-            {event.registrationFields && event.registrationFields.split(',').map((field, index) => {
-                const [fieldName, optionsString] = field.split(':');
-                const name = fieldName.trim();
-                const isDropdown = field.includes(':');
-                if (isDropdown) {
-                    const options = optionsString.split('|');
-                    return (
-                        <div key={index} className="form-group">
-                            <label className="form-label">{name}</label>
-                            <select
-                                name={name}
-                                className="form-input"
-                                value={formData[name] || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
-                                required
-                            >
-                                <option value="">Select an option</option>
-                                {options.map((option, optIndex) => (
-                                    <option key={optIndex} value={option.trim()}>
-                                        {option.trim()}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    );
-                } else {
-                    return (
-                        <div key={index} className="form-group">
-                            <label className="form-label">{name}</label>
-                            <input
-                                type="text"
-                                name={name}
-                                className="form-input"
-                                value={formData[name] || ''}
-                                onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
-                                required
-                            />
-                        </div>
-                    );
-                }
-            })}
+            {event.registrationFields && event.registrationFields.split(',').map((field, index) => (
+                field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && renderCustomField(field)
+            ))}
 
-            {event.isDateSelectionEnabled && (
+            {event.availableDates && event.availableDates.length > 0 && (
                 <div className="form-group">
-                    <label className="form-label">Select Booking Date(s)</label>
-                    <Calendar
-                        onChange={setSelectedDates}
-                        value={selectedDates}
-                        minDate={eventStartDate}
-                        maxDate={eventEndDate}
-                        selectRange={true}
-                        tileDisabled={({ date, view }) =>
-                            view === 'month' && (date < eventStartDate || (eventEndDate && date > eventEndDate))
-                        }
-                    />
+                    <label className="form-label">Select Booking Dates</label>
+                    <div className="available-dates-grid">
+                        {event.availableDates.map((dateStr, index) => (
+                            <button
+                                key={index}
+                                type="button"
+                                className={`date-selection-btn ${formData.selectedDates.has(dateStr) ? 'selected' : ''}`}
+                                onClick={() => handleDateSelect(new Date(dateStr))}
+                            >
+                                {new Date(dateStr).toLocaleDateString()}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -983,7 +1011,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected || (event.isDateSelectionEnabled && selectedDates.length === 0)}
+                    disabled={!hasTicketsSelected || !hasDatesSelected}
                 >
                     {isFree || !isPaymentMethodSet ? 'Submit Registration' : 'Proceed to Payment'}
                 </button>
@@ -1106,7 +1134,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         culturalPaymentMethod: 'link',
         culturalPaymentLink: '',
         culturalPaymentQRCode: '',
-        isDateSelectionEnabled: false,
+        availableDates: [''],
     };
 
     const [formData, setFormData] = useState(initialFormData);
@@ -1121,7 +1149,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 
     useEffect(() => {
         if (isOpen && postToEdit) {
-            const isCulturalEvent = postToEdit.type === 'culturalEvent';
             setFormData({
                 type: postToEdit.type,
                 title: postToEdit.title,
@@ -1133,7 +1160,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 duration: postToEdit.duration || '',
                 venueAddress: postToEdit.venueAddress || '',
                 source: postToEdit.source || '',
-                // Event-specific
                 price: postToEdit.price || 0,
                 registrationLink: postToEdit.registrationLink || '',
                 registrationOpen: postToEdit.registrationOpen !== undefined ? postToEdit.registrationOpen : true,
@@ -1142,12 +1168,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 paymentMethod: postToEdit.paymentMethod || 'link',
                 paymentLink: postToEdit.paymentLink || '',
                 paymentQRCode: postToEdit.paymentQRCode || '',
-                // Cultural Event specific
                 ticketOptions: postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }],
                 culturalPaymentMethod: postToEdit.culturalPaymentMethod || 'link',
                 culturalPaymentLink: postToEdit.culturalPaymentLink || '',
                 culturalPaymentQRCode: postToEdit.culturalPaymentQRCode || '',
-                isDateSelectionEnabled: postToEdit.isDateSelectionEnabled || false,
+                availableDates: postToEdit.availableDates || [''],
             });
             setImagePreviews(postToEdit.images || []);
             setPaymentQRPreview(postToEdit.paymentQRCode || postToEdit.culturalPaymentQRCode || '');
@@ -1202,6 +1227,25 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
         const newTicketOptions = formData.ticketOptions.filter((_, i) => i !== index);
         setFormData(prev => ({ ...prev, ticketOptions: newTicketOptions }));
     };
+    
+    const handleDateChange = (index, e) => {
+        const { value } = e.target;
+        const newDates = [...formData.availableDates];
+        newDates[index] = value;
+        setFormData(prev => ({ ...prev, availableDates: newDates }));
+    };
+
+    const addDateInput = () => {
+        setFormData(prev => ({
+            ...prev,
+            availableDates: [...prev.availableDates, '']
+        }));
+    };
+
+    const removeDateInput = (index) => {
+        const newDates = formData.availableDates.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, availableDates: newDates }));
+    };
 
     const handleTypeChange = (e) => {
         const newType = e.target.value;
@@ -1233,7 +1277,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 culturalPaymentMethod: 'link',
                 culturalPaymentLink: '',
                 culturalPaymentQRCode: '',
-                isDateSelectionEnabled: false,
+                availableDates: [''],
             }));
         } else {
              // Default to in-app form for cultural events, link for regular
@@ -1244,7 +1288,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: defaultMethod === 'link' ? '' : prev.registrationLink,
                 enableRegistrationForm: defaultMethod === 'form',
                 registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
-                isDateSelectionEnabled: true
             }));
         }
     };
@@ -1271,26 +1314,27 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             return;
         }
 
-        if (formData.type === 'event' && (!formData.location || !formData.eventStartDate || !formData.duration)) {
+        if ((formData.type === 'event' || formData.type === 'culturalEvent') && (!formData.location || !formData.eventStartDate || !formData.duration)) {
             setUploadAlertMessage("Please fill in all required event details (Location, Start Date, Duration).");
             setShowUploadAlert(true);
             return;
         }
-
+        
+        // Validation for Cultural Event tickets and dates
         if (formData.type === 'culturalEvent') {
             const hasEmptyTicketFields = formData.ticketOptions.some(option => !option.ticketType || option.ticketPrice < 0);
-            if (!formData.location || !formData.eventStartDate || !formData.duration || hasEmptyTicketFields) {
-                setUploadAlertMessage("Please fill in all required cultural event details (Location, Start Date, Duration, and all ticket options).");
+            const hasEmptyDateFields = formData.availableDates.some(date => !date);
+            if (hasEmptyTicketFields) {
+                setUploadAlertMessage("Please fill in all required ticket details for the cultural event.");
                 setShowUploadAlert(true);
                 return;
             }
-            if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
-                setUploadAlertMessage("Please upload a QR Code image for payment.");
+             if (hasEmptyDateFields) {
+                setUploadAlertMessage("Please fill in all available dates for the cultural event.");
                 setShowUploadAlert(true);
                 return;
             }
         }
-
 
         // Validate registration fields based on user selection
         if ((formData.type === 'event' || formData.type === 'culturalEvent') && hasRegistration) {
@@ -1306,14 +1350,25 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 return;
             }
             if (registrationMethod === 'form') {
-                if (formData.type === 'event' && formData.price > 0) {
-                    if (formData.paymentMethod === 'link' && !formData.paymentLink) {
-                        setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment.");
+                if (formData.type === 'event' && formData.price > 0 && formData.paymentMethod === 'link' && !formData.paymentLink) {
+                    setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment.");
+                    setShowUploadAlert(true);
+                    return;
+                }
+                if (formData.type === 'event' && formData.price > 0 && formData.paymentMethod === 'qr' && !paymentQRPreview) {
+                    setUploadAlertMessage("Please upload a QR Code image for payment.");
+                    setShowUploadAlert(true);
+                    return;
+                }
+                 // Cultural Event payment validation
+                 if (formData.type === 'culturalEvent' && (formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0)) {
+                    if (formData.culturalPaymentMethod === 'link' && !formData.culturalPaymentLink) {
+                        setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment for the cultural event.");
                         setShowUploadAlert(true);
                         return;
                     }
-                    if (formData.paymentMethod === 'qr' && !paymentQRPreview) {
-                        setUploadAlertMessage("Please upload a QR Code image for payment.");
+                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
+                        setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
                         setShowUploadAlert(true);
                         return;
                     }
@@ -1323,12 +1378,18 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 
         let submissionData = { ...formData };
 
-        if (formData.type === 'culturalEvent') {
-            submissionData.culturalPaymentQRCode = paymentQRPreview;
-            submissionData.enableRegistrationForm = true; // Cultural event forms are always in-app
-            submissionData.registrationOpen = true;
-        } else if (formData.type === 'event') {
-            submissionData.paymentQRCode = paymentQRPreview;
+        if (formData.type === 'event') {
+            submissionData = {
+                ...submissionData,
+                paymentQRCode: paymentQRPreview,
+            };
+        } else if (formData.type === 'culturalEvent') {
+             submissionData = {
+                ...submissionData,
+                culturalPaymentQRCode: paymentQRPreview,
+                enableRegistrationForm: registrationMethod === 'form',
+                registrationLink: registrationMethod === 'link' ? formData.registrationLink : '',
+             };
         }
         
         submissionData = {
@@ -1495,206 +1556,101 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                             required
                                         />
                                     </div>
-                                     {/* Cultural Event Specific Fields */}
-                                     {formData.type === 'culturalEvent' && (
-                                        <div className="cultural-event-section">
-                                            <div className="form-group checkbox-group">
-                                                <input
-                                                    type="checkbox"
-                                                    id="isDateSelectionEnabled"
-                                                    name="isDateSelectionEnabled"
-                                                    checked={formData.isDateSelectionEnabled}
-                                                    onChange={handleFormChange}
-                                                />
-                                                <label htmlFor="isDateSelectionEnabled">Allow users to select date from a calendar</label>
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">Ticket Options</label>
-                                                {formData.ticketOptions.map((option, index) => (
-                                                    <div key={index} className="ticket-option-row">
-                                                        <input
-                                                            type="text"
-                                                            name="ticketType"
-                                                            placeholder="e.g., Adult Ticket"
-                                                            value={option.ticketType}
-                                                            onChange={(e) => handleTicketOptionChange(index, e)}
-                                                            required
-                                                        />
-                                                        <input
-                                                            type="number"
-                                                            name="ticketPrice"
-                                                            placeholder="Price (₹)"
-                                                            value={option.ticketPrice}
-                                                            onChange={(e) => handleTicketOptionChange(index, e)}
-                                                            min="0"
-                                                            required
-                                                        />
-                                                        <button type="button" onClick={() => removeTicketOption(index)}>
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                <button type="button" className="btn-secondary add-ticket-option" onClick={addTicketOption}>
-                                                    Add Ticket Option
-                                                </button>
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">Payment Method</label>
-                                                <select
-                                                    className="form-select"
-                                                    value={formData.culturalPaymentMethod}
-                                                    onChange={handleFormChange}
-                                                    name="culturalPaymentMethod"
+
+                                    {/* Registration Options Section */}
+                                    {(formData.type === 'event' || formData.type === 'culturalEvent') && (
+                                        <div className="form-group">
+                                            <label className="form-label">Registration Required?</label>
+                                            <div className="registration-toggle-group">
+                                                <button
+                                                    type="button"
+                                                    className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
+                                                    onClick={() => setHasRegistration(false)}
                                                 >
-                                                    <option value="link">Payment Link</option>
-                                                    <option value="qr">QR Code</option>
-                                                </select>
-                                                {formData.culturalPaymentMethod === 'link' && (
-                                                    <div className="form-group">
-                                                        <label className="form-label">Payment Link</label>
-                                                        <input
-                                                            type="url"
-                                                            className="form-input"
-                                                            value={formData.culturalPaymentLink}
-                                                            onChange={handleFormChange}
-                                                            name="culturalPaymentLink"
-                                                            placeholder="https://example.com/payment"
-                                                            required
-                                                        />
-                                                    </div>
-                                                )}
-                                                {formData.culturalPaymentMethod === 'qr' && (
-                                                    <div className="form-group">
-                                                        <label className="form-label">QR Code Image</label>
-                                                        <div className="image-upload-container">
-                                                            {paymentQRPreview ? (
-                                                                <div className="payment-qr-preview">
-                                                                    <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                    <button
-                                                                        type="button"
-                                                                        className="remove-image-btn"
-                                                                        onClick={removeQRImage}
-                                                                    >
-                                                                        <X size={14} />
-                                                                    </button>
-                                                                </div>
-                                                            ) : (
-                                                                <>
-                                                                    <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                        <div className="upload-btn">
-                                                                            <ImageIcon size={16} />
-                                                                            <span>Upload QR Code</span>
-                                                                        </div>
-                                                                    </label>
-                                                                    <input
-                                                                        id="qr-file-input"
-                                                                        ref={qrFileInputRef}
-                                                                        type="file"
-                                                                        accept="image/*"
-                                                                        onChange={handlePaymentQRUpload}
-                                                                        style={{ display: 'none' }}
-                                                                    />
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                    No
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
+                                                    onClick={() => setHasRegistration(true)}
+                                                >
+                                                    Yes
+                                                </button>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Event-specific fields */}
-                                    {formData.type === 'event' && (
+                                    {/* Registration Method option, appears only if registration is required */}
+                                    {hasRegistration && (
                                         <>
                                             <div className="form-group">
-                                                <label className="form-label">Price (₹)</label>
-                                                <input
-                                                    type="number"
-                                                    className="form-input"
-                                                    value={formData.price}
-                                                    onChange={handleFormChange}
-                                                    name="price"
-                                                    min="0"
-                                                    required
-                                                />
-                                            </div>
-
-                                            {/* Registration Options Section */}
-                                            <div className="form-group">
-                                                <label className="form-label">Registration Required?</label>
-                                                <div className="registration-toggle-group">
-                                                    <button
-                                                        type="button"
-                                                        className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
-                                                        onClick={() => setHasRegistration(false)}
-                                                    >
-                                                        No
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
-                                                        onClick={() => setHasRegistration(true)}
-                                                    >
-                                                        Yes
-                                                    </button>
+                                                <label className="form-label">Registration Method</label>
+                                                <div className="registration-method-options">
+                                                    <label className="radio-option">
+                                                        <input
+                                                            type="radio"
+                                                            name="registrationMethod"
+                                                            value="link"
+                                                            checked={registrationMethod === 'link'}
+                                                            onChange={() => handleRegistrationMethodChange('link')}
+                                                        />
+                                                        <span>External Link</span>
+                                                    </label>
+                                                    <label className="radio-option">
+                                                        <input
+                                                            type="radio"
+                                                            name="registrationMethod"
+                                                            value="form"
+                                                            checked={registrationMethod === 'form'}
+                                                            onChange={() => handleRegistrationMethodChange('form')}
+                                                        />
+                                                        <span>In-App Form</span>
+                                                    </label>
                                                 </div>
                                             </div>
 
-                                            {/* Registration Method option, appears only if registration is required */}
-                                            {hasRegistration && (
+                                            {registrationMethod === 'link' && (
+                                                <div className="form-group">
+                                                    <label className="form-label">Registration Link</label>
+                                                    <input
+                                                        type="url"
+                                                        className="form-input"
+                                                        value={formData.registrationLink}
+                                                        onChange={handleFormChange}
+                                                        name="registrationLink"
+                                                        placeholder="https://example.com/register"
+                                                        required
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {registrationMethod === 'form' && (
                                                 <>
                                                     <div className="form-group">
-                                                        <label className="form-label">Registration Method</label>
-                                                        <div className="registration-method-options">
-                                                            <label className="radio-option">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="registrationMethod"
-                                                                    value="link"
-                                                                    checked={registrationMethod === 'link'}
-                                                                    onChange={() => handleRegistrationMethodChange('link')}
-                                                                />
-                                                                <span>External Link</span>
-                                                            </label>
-                                                            <label className="radio-option">
-                                                                <input
-                                                                    type="radio"
-                                                                    name="registrationMethod"
-                                                                    value="form"
-                                                                    checked={registrationMethod === 'form'}
-                                                                    onChange={() => handleRegistrationMethodChange('form')}
-                                                                />
-                                                                <span>In-App Form</span>
-                                                            </label>
-                                                        </div>
+                                                        <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-input"
+                                                            value={formData.registrationFields}
+                                                            onChange={handleFormChange}
+                                                            name="registrationFields"
+                                                            placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
+                                                            required
+                                                        />
                                                     </div>
 
-                                                    {registrationMethod === 'link' && (
-                                                        <div className="form-group">
-                                                            <label className="form-label">Registration Link</label>
-                                                            <input
-                                                                type="url"
-                                                                className="form-input"
-                                                                value={formData.registrationLink}
-                                                                onChange={handleFormChange}
-                                                                name="registrationLink"
-                                                                placeholder="https://example.com/register"
-                                                                required
-                                                            />
-                                                        </div>
-                                                    )}
-
-                                                    {registrationMethod === 'form' && (
+                                                    {/* Event Specific Fields */}
+                                                    {formData.type === 'event' && (
                                                         <>
                                                             <div className="form-group">
-                                                                <label className="form-label">Custom Registration Fields (comma-separated)</label>
+                                                                <label className="form-label">Price (₹)</label>
                                                                 <input
-                                                                    type="text"
+                                                                    type="number"
                                                                     className="form-input"
-                                                                    value={formData.registrationFields}
+                                                                    value={formData.price}
                                                                     onChange={handleFormChange}
-                                                                    name="registrationFields"
-                                                                    placeholder="e.g., Roll Number, Branch:CSE|IT|ECE|Mech|Civil"
+                                                                    name="price"
+                                                                    min="0"
                                                                     required
                                                                 />
                                                             </div>
@@ -1726,7 +1682,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                             />
                                                                         </div>
                                                                     )}
-
                                                                     {formData.paymentMethod === 'qr' && (
                                                                         <div className="form-group">
                                                                             <label className="form-label">QR Code Image</label>
@@ -1734,11 +1689,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                                 {paymentQRPreview ? (
                                                                                     <div className="payment-qr-preview">
                                                                                         <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                                        <button
-                                                                                            type="button"
-                                                                                            className="remove-image-btn"
-                                                                                            onClick={removeQRImage}
-                                                                                        >
+                                                                                        <button type="button" className="remove-image-btn" onClick={removeQRImage}>
                                                                                             <X size={14} />
                                                                                         </button>
                                                                                     </div>
@@ -1766,6 +1717,122 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                                                 </div>
                                                             )}
                                                         </>
+                                                    )}
+
+                                                    {/* Cultural Event Specific Fields */}
+                                                    {formData.type === 'culturalEvent' && (
+                                                        <div className="cultural-event-section">
+                                                            <div className="form-group">
+                                                                <label className="form-label">Available Dates</label>
+                                                                {formData.availableDates.map((date, index) => (
+                                                                    <div key={index} className="date-input-row">
+                                                                        <input
+                                                                            type="date"
+                                                                            className="form-input"
+                                                                            value={date ? date.split('T')[0] : ''}
+                                                                            onChange={(e) => handleDateChange(index, e)}
+                                                                            required
+                                                                        />
+                                                                        <button type="button" onClick={() => removeDateInput(index)}>
+                                                                            <X size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                <button type="button" className="btn-secondary add-date-option" onClick={addDateInput}>
+                                                                    Add Date
+                                                                </button>
+                                                            </div>
+                                                            <div className="form-group">
+                                                                <label className="form-label">Ticket Options</label>
+                                                                {formData.ticketOptions.map((option, index) => (
+                                                                    <div key={index} className="ticket-option-row">
+                                                                        <input
+                                                                            type="text"
+                                                                            name="ticketType"
+                                                                            placeholder="e.g., Adult Ticket"
+                                                                            value={option.ticketType}
+                                                                            onChange={(e) => handleTicketOptionChange(index, e)}
+                                                                            required
+                                                                        />
+                                                                        <input
+                                                                            type="number"
+                                                                            name="ticketPrice"
+                                                                            placeholder="Price (₹)"
+                                                                            value={option.ticketPrice}
+                                                                            onChange={(e) => handleTicketOptionChange(index, e)}
+                                                                            min="0"
+                                                                            required
+                                                                        />
+                                                                        <button type="button" onClick={() => removeTicketOption(index)}>
+                                                                            <X size={16} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                                <button type="button" className="btn-secondary add-ticket-option" onClick={addTicketOption}>
+                                                                    Add Ticket Option
+                                                                </button>
+                                                            </div>
+                                                            {formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0 && (
+                                                                 <div className="form-group">
+                                                                    <label className="form-label">Payment Method</label>
+                                                                    <select
+                                                                        className="form-select"
+                                                                        value={formData.culturalPaymentMethod}
+                                                                        onChange={handleFormChange}
+                                                                        name="culturalPaymentMethod"
+                                                                    >
+                                                                        <option value="link">Payment Link</option>
+                                                                        <option value="qr">QR Code</option>
+                                                                    </select>
+                                                                    {formData.culturalPaymentMethod === 'link' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">Payment Link</label>
+                                                                            <input
+                                                                                type="url"
+                                                                                className="form-input"
+                                                                                value={formData.culturalPaymentLink}
+                                                                                onChange={handleFormChange}
+                                                                                name="culturalPaymentLink"
+                                                                                placeholder="https://example.com/payment"
+                                                                                required
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    {formData.culturalPaymentMethod === 'qr' && (
+                                                                        <div className="form-group">
+                                                                            <label className="form-label">QR Code Image</label>
+                                                                            <div className="image-upload-container">
+                                                                                {paymentQRPreview ? (
+                                                                                    <div className="payment-qr-preview">
+                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                        <button type="button" className="remove-image-btn" onClick={removeQRImage}>
+                                                                                            <X size={14} />
+                                                                                        </button>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <>
+                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                                            <div className="upload-btn">
+                                                                                                <ImageIcon size={16} />
+                                                                                                <span>Upload QR Code</span>
+                                                                                            </div>
+                                                                                        </label>
+                                                                                        <input
+                                                                                            id="qr-file-input"
+                                                                                            ref={qrFileInputRef}
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            onChange={handlePaymentQRUpload}
+                                                                                            style={{ display: 'none' }}
+                                                                                        />
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+                                                                 </div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </>
                                             )}
@@ -3003,9 +3070,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //       .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //       .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //       .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //        .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //        .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //        .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -3921,8 +3988,11 @@ const App = () => {
                     culturalPaymentMethod: newPost.culturalPaymentMethod,
                     culturalPaymentLink: newPost.culturalPaymentLink,
                     culturalPaymentQRCode: newPost.culturalPaymentQRCode,
-                    isDateSelectionEnabled: newPost.isDateSelectionEnabled,
-                    registrationOpen: true, // Cultural events always have registration open
+                    availableDates: newPost.availableDates,
+                    registrationLink: newPost.registrationLink,
+                    registrationOpen: newPost.registrationOpen,
+                    enableRegistrationForm: newPost.enableRegistrationForm,
+                    registrationFields: newPost.registrationFields,
                 };
             } else {
                 submissionData = baseData;
@@ -4727,7 +4797,28 @@ const App = () => {
 
 
     const renderMainContent = () => {
-        // If a detailed view is open, render that.
+        // If a detailed event view is open, render that.
+        if (selectedEvent && selectedEvent.type === 'event') {
+            return (
+                <div className="main-content-detail-view">
+                    <button className="back-to-feed-btn" onClick={handleCloseEventDetail}>
+                        <ArrowLeft /> Back to Feed
+                    </button>
+                    <EventDetailPage
+                        event={selectedEvent}
+                        onClose={handleCloseEventDetail}
+                        isLoggedIn={isLoggedIn}
+                        onRequireLogin={() => setShowLoginModal(true)}
+                        onAddToCalendar={handleAddToCalendar}
+                        onRegister={(eventId, data) => handleRegisterEvent(eventId, data)}
+                        isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                        onShowCalendarAlert={handleShowCalendarAlert}
+                    />
+                </div>
+            );
+        }
+        
+        // If a detailed post view is open, render that.
         if (selectedPost) {
             return (
                 <div className="single-post-and-feed">
@@ -4781,37 +4872,6 @@ const App = () => {
                                 />
                             ))}
                     </div>
-                </div>
-            );
-        }
-        if (selectedEvent) {
-            const isCultural = selectedEvent.type === 'culturalEvent';
-            return (
-                <div className="main-content-detail-view">
-                    <button className="back-to-feed-btn" onClick={handleCloseEventDetail}>
-                        <ArrowLeft /> Back to Feed
-                    </button>
-                    {isCultural ? (
-                        <CulturalEventRegistrationModal
-                            isOpen={true}
-                            onClose={handleCloseEventDetail}
-                            event={selectedEvent}
-                            isLoggedIn={isLoggedIn}
-                            onRequireLogin={() => setShowLoginModal(true)}
-                            onRegister={(eventId, data) => handleRegisterEvent(eventId, data)}
-                        />
-                    ) : (
-                        <EventDetailPage
-                            event={selectedEvent}
-                            onClose={handleCloseEventDetail}
-                            isLoggedIn={isLoggedIn}
-                            onRequireLogin={() => setShowLoginModal(true)}
-                            onAddToCalendar={handleAddToCalendar}
-                            onRegister={(eventId, data) => handleRegisterEvent(eventId, data)}
-                            isRegistered={myRegisteredEvents.has(selectedEvent._id)}
-                            onShowCalendarAlert={handleShowCalendarAlert}
-                        />
-                    )}
                 </div>
             );
         }
