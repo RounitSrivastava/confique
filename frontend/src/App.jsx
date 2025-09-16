@@ -438,14 +438,13 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
     );
 };
 
-// Registration Form Modal Component for standard events
+// Registration Form Modal component
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
     const getInitialFormData = () => {
         const base = { name: '', email: '', phone: '', transactionId: '' };
         if (event.registrationFields) {
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
             customFields.forEach(field => {
-                // Initialize custom fields, avoiding overwriting base fields
                 if (!base.hasOwnProperty(field.toLowerCase().replace(/ /g, ''))) {
                     base[field] = '';
                 }
@@ -484,8 +483,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             onRequireLogin();
             return;
         }
-        
-        // --- FIX START: Validation for required fields and phone number
+
         if (!formData.name || !formData.email || !formData.phone) {
             setFormAlertMessage("Please fill in all required registration fields.");
             setShowFormAlert(true);
@@ -502,7 +500,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         const customPhoneFields = customFields
             .map(field => field.split(':')[0].trim())
             .filter(fieldName => phoneKeywords.some(keyword => fieldName.toLowerCase().includes(keyword)));
-        
+
         for (const field of customPhoneFields) {
             const fieldValue = formData[field];
             if (fieldValue && !/^\d{10}$/.test(fieldValue)) {
@@ -511,34 +509,25 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                 return;
             }
         }
-        // --- FIX END
 
         if (event.price > 0 && event.enableRegistrationForm && event.paymentMethod === 'qr') {
             setShowPaymentStep(true);
         } else {
-            // --- FIX START: Pass all form data, including custom fields, to onRegister
-            onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
-            // --- FIX END
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
+            onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
             setShowSuccessModal(true);
         }
     };
 
     const handlePaymentConfirm = (e) => {
         e.preventDefault();
-        // --- FIX START: Payment validation for transactionId
-        if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length < 4)) {
-            setFormAlertMessage("Please enter at least the last 4 digits of your transaction number.");
+        if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
+            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-        // --- FIX END
-
-        // --- FIX START: Pass all form data, including custom fields, to onRegister
-        onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
-        // --- FIX END
-
         setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
+        onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
         setShowSuccessModal(true);
     };
 
@@ -551,7 +540,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         setShowSuccessModal(false);
         onClose();
     };
-    
+
     if (!isOpen) return null;
 
     const renderCustomField = (field) => {
@@ -687,7 +676,6 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                     />
                 </div>
 
-                {/* Iterate over and render custom fields */}
                 {customFields.map(field => (
                     field && !['name', 'email', 'phone'].includes(field.toLowerCase()) && renderCustomField(field)
                 ))}
@@ -1328,7 +1316,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                 registrationLink: defaultMethod === 'link' ? '' : prev.registrationLink,
                 enableRegistrationForm: defaultMethod === 'form',
                 registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
-            }));
+             }));
         }
     };
 
@@ -1425,13 +1413,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
             };
         } else if (formData.type === 'culturalEvent') {
              submissionData = {
-                ...submissionData,
-                culturalPaymentQRCode: paymentQRPreview,
-                enableRegistrationForm: registrationMethod === 'form',
-                registrationLink: registrationMethod === 'link' ? formData.registrationLink : '',
+                 ...submissionData,
+                 culturalPaymentQRCode: paymentQRPreview,
+                 enableRegistrationForm: registrationMethod === 'form',
+                 registrationLink: registrationMethod === 'link' ? formData.registrationLink : '',
              };
         }
-        
+       
         submissionData = {
             ...submissionData,
             price: parseFloat(submissionData.price) || 0,
@@ -1903,7 +1891,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
                                         <div className="image-upload-preview">
                                             {imagePreviews.map((preview, index) => (
                                                 <div key={index} className="image-preview-item">
-                                                    <img src={preview} alt={`Preview ${index + 1}`} loading="lazy" decoding="async" />
+                                                    <img
+                                                        src={preview}
+                                                        alt={`Preview ${index + 1}`}
+                                                        className="post-image"
+                                                        loading="lazy"
+                                                        decoding="async"
+                                                    />
                                                     <button
                                                         type="button"
                                                         className="remove-image-btn"
@@ -1946,6 +1940,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser }) =>
 const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered, onShowCalendarAlert }) => {
     const [showFullContent, setShowFullContent] = useState(false);
     const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [showCulturalEventRegistration, setShowCulturalEventRegistration] = useState(false);
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
 
@@ -2020,7 +2015,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
             return;
         }
 
-        if (event.enableRegistrationForm) {
+        if (event.type === 'culturalEvent' && event.enableRegistrationForm) {
+            setShowCulturalEventRegistration(true);
+        } else if (event.enableRegistrationForm) {
             setShowRegistrationForm(true);
         } else if (event.registrationLink) {
             window.open(event.registrationLink, '_blank');
@@ -2169,6 +2166,16 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     <RegistrationFormModal
                         isOpen={showRegistrationForm}
                         onClose={() => setShowRegistrationForm(false)}
+                        event={event}
+                        isLoggedIn={isLoggedIn}
+                        onRequireLogin={onRequireLogin}
+                        onRegister={onRegister}
+                    />
+                )}
+                {showCulturalEventRegistration && (
+                    <CulturalEventRegistrationModal
+                        isOpen={showCulturalEventRegistration}
+                        onClose={() => setShowCulturalEventRegistration(false)}
                         event={event}
                         isLoggedIn={isLoggedIn}
                         onRequireLogin={onRequireLogin}
@@ -3110,9 +3117,9 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const upcomingCalendarEvents = myCalendarEvents;
     // To restore original functionality (only upcoming events):
     // const upcomingCalendarEvents = myCalendarEvents
-    //      .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
-    //      .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
-    //      .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
+    //    .filter(e => e.eventStartDate && new Date(e.eventStartDate) > new Date())
+    //    .sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate))
+    //    .slice(0, 3); // Or remove .slice(0,3) to show all upcoming
 
     return (
         <>
@@ -4019,21 +4026,21 @@ const App = () => {
                 };
             } else if (newPost.type === 'culturalEvent') {
                  submissionData = {
-                    ...baseData,
-                    location: newPost.location,
-                    eventStartDate: newPost.eventStartDate,
-                    eventEndDate: newPost.eventEndDate,
-                    duration: newPost.duration,
-                    ticketOptions: newPost.ticketOptions,
-                    culturalPaymentMethod: newPost.culturalPaymentMethod,
-                    culturalPaymentLink: newPost.culturalPaymentLink,
-                    culturalPaymentQRCode: newPost.culturalPaymentQRCode,
-                    availableDates: newPost.availableDates,
-                    registrationLink: newPost.registrationLink,
-                    registrationOpen: newPost.registrationOpen,
-                    enableRegistrationForm: newPost.enableRegistrationForm,
-                    registrationFields: newPost.registrationFields,
-                };
+                     ...baseData,
+                     location: newPost.location,
+                     eventStartDate: newPost.eventStartDate,
+                     eventEndDate: newPost.eventEndDate,
+                     duration: newPost.duration,
+                     ticketOptions: newPost.ticketOptions,
+                     culturalPaymentMethod: newPost.culturalPaymentMethod,
+                     culturalPaymentLink: newPost.culturalPaymentLink,
+                     culturalPaymentQRCode: newPost.culturalPaymentQRCode,
+                     availableDates: newPost.availableDates,
+                     registrationLink: newPost.registrationLink,
+                     registrationOpen: newPost.registrationOpen,
+                     enableRegistrationForm: newPost.enableRegistrationForm,
+                     registrationFields: newPost.registrationFields,
+                 };
             } else {
                 submissionData = baseData;
             }
@@ -4857,7 +4864,7 @@ const App = () => {
                 </div>
             );
         }
-        
+       
         // If a detailed post view is open, render that.
         if (selectedPost) {
             return (
@@ -4918,7 +4925,7 @@ const App = () => {
                 </div>
             );
         }
-        
+       
         // Otherwise, render the component for the active section.
         return <CurrentComponent />;
     };
@@ -5025,47 +5032,49 @@ const App = () => {
 
             <header className="header">
                 <div className="header-container">
-                    <div className="header-left">
-                        <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
-                            <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
-                            <span className="app-title">Confique</span>
-                        </a>
-                    </div>
-                    {activeSection === 'events' && isLoggedIn && (
-                        <div className="mobile-calendar-icon-container">
-                            <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
-                                <CalendarIcon size={24} />
-                            </button>
+                    <div className="header-content">
+                        <div className="header-left">
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
+                                <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
+                                <span className="app-title">Confique</span>
+                            </a>
                         </div>
-                    )}
-
-                    <div className="header-search">
-                        <div className="search-container">
-                            <Search className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    <div className="header-right">
-                        {isLoggedIn ? (
-                            <ProfileDropdown
-                                user={currentUser}
-                                onLogout={handleLogout}
-                                onProfileClick={handleProfileClick} // Use the new handler function
-                            />
-                        ) : (
-                            <button
-                                className="login-button"
-                                onClick={() => setShowLoginModal(true)}
-                            >
-                                Login
-                            </button>
+                        {activeSection === 'events' && isLoggedIn && (
+                            <div className="mobile-calendar-icon-container">
+                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                    <CalendarIcon size={24} />
+                                </button>
+                            </div>
                         )}
+
+                        <div className="header-search">
+                            <div className="search-container">
+                                <Search className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="header-right">
+                            {isLoggedIn ? (
+                                <ProfileDropdown
+                                    user={currentUser}
+                                    onLogout={handleLogout}
+                                    onProfileClick={handleProfileClick} // Use the new handler function
+                                />
+                            ) : (
+                                <button
+                                    className="login-button"
+                                    onClick={() => setShowLoginModal(true)}
+                                >
+                                    Login
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
