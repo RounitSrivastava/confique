@@ -728,6 +728,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+    // FIX: Re-initialize formData correctly each time the modal opens
     const getInitialFormData = () => {
         const base = { name: '', email: '', phone: '', transactionId: '', selectedDates: new Set() };
         if (event.registrationFields) {
@@ -744,13 +745,14 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         return base;
     };
     
-    const [formData, setFormData] = useState(getInitialFormData);
+    const [formData, setFormData] = useState({});
     const [showFormAlert, setShowFormAlert] = useState(false);
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     
+    // FIX: Ensure availableDates are parsed correctly from event object
     const availableDates = event.availableDates ? event.availableDates.map(d => new Date(d)) : [];
 
     useEffect(() => {
@@ -784,19 +786,22 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const calculateTotalPrice = () => {
-        const numberOfDays = formData.selectedDates.size;
-        const totalTicketPrice = formData.ticketSelections.reduce((total, selection, index) => {
-            const price = event.ticketOptions[index].ticketPrice;
-            return total + (price * selection.quantity);
-        }, 0);
+        // FIX: Ensure calculation considers both tickets and selected dates
+        const numberOfDays = formData.selectedDates ? formData.selectedDates.size : 0;
+        const totalTicketPrice = formData.ticketSelections ? formData.ticketSelections.reduce((total, selection, index) => {
+            const price = event.ticketOptions[index]?.ticketPrice || 0;
+            return total + (price * (selection?.quantity || 0));
+        }, 0) : 0;
         return totalTicketPrice * numberOfDays;
     };
 
     const totalPrice = calculateTotalPrice();
-    const hasTicketsSelected = formData.ticketSelections.some(selection => selection.quantity > 0);
-    const hasDatesSelected = formData.selectedDates.size > 0;
+    const hasTicketsSelected = formData.ticketSelections ? formData.ticketSelections.some(selection => selection.quantity > 0) : false;
+    const hasDatesSelected = formData.selectedDates ? formData.selectedDates.size > 0 : false;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
+    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
+
 
     const handleProceedToPayment = (e) => {
         e.preventDefault();
@@ -820,7 +825,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return;
         }
 
-        if (!isFree && isPaymentMethodSet) {
+        if (totalPrice > 0 && isPaymentMethodSet) {
             setShowPaymentStep(true);
         } else {
             handleFinalRegistration();
@@ -842,7 +847,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             name: formData.name,
             email: formData.email,
             phone: formData.phone,
-            bookingDates: event.availableDates && event.availableDates.length > 0 ? Array.from(formData.selectedDates) : [],
+            // FIX: Pass the correct array of selected date strings
+            bookingDates: Array.from(formData.selectedDates),
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
@@ -861,12 +867,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             });
         }
 
-        if (!isFree && event.culturalPaymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length < 4)) {
+        // FIX: Add payment validation for QR code step
+        if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-
+        
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -891,7 +898,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     if (!isOpen || !event) return null;
     
-    // Render Custom Fields Logic
     const renderCustomField = (field) => {
         const isDropdown = field.includes(':');
         if (isDropdown) {
@@ -1011,9 +1017,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected || !hasDatesSelected}
+                    disabled={!hasTicketsSelected || (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected)}
                 >
-                    {isFree || !isPaymentMethodSet ? 'Submit Registration' : 'Proceed to Payment'}
+                    {isProceedToPaymentEnabled ? 'Proceed to Payment' : 'Submit Registration'}
                 </button>
             </div>
         </form>
@@ -4822,6 +4828,9 @@ const App = () => {
         if (selectedPost) {
             return (
                 <div className="single-post-and-feed">
+                    <button className="back-to-feed-btn" onClick={() => setSelectedPost(null)}>
+                        <ArrowLeft /> Back to Feed
+                    </button>
                     <PostCard
                         key={selectedPost._id}
                         post={selectedPost}
