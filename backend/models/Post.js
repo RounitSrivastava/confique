@@ -74,7 +74,7 @@
 
 const mongoose = require('mongoose');
 
-// NEW: Sub-schema for cultural event ticket options
+// Sub-schema for cultural event ticket options
 const ticketOptionSchema = new mongoose.Schema({
     ticketType: { type: String, required: true },
     ticketPrice: { type: Number, required: true, min: 0 },
@@ -89,7 +89,7 @@ const commentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
-// A separate schema for Registrations (no longer embedded in Post)
+// A separate schema for Registrations (not embedded in Post, but defined here)
 const registrationSchema = new mongoose.Schema({
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
