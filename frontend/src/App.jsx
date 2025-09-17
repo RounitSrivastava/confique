@@ -1126,8 +1126,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     {isRegistered ? (
                         <div className="already-registered-message">
                             <Check size={48} className="success-icon" />
-                            <h3>You are already registered!</h3>
-                            <p>You can close this window now.</p>
+                            <h3>Thank you for your payment!</h3>
+                            <p>Registration confirmed.</p>
                             <button className="btn-primary" onClick={onClose}>Close</button>
                         </div>
                     ) : (
