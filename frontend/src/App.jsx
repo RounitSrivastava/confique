@@ -1202,7 +1202,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
         return initial;
     };
-    
+
     const [formData, setFormData] = useState(() => getInitialFormData(postToEdit, currentUser));
     const [imagePreviews, setImagePreviews] = useState(postToEdit?.images || []);
     const [paymentQRPreview, setPaymentQRPreview] = useState(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
@@ -1468,7 +1468,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 availableDates: undefined,
             };
         }
-        
+
         try {
             await onSubmit(submissionData);
             onClose(); // Close the modal first
@@ -1523,6 +1523,12 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
     const removeQRImage = () => {
         setPaymentQRPreview('');
+    };
+    
+    // Corrected `handleImageError` to fix ReferenceError
+    const handleImageError = (e) => {
+        e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
+        e.target.onerror = null;
     };
 
     if (!isOpen) return null;
@@ -2029,8 +2035,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
+                // Fix: Corrected the URL format for Google Maps to use a proper template literal
                 window.open(
-                    `http://google.com/maps/dir/${origin}/${destination}`,
+                    `https://www.google.com/maps/dir/${origin}/${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2205,6 +2212,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         isLoggedIn={isLoggedIn}
                         onRequireLogin={onRequireLogin}
                         onRegister={onRegister}
+                        isRegistered={isRegistered}
                     />
                 )}
                 {showCulturalEventRegistration && (
@@ -2215,6 +2223,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                         isLoggedIn={isLoggedIn}
                         onRequireLogin={onRequireLogin}
                         onRegister={onRegister}
+                        isRegistered={isRegistered}
                     />
                 )}
                 <CustomMessageModal
@@ -2281,25 +2290,21 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
     
-    // Determine the post's content to display
-    const contentToDisplay = post.content || '';
-    const hasMoreContent = contentToDisplay.length > 200;
-    const displayContent = showFullContent ? contentToDisplay : contentToDisplay.substring(0, 200);
-
+    // Fix: Define handleImageError inside the component
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
     };
 
+    const contentToDisplay = post.content || '';
+    
+    // Fix: Use a useEffect hook to check for content overflow
     useEffect(() => {
         if (contentRef.current) {
-            // Re-evaluate if "Show More" is needed when component mounts or content changes
-            const textElement = contentRef.current;
-            const lineHeight = parseFloat(getComputedStyle(textElement).lineHeight);
-            const maxHeight = lineHeight * 3; 
-            setNeedsShowMore(textElement.scrollHeight > maxHeight);
+            const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
+            setNeedsShowMore(isOverflowing);
         }
-    }, [post.content]);
+    }, [post.content, showFullContent]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -2459,16 +2464,16 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
-                        {displayContent}
-                        {hasMoreContent && (
-                            <button
-                                className="show-more-button"
-                                onClick={() => setShowFullContent(!showFullContent)}
-                            >
-                                {showFullContent ? 'Show Less' : 'Show More'}
-                            </button>
-                        )}
+                        {contentToDisplay}
                     </p>
+                    {needsShowMore && (
+                        <button
+                            className="show-more-button"
+                            onClick={() => setShowFullContent(!showFullContent)}
+                        >
+                            {showFullContent ? 'Show Less' : 'Show More'}
+                        </button>
+                    )}
                 </div>
 
                 {post.images && post.images.length > 0 && (
@@ -3591,7 +3596,7 @@ const App = () => {
 
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
-    
+
     // State for the post submission success popup
     const [showPostSuccessAlert, setShowPostSuccessAlert] = useState(false);
     const [postSuccessAlertMessage, setPostSuccessAlertMessage] = useState('');
@@ -4819,9 +4824,6 @@ const App = () => {
         if (selectedEvent) {
             return (
                 <div className="main-content-detail-view">
-                    <button className="back-to-feed-btn" onClick={handleCloseEventDetail}>
-                        <ArrowLeft /> Back to Feed
-                    </button>
                     <EventDetailPage
                         event={selectedEvent}
                         onClose={handleCloseEventDetail}
@@ -4835,13 +4837,10 @@ const App = () => {
                 </div>
             );
         }
-        
+
         if (selectedPost) {
             return (
                 <div className="single-post-and-feed">
-                    <button className="back-to-feed-btn" onClick={() => setSelectedPost(null)}>
-                        <ArrowLeft /> Back to Feed
-                    </button>
                     <PostCard
                         key={selectedPost._id}
                         post={selectedPost}
@@ -4867,7 +4866,7 @@ const App = () => {
                 </div>
             );
         }
-        
+
         return <CurrentComponent />;
     };
 
