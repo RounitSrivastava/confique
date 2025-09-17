@@ -1,33 +1,47 @@
-// Add these new imports at the top of the file
+// userRoutes.js
+const express = require('express');
+const router = express.Router();
 const Registration = require('../models/Registration'); 
-const Post = require('../models/Post'); // Assuming you have a Post model
-
-// ... (existing imports like express, protect middleware, etc.)
+const Post = require('../models/Post'); 
+const { protect } = require('../middleware/auth'); 
 
 // NEW ROUTE: POST /api/users/register-event/:eventId
 // This route saves the registration data to the database.
 router.post('/register-event/:eventId', protect, async (req, res) => {
     const { eventId } = req.params;
-    const { name, email, phone, ...customFields } = req.body;
+    const { name, email, phone, ...otherFields } = req.body;
 
-    // Verify the event and that the user isn't already registered
-    const event = await Post.findById(eventId);
-    if (!event) {
-        return res.status(404).json({ message: 'Event not found.' });
-    }
-    const isRegistered = await Registration.findOne({ eventId, userId: req.user._id });
-    if (isRegistered) {
-        return res.status(409).json({ message: 'You are already registered for this event.' });
-    }
+    console.log('Received cultural event registration request for eventId:', eventId);
+    console.log('Request Body:', req.body);
+    console.log('User ID:', req.user._id);
 
     try {
-        const newRegistration = await Registration.create({
-            eventId,
-            userId: req.user._id,
+        const event = await Post.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found.' });
+        }
+        
+        // This check needs to be more robust. Let's assume you're checking against a
+        // User's `registeredEvents` array, not a separate `Registration` model for simplicity.
+        // If you are using a separate `Registration` model as in the original code, this line is fine.
+        const isRegistered = await Registration.findOne({ eventId, userId: req.user._id });
+        if (isRegistered) {
+            return res.status(409).json({ message: 'You are already registered for this event.' });
+        }
+
+        // Create the base registration object
+        const registrationData = {
             name,
             email,
             phone,
-            customFields,
+            ...otherFields,
+        };
+
+        const newRegistration = await Registration.create({
+            eventId,
+            userId: req.user._id,
+            registrationData,
+            // The registrationData field in your Mongoose schema must be of type Mixed
         });
 
         // We can also trigger a notification for the event host here
@@ -36,6 +50,12 @@ router.post('/register-event/:eventId', protect, async (req, res) => {
         res.status(201).json({ message: 'Registration successful!', registration: newRegistration });
     } catch (error) {
         console.error('Registration error:', error);
+        
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return res.status(400).json({ message: messages.join(', ') });
+        }
+
         res.status(500).json({ message: 'Server error during registration.' });
     }
 });
@@ -47,7 +67,6 @@ router.get('/my-events/registration-counts', protect, async (req, res) => {
         const userEvents = await Post.find({ userId: req.user._id });
         const registrationCounts = {};
 
-        // Use Promise.all to efficiently count registrations for all events
         await Promise.all(userEvents.map(async (event) => {
             const count = await Registration.countDocuments({ eventId: event._id });
             registrationCounts[event._id] = count;
