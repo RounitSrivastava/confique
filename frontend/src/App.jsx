@@ -885,11 +885,19 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
 
         try {
+            // Await the asynchronous call to onRegister
             await onRegister(event._id, registrationData);
+            
+            // Only show the success message if onRegister completes successfully
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
             setShowSuccessModal(true);
         } catch (error) {
-            setFormAlertMessage(`Registration failed: ${error.message}`);
+            // If an error occurs, the catch block in the App component will handle the notification
+            // We can add a generic message here or rely on the parent component's notification system.
+            console.error("Error during registration process:", error);
+            // Optionally, you can close the modal here to let the notification from the App component take over
+            // or display a local error message.
+            setFormAlertMessage("Registration failed. Please try again.");
             setShowFormAlert(true);
         }
     };
@@ -1282,14 +1290,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 availableDates: [''],
             }));
         } else {
-             const defaultMethod = formData.type === 'culturalEvent' ? 'form' : 'link';
-             setRegistrationMethod(defaultMethod);
-             setFormData(prev => ({
-                 ...prev,
-                 registrationLink: defaultMethod === 'link' ? '' : prev.registrationLink,
-                 enableRegistrationForm: defaultMethod === 'form',
-                 registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
-             }));
+            const defaultMethod = formData.type === 'culturalEvent' ? 'form' : 'link';
+            setRegistrationMethod(defaultMethod);
+            setFormData(prev => ({
+                ...prev,
+                registrationLink: defaultMethod === 'link' ? '' : prev.registrationLink,
+                enableRegistrationForm: defaultMethod === 'form',
+                registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
+            }));
         }
     };
 
@@ -1329,7 +1337,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 setShowUploadAlert(true);
                 return;
             }
-             if (hasEmptyDateFields) {
+            if (hasEmptyDateFields) {
                 setUploadAlertMessage("Please fill in all available dates for the cultural event.");
                 setShowUploadAlert(true);
                 return;
@@ -1359,18 +1367,18 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                     setShowUploadAlert(true);
                     return;
                 }
-                 if (formData.type === 'culturalEvent' && (formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0)) {
-                     if (formData.culturalPaymentMethod === 'link' && !formData.culturalPaymentLink) {
-                         setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment for the cultural event.");
-                         setShowUploadAlert(true);
-                         return;
-                     }
-                     if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
-                         setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
-                         setShowUploadAlert(true);
-                         return;
-                     }
-                 }
+                if (formData.type === 'culturalEvent' && (formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0)) {
+                    if (formData.culturalPaymentMethod === 'link' && !formData.culturalPaymentLink) {
+                        setUploadAlertMessage("Please provide a Payment Link or choose QR Code payment for the cultural event.");
+                        setShowUploadAlert(true);
+                        return;
+                    }
+                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
+                        setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
+                        setShowUploadAlert(true);
+                        return;
+                    }
+                }
             }
         }
 
@@ -1905,6 +1913,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                         src={preview}
                                                         alt={`Preview ${index + 1}`}
                                                         className="post-image"
+                                                        onError={handleImageError}
                                                         loading="lazy"
                                                         decoding="async"
                                                     />
@@ -3860,17 +3869,17 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
+    // Corrected `handleRegisterEvent` function
     const handleRegisterEvent = async (eventId, registrationData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
-            setShowLoginModal(true);
-            return;
+            throw new Error('User not logged in.');
         }
 
         const post = posts.find(p => p._id === eventId);
         if (!post) {
             console.error('Post not found for registration.');
-            return;
+            throw new Error('Event not found.');
         }
 
         if (myRegisteredEvents.has(eventId)) {
@@ -3883,7 +3892,7 @@ const App = () => {
                 },
                 ...prev
             ]);
-            return;
+            throw new Error(`You are already registered for "${post.title}".`);
         }
 
         try {
@@ -3891,6 +3900,7 @@ const App = () => {
                 method: 'POST',
                 body: JSON.stringify(registrationData),
             });
+
             if (res.ok) {
                 setMyRegisteredEvents(prev => new Set(prev).add(eventId));
                 setNotifications(prev => [
@@ -3915,6 +3925,8 @@ const App = () => {
                     },
                     ...prev
                 ]);
+                // CRITICAL FIX: Throw an error to propagate failure to the modal
+                throw new Error(errorData.message || 'Registration failed due to server error.');
             }
         } catch (err) {
             console.error('Registration failed:', err);
@@ -3927,6 +3939,8 @@ const App = () => {
                 },
                 ...prev
             ]);
+            // CRITICAL FIX: Re-throw the error to ensure the modal's catch block is executed.
+            throw err;
         }
     };
 
