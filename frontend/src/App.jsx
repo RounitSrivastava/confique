@@ -485,7 +485,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         }
 
         if (isRegistered) {
-            setFormAlertMessage("You are already registered for this event.");
+            setFormAlertMessage("Thank you! Your registration has been confirmed.");
             setShowFormAlert(true);
             return;
         }
