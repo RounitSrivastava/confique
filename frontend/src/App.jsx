@@ -439,7 +439,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 };
 
 // Registration Form Modal component
-const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
     const getInitialFormData = () => {
         const base = { name: '', email: '', phone: '', transactionId: '' };
         if (event.registrationFields) {
@@ -481,6 +481,12 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
         if (!isLoggedIn) {
             onRequireLogin();
+            return;
+        }
+
+        if (isRegistered) {
+            setFormAlertMessage("You are already registered for this event.");
+            setShowFormAlert(true);
             return;
         }
 
@@ -726,7 +732,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 };
 
 // Cultural Event Registration Modal
-const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister }) => {
+const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
     const getInitialFormData = () => {
         const base = {
             name: '',
@@ -822,6 +828,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             onRequireLogin();
             return;
         }
+
+        if (isRegistered) {
+            setFormAlertMessage("You are already registered for this event.");
+            setShowFormAlert(true);
+            return;
+        }
+
         if (!formData.name || !formData.email || !formData.phone) {
             setFormAlertMessage("Please provide your name, email, and phone number.");
             setShowFormAlert(true);
@@ -847,7 +860,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-
+    
+        if (isRegistered) {
+            setFormAlertMessage("You are already registered for this event.");
+            setShowFormAlert(true);
+            return;
+        }
+    
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -855,7 +874,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-
+    
         const registrationData = {
             name: formData.name,
             email: formData.email,
@@ -867,7 +886,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             eventTitle: event.title,
             type: event.type,
         };
-
+    
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -877,26 +896,19 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-
+    
         if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-
+    
         try {
-            // Await the asynchronous call to onRegister
             await onRegister(event._id, registrationData);
-            
-            // Only show the success message if onRegister completes successfully
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
             setShowSuccessModal(true);
         } catch (error) {
-            // If an error occurs, the catch block in the App component will handle the notification
-            // We can add a generic message here or rely on the parent component's notification system.
             console.error("Error during registration process:", error);
-            // Optionally, you can close the modal here to let the notification from the App component take over
-            // or display a local error message.
             setFormAlertMessage("Registration failed. Please try again.");
             setShowFormAlert(true);
         }
@@ -1036,7 +1048,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected || (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected)}
+                    disabled={!hasTicketsSelected || (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected) || isRegistered}
                 >
                     {isProceedToPaymentEnabled ? 'Proceed to Payment' : 'Submit Registration'}
                 </button>
@@ -1111,7 +1123,16 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </button>
                 </div>
                 <div className="modal-body">
-                    {showPaymentStep ? renderPaymentStep() : renderRegistrationForm()}
+                    {isRegistered ? (
+                        <div className="already-registered-message">
+                            <Check size={48} className="success-icon" />
+                            <h3>You are already registered!</h3>
+                            <p>You can close this window now.</p>
+                            <button className="btn-primary" onClick={onClose}>Close</button>
+                        </div>
+                    ) : (
+                        showPaymentStep ? renderPaymentStep() : renderRegistrationForm()
+                    )}
                 </div>
             </div>
             <CustomMessageModal
@@ -1294,7 +1315,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setRegistrationMethod(defaultMethod);
             setFormData(prev => ({
                 ...prev,
-                registrationLink: defaultMethod === 'link' ? '' : prev.registrationLink,
+                registrationLink: defaultMethod === 'link' ? prev.registrationLink : '',
                 enableRegistrationForm: defaultMethod === 'form',
                 registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
             }));
@@ -2253,13 +2274,17 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-    const displayContent = showFullContent ? post.content : post.content.substring(0, 200);
+    
+    // Determine the post's content to display
+    const contentToDisplay = post.content || '';
+    const hasMoreContent = contentToDisplay.length > 200;
+    const displayContent = showFullContent ? contentToDisplay : contentToDisplay.substring(0, 200);
 
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -2268,9 +2293,11 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     useEffect(() => {
         if (contentRef.current) {
-            const lineHeight = parseFloat(getComputedStyle(contentRef.current).lineHeight);
-            const maxHeight = lineHeight * 3;
-            setNeedsShowMore(contentRef.current.scrollHeight > maxHeight);
+            // Re-evaluate if "Show More" is needed when component mounts or content changes
+            const textElement = contentRef.current;
+            const lineHeight = parseFloat(getComputedStyle(textElement).lineHeight);
+            const maxHeight = lineHeight * 3; 
+            setNeedsShowMore(textElement.scrollHeight > maxHeight);
         }
     }, [post.content]);
 
@@ -2287,6 +2314,9 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
     const isLiked = likedPosts?.has(post._id);
+    const isEventPast = post.eventStartDate && new Date(post.eventStartDate) < new Date();
+    const isRegistrationOpen = post.registrationOpen;
+    const hasRegistrationMethod = post.enableRegistrationForm || post.registrationLink;
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
@@ -2374,6 +2404,16 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
+    
+    const registrationButtonText = () => {
+        if (isRegistered) return "REGISTERED";
+        if (isEventPast) return "EVENT ENDED";
+        if (!isRegistrationOpen) return "REGISTRATION CLOSED";
+        if (!hasRegistrationMethod) return "NO REGISTRATION REQUIRED";
+        return "REGISTER NOW";
+    };
+
+    const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
 
     const renderPostCardContent = () => (
         <>
@@ -2419,8 +2459,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
-                        {post.content}
-                        {needsShowMore && (
+                        {displayContent}
+                        {hasMoreContent && (
                             <button
                                 className="show-more-button"
                                 onClick={() => setShowFullContent(!showFullContent)}
@@ -2462,12 +2502,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     <span>Add to Calendar</span>
                                 </button>
                                 <button
-                                    className={`action-btn registration-inline-btn ${post.registrationOpen ? '' : 'disabled'}`}
-                                    onClick={() => onOpenEventDetail(post)}
-                                    disabled={!post.registrationOpen}
+                                    className={`action-btn registration-inline-btn ${isButtonDisabled ? 'disabled' : ''}`}
+                                    onClick={(e) => { e.stopPropagation(); onOpenEventDetail(post); }}
+                                    disabled={isButtonDisabled}
                                 >
                                     <Ticket size={20} />
-                                    <span>Register</span>
+                                    <span>{registrationButtonText()}</span>
                                 </button>
                             </div>
                             {post.source && (
@@ -2487,8 +2527,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                     </li>
                                 ))}
                             </ul>
-                            <button className="action-btn btn-primary" onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}>
-                                <Ticket size={18} /> Register Now
+                            <button
+                                className={`action-btn btn-primary ${isButtonDisabled ? 'disabled' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}
+                                disabled={isButtonDisabled}
+                            >
+                                <Ticket size={18} /> {registrationButtonText()}
                             </button>
                         </div>
                     )}
@@ -2558,7 +2602,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     );
 };
 
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -2590,6 +2634,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 isLoggedIn={!!currentUser}
                                 onExportData={onExportData}
                                 onShowRegistrationModal={onShowRegistrationModal}
+                                isRegistered={myRegisteredEvents.has(post._id)}
                             />
                         ))}
                     </div>
@@ -2611,6 +2656,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
+                        isRegistered={myRegisteredEvents.has(post._id)}
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={onReportPost}
@@ -2627,7 +2673,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     );
 };
 
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -2646,6 +2692,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
+                        isRegistered={myRegisteredEvents.has(post._id)}
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={onReportPost}
@@ -2680,6 +2727,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onOpenEventDetail={onOpenEventDetail}
                         onAddToCalendar={onAddToCalendar}
                         currentUser={currentUser}
+                        isRegistered={false} // Confessions don't have registrations
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
                         onReportPost={onReportPost}
@@ -2695,7 +2743,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
+const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
     const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
 
     return (
@@ -2716,6 +2764,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             onAddToCalendar={onAddToCalendar}
                             currentUser={currentUser}
                             onShowRegistrationModal={onShowRegistrationModal}
+                            isRegistered={myRegisteredEvents.has(post._id)}
                             isProfileView={false}
                             onReportPost={onReportPost}
                             onDeletePost={onDeletePost}
@@ -2950,7 +2999,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     );
 };
 
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
     if (!currentUser) {
         return (
             <div>
@@ -3043,6 +3092,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             onReportPost={onReportPost}
                             onShowCalendarAlert={onShowCalendarAlert}
                             onShowRegistrationModal={onShowRegistrationModal}
+                            isRegistered={myRegisteredEvents.has(post._id)}
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                         />
@@ -4669,7 +4719,8 @@ const App = () => {
         onShowRegistrationModal: (event) => {
             setSelectedCulturalEvent(event);
             setShowCulturalEventRegistration(true);
-        }
+        },
+        myRegisteredEvents
     };
 
     const menuItems = [
@@ -4903,6 +4954,7 @@ const App = () => {
                     isLoggedIn={isLoggedIn}
                     onRequireLogin={() => setShowLoginModal(true)}
                     onRegister={handleRegisterEvent}
+                    isRegistered={myRegisteredEvents.has(selectedCulturalEvent._id)}
                 />
             )}
 
