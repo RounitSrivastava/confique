@@ -23,14 +23,11 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
             return res.status(404).json({ message: 'Event not found.' });
         }
         
-        // MODIFIED: Only check for existing registration for regular events
-        if (event.type !== 'culturalEvent') {
-            const isRegistered = await Registration.findOne({ eventId, userId });
-            if (isRegistered) {
-                return res.status(409).json({ message: 'You are already registered for this event.' });
-            }
+        const isRegistered = await Registration.findOne({ eventId, userId });
+        if (isRegistered) {
+            return res.status(409).json({ message: 'You are already registered for this event.' });
         }
-
+        
         const { 
             name, 
             email, 
@@ -81,6 +78,8 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
     }
 }));
 
+
+// FIX: This is the new, crucial route that was missing.
 // @desc    Get all event IDs a user is registered for
 // @route   GET /api/users/my-events-registrations
 // @access  Private
