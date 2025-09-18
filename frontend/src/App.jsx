@@ -1122,8 +1122,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             decoding="async"
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
-                        {/* Check if payment screenshot upload is enabled and render the upload field */}
-                        {!!event.enablePaymentScreenshot && (
+                        {/* Corrected position and logic for payment screenshot upload */}
+                        {event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
                                 {paymentScreenshot ? (
@@ -2036,7 +2036,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                 <div key={index} className="image-preview-item">
                                                     <img
                                                         src={preview}
-                                                        alt={`Preview ${index + 1}`}
+                                                        alt={`Post image ${index + 1}`}
                                                         className="post-image"
                                                         onError={handleImageError}
                                                         loading="lazy"
