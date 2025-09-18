@@ -1172,7 +1172,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (!!event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || ((event.enablePaymentScreenshot || false) && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1288,7 +1288,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setFormData(getInitialFormData(postToEdit, currentUser));
             setImagePreviews(postToEdit?.images || []);
             setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
-            setHasRegistration(!!postToEdit?.registrationLink || !!postToToEdit?.enableRegistrationForm);
+            // Corrected the typo here
+            setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
             setUploadAlertMessage('');
