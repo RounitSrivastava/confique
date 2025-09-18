@@ -769,6 +769,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     useEffect(() => {
         if (isOpen) {
+            if (!isLoggedIn) {
+                onRequireLogin();
+                onClose(); // Close the current modal if not logged in
+                return;
+            }
             setFormData(getInitialFormData());
             setShowPaymentStep(false);
             setShowFormAlert(false);
@@ -776,7 +781,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowSuccessModal(false);
             setSuccessMessage('');
         }
-    }, [isOpen, event]);
+    }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -860,13 +865,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-    
+   
         if (isRegistered) {
             setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
-    
+   
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -874,7 +879,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-    
+   
         const registrationData = {
             name: formData.name,
             email: formData.email,
@@ -886,7 +891,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             eventTitle: event.title,
             type: event.type,
         };
-    
+   
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -896,13 +901,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-    
+   
         if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-    
+   
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -1524,7 +1529,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const removeQRImage = () => {
         setPaymentQRPreview('');
     };
-    
+   
     // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -2037,7 +2042,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                 // Fix: Corrected the URL format for Google Maps to use a proper template literal
                 window.open(
-                    `https://www.google.com/maps/dir/${origin}/${destination}`,
+                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2289,7 +2294,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-    
+   
     // Fix: Define handleImageError inside the component
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -2297,7 +2302,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     };
 
     const contentToDisplay = post.content || '';
-    
+   
     // Fix: Use a useEffect hook to check for content overflow
     useEffect(() => {
         if (contentRef.current) {
@@ -2409,7 +2414,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
-    
+   
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
         if (isEventPast) return "EVENT ENDED";
@@ -2534,7 +2539,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             </ul>
                             <button
                                 className={`action-btn btn-primary ${isButtonDisabled ? 'disabled' : ''}`}
-                                onClick={(e) => { e.stopPropagation(); onShowRegistrationModal(post); }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isLoggedIn) {
+                                        alert("Please log in to register for events.");
+                                        return;
+                                    }
+                                    onShowRegistrationModal(post);
+                                }}
                                 disabled={isButtonDisabled}
                             >
                                 <Ticket size={18} /> {registrationButtonText()}
@@ -4722,6 +4734,10 @@ const App = () => {
         isLoggedIn,
         onExportData: handleExportRegistrations,
         onShowRegistrationModal: (event) => {
+            if (!isLoggedIn) {
+                setShowLoginModal(true);
+                return;
+            }
             setSelectedCulturalEvent(event);
             setShowCulturalEventRegistration(true);
         },
@@ -4951,7 +4967,10 @@ const App = () => {
                     onClose={() => setShowCulturalEventRegistration(false)}
                     event={selectedCulturalEvent}
                     isLoggedIn={isLoggedIn}
-                    onRequireLogin={() => setShowLoginModal(true)}
+                    onRequireLogin={() => {
+                        setShowCulturalEventRegistration(false);
+                        setShowLoginModal(true);
+                    }}
                     onRegister={handleRegisterEvent}
                     isRegistered={myRegisteredEvents.has(selectedCulturalEvent._id)}
                 />
