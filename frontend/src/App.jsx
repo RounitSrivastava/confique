@@ -1414,7 +1414,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -2288,28 +2288,27 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered, onRequireLogin }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
    
-    // Fix: Define handleImageError inside the component
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
     };
 
     const contentToDisplay = post.content || '';
-   
-    // Fix: Use a useEffect hook to check for content overflow
+    const truncatedContent = contentToDisplay.length > 200 ? contentToDisplay.substring(0, 200) + '...' : contentToDisplay;
+
     useEffect(() => {
-        if (contentRef.current) {
+        if (contentRef.current && post.content) {
             const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
-            setNeedsShowMore(isOverflowing);
+            setNeedsShowMore(isOverflowing || post.content.length > 200);
         }
-    }, [post.content, showFullContent]);
+    }, [post.content]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -2333,7 +2332,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         if (isLoggedIn) {
             setOpenCommentPostId(isCommentsOpen ? null : post._id);
         } else {
-            alert("Please log in to comment.");
+            onRequireLogin();
         }
     };
 
@@ -2362,7 +2361,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleAddToCalendarClick = () => {
         console.log("Button clicked. Attempting to add event:", post);
         if (!isLoggedIn) {
-            alert("Please log in to add events to your calendar.");
+            console.log("User not logged in, requiring login.");
+            onRequireLogin();
             return;
         }
         if (!post || !post.eventStartDate) {
@@ -2469,7 +2469,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         className={`post-text ${showFullContent ? 'expanded' : ''}`}
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
-                        {contentToDisplay}
+                        {showFullContent ? contentToDisplay : truncatedContent}
                     </p>
                     {needsShowMore && (
                         <button
@@ -2542,7 +2542,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (!isLoggedIn) {
-                                        alert("Please log in to register for events.");
+                                        onRequireLogin();
                                         return;
                                     }
                                     onShowRegistrationModal(post);
@@ -2619,7 +2619,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     );
 };
 
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -2652,6 +2652,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onExportData={onExportData}
                                 onShowRegistrationModal={onShowRegistrationModal}
                                 isRegistered={myRegisteredEvents.has(post._id)}
+                                onRequireLogin={onRequireLogin}
                             />
                         ))}
                     </div>
@@ -2683,6 +2684,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         isLoggedIn={!!currentUser}
                         onExportData={onExportData}
                         onShowRegistrationModal={onShowRegistrationModal}
+                        onRequireLogin={onRequireLogin}
                     />
                 ))}
             </div>
@@ -2690,7 +2692,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     );
 };
 
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -2718,6 +2720,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
                         onExportData={onExportData}
+                        onRequireLogin={onRequireLogin}
                     />
                 ))}
             </div>
@@ -2725,7 +2728,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -2753,6 +2756,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         onShowCalendarAlert={onShowCalendarAlert}
                         isLoggedIn={!!currentUser}
                         onExportData={onExportData}
+                        onRequireLogin={onRequireLogin}
                     />
                 ))}
             </div>
@@ -2760,7 +2764,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
+const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
     const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
 
     return (
@@ -2789,6 +2793,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             onShowCalendarAlert={onShowCalendarAlert}
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
+                            onRequireLogin={onRequireLogin}
                         />
                     ))
                 ) : (
@@ -3016,7 +3021,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     );
 };
 
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
     if (!currentUser) {
         return (
             <div>
@@ -3112,6 +3117,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             isRegistered={myRegisteredEvents.has(post._id)}
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
+                            onRequireLogin={onRequireLogin}
                         />
                     ))}
                 </div>
@@ -4741,7 +4747,8 @@ const App = () => {
             setSelectedCulturalEvent(event);
             setShowCulturalEventRegistration(true);
         },
-        myRegisteredEvents
+        myRegisteredEvents,
+        onRequireLogin: () => setShowLoginModal(true)
     };
 
     const menuItems = [
