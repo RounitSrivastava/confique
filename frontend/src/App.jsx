@@ -895,12 +895,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        
-        if (event.culturalPaymentMethod === 'qr' && !isFree && !event.enablePaymentScreenshot && (!formData.transactionId || formData.transactionId.length < 4)) {
-            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
-            setShowFormAlert(true);
-            return;
-        }
 
         const registrationData = {
             name: formData.name,
@@ -910,6 +904,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
+            // Pass the payment screenshot to the backend
             paymentScreenshot, 
             eventTitle: event.title,
             type: event.type,
@@ -923,6 +918,12 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     registrationData[fieldName] = fieldValue;
                 }
             });
+        }
+
+        if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
+            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+            setShowFormAlert(true);
+            return;
         }
         
         try {
@@ -942,6 +943,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
     };
 
+    // New function to handle screenshot upload
     const handlePaymentScreenshotUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1109,20 +1111,21 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </div>
                 )}
 
-                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode && (
+                {event.culturalPaymentMethod === 'qr' && (
                     <div className="qr-payment-section">
-                        <div className="form-group">
-                            <label className="form-label">Payment via QR Code</label>
-                            <img
-                                src={event.culturalPaymentQRCode}
-                                alt="Payment QR Code"
-                                className="payment-qr"
-                                loading="lazy"
-                                decoding="async"
-                                onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
-                            />
-                        </div>
-                        
+                        {event.culturalPaymentQRCode && (
+                            <div className="form-group">
+                                <label className="form-label">Payment via QR Code</label>
+                                <img
+                                    src={event.culturalPaymentQRCode}
+                                    alt="Payment QR Code"
+                                    className="payment-qr"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                                />
+                            </div>
+                        )}
                         {event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
@@ -1160,7 +1163,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                                 onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
                                 placeholder="Last 4 digits of Transaction ID"
                                 maxLength={4}
-                                required={!event.enablePaymentScreenshot}
+                                required={event.enablePaymentScreenshot || !isFree}
                             />
                         </div>
                     </div>
@@ -1173,7 +1176,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.enablePaymentScreenshot && !paymentScreenshot) || (!event.enablePaymentScreenshot && event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1389,7 +1392,10 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 ...prev,
                 registrationLink: defaultMethod === 'link' ? prev.registrationLink : '',
                 enableRegistrationForm: defaultMethod === 'form',
-                registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
+                registrationFields: defaultMethod === 'form' ? prev.registrationFields : '',
+                paymentMethod: 'link',
+                paymentLink: '',
+                paymentQRCode: ''
             }));
         }
     };
@@ -1466,8 +1472,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                         setShowUploadAlert(true);
                         return;
                     }
-                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
-                        setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
+                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview && !formData.enablePaymentScreenshot) {
+                        setUploadAlertMessage("Please upload a QR Code image for payment.");
                         setShowUploadAlert(true);
                         return;
                     }
