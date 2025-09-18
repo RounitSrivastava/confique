@@ -895,6 +895,12 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
+        
+        if (event.culturalPaymentMethod === 'qr' && !isFree && !event.enablePaymentScreenshot && (!formData.transactionId || formData.transactionId.length < 4)) {
+            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+            setShowFormAlert(true);
+            return;
+        }
 
         const registrationData = {
             name: formData.name,
@@ -904,7 +910,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
-            // Pass the payment screenshot to the backend
             paymentScreenshot, 
             eventTitle: event.title,
             type: event.type,
@@ -918,12 +923,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     registrationData[fieldName] = fieldValue;
                 }
             });
-        }
-
-        if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
-            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
-            setShowFormAlert(true);
-            return;
         }
         
         try {
@@ -943,7 +942,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
     };
 
-    // New function to handle screenshot upload
     const handlePaymentScreenshotUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1112,16 +1110,19 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 )}
 
                 {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode && (
-                    <div className="form-group">
-                        <label className="form-label">Payment via QR Code</label>
-                        <img
-                            src={event.culturalPaymentQRCode}
-                            alt="Payment QR Code"
-                            className="payment-qr"
-                            loading="lazy"
-                            decoding="async"
-                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
-                        />
+                    <div className="qr-payment-section">
+                        <div className="form-group">
+                            <label className="form-label">Payment via QR Code</label>
+                            <img
+                                src={event.culturalPaymentQRCode}
+                                alt="Payment QR Code"
+                                className="payment-qr"
+                                loading="lazy"
+                                decoding="async"
+                                onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                            />
+                        </div>
+                        
                         {event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
@@ -1150,16 +1151,18 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                                 )}
                             </div>
                         )}
-                        <label className="form-label">Last 4 Digits of Transaction ID</label>
-                        <input
-                            type="text"
-                            className="form-input"
-                            value={formData.transactionId}
-                            onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
-                            placeholder="Last 4 digits of Transaction ID"
-                            maxLength={4}
-                            required={event.enablePaymentScreenshot}
-                        />
+                        <div className="form-group">
+                            <label className="form-label">Last 4 Digits of Transaction ID</label>
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={formData.transactionId}
+                                onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
+                                placeholder="Last 4 digits of Transaction ID"
+                                maxLength={4}
+                                required={!event.enablePaymentScreenshot}
+                            />
+                        </div>
                     </div>
                 )}
             </div>
@@ -1170,7 +1173,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (event.enablePaymentScreenshot && !paymentScreenshot) || (!event.enablePaymentScreenshot && event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
