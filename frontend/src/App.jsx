@@ -740,6 +740,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             phone: '',
             transactionId: '',
             selectedDates: [],
+            paymentScreenshot: null, // NEW: Add paymentScreenshot field to initial state
         };
 
         if (event.registrationFields) {
@@ -764,6 +765,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
+    const [paymentScreenshot, setPaymentScreenshot] = useState(null); // State for payment screenshot
+    const screenshotInputRef = useRef(null);
 
     const availableDates = event.availableDates || [];
 
@@ -780,6 +783,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
+            setPaymentScreenshot(null);
         }
     }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
 
@@ -865,13 +869,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-   
+        
         if (isRegistered) {
             setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
-   
+        
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -879,7 +883,14 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-   
+
+        // New validation for payment screenshot
+        if (event.culturalPaymentMethod === 'qr' && event.enablePaymentScreenshot && !isFree && !paymentScreenshot) {
+            setFormAlertMessage("Please upload a payment screenshot.");
+            setShowFormAlert(true);
+            return;
+        }
+
         const registrationData = {
             name: formData.name,
             email: formData.email,
@@ -888,10 +899,12 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             selectedTickets,
             totalPrice,
             transactionId: formData.transactionId || null,
+            // Pass the payment screenshot to the backend
+            paymentScreenshot, 
             eventTitle: event.title,
             type: event.type,
         };
-   
+
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -901,13 +914,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-   
+
         if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-   
+        
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -925,9 +938,26 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
     };
 
+    // New function to handle screenshot upload
+    const handlePaymentScreenshotUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        compressImage(file, (compressedDataUrl) => {
+            setPaymentScreenshot(compressedDataUrl);
+        });
+        e.target.value = null;
+    };
+
+    const handleRemoveScreenshot = () => {
+        setPaymentScreenshot(null);
+        if (screenshotInputRef.current) {
+            screenshotInputRef.current.value = null;
+        }
+    };
+
     const handleClose = () => {
         setShowPaymentStep(false);
-        setShowSuccessModal(false);
         onClose();
     };
 
@@ -1087,6 +1117,35 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             decoding="async"
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
+                        {event.enablePaymentScreenshot && (
+                            <div className="form-group payment-screenshot-upload">
+                                <label className="form-label">Upload Payment Screenshot</label>
+                                {paymentScreenshot ? (
+                                    <div className="payment-qr-preview">
+                                        <img src={paymentScreenshot} alt="Payment Screenshot" loading="lazy" decoding="async" />
+                                        <button type="button" className="remove-image-btn" onClick={handleRemoveScreenshot}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label htmlFor="screenshot-file-input" className="upload-btn-wrapper">
+                                        <div className="upload-btn">
+                                            <ImageIcon size={16} />
+                                            <span>Upload Screenshot</span>
+                                        </div>
+                                        <input
+                                            id="screenshot-file-input"
+                                            ref={screenshotInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handlePaymentScreenshotUpload}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                        )}
+                        <label className="form-label">Last 4 Digits of Transaction ID</label>
                         <input
                             type="text"
                             className="form-input"
@@ -1110,7 +1169,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1131,7 +1190,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     {isRegistered ? (
                         <div className="already-registered-message">
                             <Check size={48} className="success-icon" />
-                            <h3>Thank you for your payment!</h3>
+                            <h3>You are already registered for this event.</h3>
                             <p>Registration confirmed.</p>
                             <button className="btn-primary" onClick={onClose}>Close</button>
                         </div>
@@ -1166,6 +1225,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             content: '',
             author: currentUser?.name || '',
             location: '',
+            venueAddress: '',
             eventStartDate: '',
             eventEndDate: '',
             price: 0,
@@ -1183,6 +1243,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             culturalPaymentLink: '',
             culturalPaymentQRCode: '',
             availableDates: [''],
+            enablePaymentScreenshot: false, // NEW: Add this to the initial state
         };
 
         if (postToEdit) {
@@ -1195,6 +1256,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 price: isCulturalEvent ? 0 : (postToEdit.price || 0),
                 ticketOptions: isCulturalEvent ? (postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }]) : [{ ticketType: '', ticketPrice: 0 }],
                 availableDates: isCulturalEvent ? (postToEdit.availableDates || ['']) : [''],
+                enablePaymentScreenshot: postToEdit.enablePaymentScreenshot || false, // NEW: Load this from the post to edit
             };
             const allFields = Object.keys(initial);
             allFields.forEach(field => {
@@ -1414,7 +1476,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -1433,6 +1495,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 culturalPaymentLink: undefined,
                 culturalPaymentQRCode: undefined,
                 availableDates: undefined,
+                enablePaymentScreenshot: undefined,
             };
         } else if (formData.type === 'culturalEvent') {
             submissionData = {
@@ -1449,6 +1512,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 paymentMethod: undefined,
                 paymentLink: undefined,
                 paymentQRCode: undefined,
+                enablePaymentScreenshot: hasRegistration && formData.culturalPaymentMethod === 'qr' ? formData.enablePaymentScreenshot : false,
             };
         } else {
             submissionData = {
@@ -1471,12 +1535,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 culturalPaymentLink: undefined,
                 culturalPaymentQRCode: undefined,
                 availableDates: undefined,
+                enablePaymentScreenshot: undefined,
             };
         }
 
         try {
             await onSubmit(submissionData);
-            onClose(); // Close the modal first
+            onClose();
             const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
             const successMessage = submissionData.status === 'pending'
                 ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
@@ -1529,8 +1594,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const removeQRImage = () => {
         setPaymentQRPreview('');
     };
-   
-    // Corrected `handleImageError` to fix ReferenceError
+    
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -1600,6 +1664,17 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                             value={formData.location}
                                             onChange={handleFormChange}
                                             name="location"
+                                            required
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="form-label">Venue Address</label>
+                                        <input
+                                            type="text"
+                                            className="form-input"
+                                            value={formData.venueAddress}
+                                            onChange={handleFormChange}
+                                            name="venueAddress"
                                             required
                                         />
                                     </div>
@@ -1878,36 +1953,51 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                         </div>
                                                                     )}
                                                                     {formData.culturalPaymentMethod === 'qr' && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">QR Code Image</label>
-                                                                            <div className="image-upload-container">
-                                                                                {paymentQRPreview ? (
-                                                                                    <div className="payment-qr-preview">
-                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
-                                                                                        <button type="button" className="remove-image-btn" onClick={removeQRImage}>
-                                                                                            <X size={14} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                                            <div className="upload-btn">
-                                                                                                <ImageIcon size={16} />
-                                                                                                <span>Upload QR Code</span>
-                                                                                            </div>
-                                                                                        </label>
-                                                                                        <input
-                                                                                            id="qr-file-input"
-                                                                                            ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
-                                                                                    </>
-                                                                                )}
+                                                                        <>
+                                                                            <div className="form-group">
+                                                                                <label className="form-label">QR Code Image</label>
+                                                                                <div className="image-upload-container">
+                                                                                    {paymentQRPreview ? (
+                                                                                        <div className="payment-qr-preview">
+                                                                                            <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                            <button type="button" className="remove-image-btn" onClick={removeQRImage}>
+                                                                                                <X size={14} />
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <>
+                                                                                            <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                                                                                <div className="upload-btn">
+                                                                                                    <ImageIcon size={16} />
+                                                                                                    <span>Upload QR Code</span>
+                                                                                                </div>
+                                                                                            </label>
+                                                                                            <input
+                                                                                                id="qr-file-input"
+                                                                                                ref={qrFileInputRef}
+                                                                                                type="file"
+                                                                                                accept="image/*"
+                                                                                                onChange={handlePaymentQRUpload}
+                                                                                                style={{ display: 'none' }}
+                                                                                            />
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
                                                                             </div>
-                                                                        </div>
+                                                                            {/* NEW: Toggle for payment screenshot upload */}
+                                                                            <div className="form-group">
+                                                                                <label className="form-label">Enable Payment Screenshot Upload?</label>
+                                                                                <label className="toggle-switch">
+                                                                                    <input
+                                                                                        type="checkbox"
+                                                                                        name="enablePaymentScreenshot"
+                                                                                        checked={formData.enablePaymentScreenshot}
+                                                                                        onChange={handleFormChange}
+                                                                                    />
+                                                                                    <span className="slider round"></span>
+                                                                                </label>
+                                                                            </div>
+                                                                        </>
                                                                     )}
                                                                 </div>
                                                             )}
@@ -1938,7 +2028,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                     </div>
 
                                     {imagePreviews.length > 0 && (
-                                        <div className="image-upload-preview">
+                                        <div className={`image-upload-preview ${imagePreviews.length === 1 ? 'single' : imagePreviews.length === 2 ? 'double' : imagePreviews.length === 3 ? 'triple' : 'quad'}`}>
                                             {imagePreviews.map((preview, index) => (
                                                 <div key={index} className="image-preview-item">
                                                     <img
@@ -2040,7 +2130,6 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // Fix: Corrected the URL format for Google Maps to use a proper template literal
                 window.open(
                     `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
                     '_blank'
@@ -2294,7 +2383,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-   
+    
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2414,7 +2503,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
-   
+    
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
         if (isEventPast) return "EVENT ENDED";
@@ -4034,8 +4123,6 @@ const App = () => {
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
-                price: parseFloat(newPost.price) || 0,
-                registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
             };
 
             const res = await callApi(endpoint, {
@@ -4073,7 +4160,6 @@ const App = () => {
                             ...prev
                         ]);
                     }
-                    // Show success alert after a successful post
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = submissionData.status === 'pending'
                         ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
@@ -4091,7 +4177,6 @@ const App = () => {
                         },
                         ...prev
                     ]);
-                    // Show success alert after a successful update
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = `Your ${postTypeLabel} "${newPost.title}" has been updated successfully!`;
                     handleShowPostSuccessAlert(successMessage);
