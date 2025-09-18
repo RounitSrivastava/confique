@@ -1158,7 +1158,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
-                            required
+                            required={event.enablePaymentScreenshot}
                         />
                     </div>
                 )}
