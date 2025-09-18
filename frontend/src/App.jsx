@@ -820,7 +820,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return total + (price * (selection?.quantity || 0));
         }, 0);
         const numberOfDays = (formData.selectedDates || []).length;
-        return totalTicketPrice * numberOfDays;
+        // If no dates are selected, the price should be the total ticket price for one day, or 0 if free.
+        const effectiveNumberOfDays = Math.max(1, numberOfDays);
+        return totalTicketPrice * effectiveNumberOfDays;
     };
 
     const totalPrice = calculateTotalPrice();
@@ -830,7 +832,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
     
     // Corrected logic for enabling the "Proceed to Payment" button
-    const isProceedToPaymentEnabled = hasTicketsSelected && (availableDates.length === 0 || hasDatesSelected) && totalPrice > 0 && isPaymentMethodSet;
+    const isRegistrationFormValid = formData.name && formData.email && formData.phone && hasTicketsSelected && (event.availableDates.length === 0 || hasDatesSelected);
+    const isProceedToPaymentEnabled = isRegistrationFormValid && totalPrice > 0 && isPaymentMethodSet;
 
 
     const handleProceedToPayment = (e) => {
@@ -851,7 +854,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        if (availableDates.length > 0 && !hasDatesSelected) {
+        if (event.availableDates.length > 0 && !hasDatesSelected) {
             setFormAlertMessage("Please select at least one booking date.");
             setShowFormAlert(true);
             return;
@@ -1085,7 +1088,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={isRegistered || (!isFree && !isProceedToPaymentEnabled) || (isFree && (!hasTicketsSelected || (availableDates.length > 0 && !hasDatesSelected)))}
+                    disabled={isRegistered || !isRegistrationFormValid || (totalPrice > 0 && !isProceedToPaymentEnabled)}
                 >
                     {isProceedToPaymentEnabled ? 'Proceed to Payment' : 'Submit Registration'}
                 </button>
@@ -1172,7 +1175,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || ((event.enablePaymentScreenshot || false) && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (!!event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1415,8 +1418,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             return;
         }
 
-        if ((formData.type === 'event' || formData.type === 'culturalEvent') && (!formData.location || !formData.eventStartDate || !formData.duration)) {
-            setUploadAlertMessage("Please fill in all required event details (Location, Start Date, Duration).");
+        if ((formData.type === 'event' || formData.type === 'culturalEvent') && (!formData.location || !formData.venueAddress || !formData.eventStartDate || !formData.duration)) {
+            setUploadAlertMessage("Please fill in all required event details (Location, Venue Address, Start Date, Duration).");
             setShowUploadAlert(true);
             return;
         }
@@ -3616,7 +3619,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
             const hasEvent = myCalendarEvents.some(event =>
                 event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
-            return hasEvent ? <Check size={16} className="event-tick" /> : null;
+            return hasEvent ? <div className="event-dot"></div> : null;
         }
         return null;
     };
