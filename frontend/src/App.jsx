@@ -740,7 +740,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             phone: '',
             transactionId: '',
             selectedDates: [],
-            paymentScreenshot: null, // NEW: Add paymentScreenshot field to initial state
+            paymentScreenshot: null, 
         };
 
         if (event.registrationFields) {
@@ -765,7 +765,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
-    const [paymentScreenshot, setPaymentScreenshot] = useState(null); // State for payment screenshot
+    const [paymentScreenshot, setPaymentScreenshot] = useState(null); 
     const screenshotInputRef = useRef(null);
 
     const availableDates = event.availableDates || [];
@@ -774,7 +774,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         if (isOpen) {
             if (!isLoggedIn) {
                 onRequireLogin();
-                onClose(); // Close the current modal if not logged in
+                onClose(); 
                 return;
             }
             setFormData(getInitialFormData());
@@ -820,7 +820,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return total + (price * (selection?.quantity || 0));
         }, 0);
         const numberOfDays = (formData.selectedDates || []).length;
-        // If no dates are selected, the price should be the total ticket price for one day, or 0 if free.
         const effectiveNumberOfDays = Math.max(1, numberOfDays);
         return totalTicketPrice * effectiveNumberOfDays;
     };
@@ -832,7 +831,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
     
     // Corrected logic for enabling the "Proceed to Payment" button
-    const isRegistrationFormValid = formData.name && formData.email && formData.phone && hasTicketsSelected && (event.availableDates.length === 0 || hasDatesSelected);
+    const isRegistrationFormValid = formData.name && formData.email && formData.phone && hasTicketsSelected && (availableDates.length === 0 || hasDatesSelected);
     const isProceedToPaymentEnabled = isRegistrationFormValid && totalPrice > 0 && isPaymentMethodSet;
 
 
@@ -854,7 +853,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-        if (event.availableDates.length > 0 && !hasDatesSelected) {
+        if (availableDates.length > 0 && !hasDatesSelected) {
             setFormAlertMessage("Please select at least one booking date.");
             setShowFormAlert(true);
             return;
