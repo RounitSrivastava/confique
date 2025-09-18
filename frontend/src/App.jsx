@@ -885,7 +885,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             }));
 
         // New validation for payment screenshot
-        if (event.culturalPaymentMethod === 'qr' && event.enablePaymentScreenshot && !isFree && !paymentScreenshot) {
+        if (event.culturalPaymentMethod === 'qr' && (event.enablePaymentScreenshot || false) && !isFree && !paymentScreenshot) {
             setFormAlertMessage("Please upload a payment screenshot.");
             setShowFormAlert(true);
             return;
@@ -1117,7 +1117,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             decoding="async"
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
-                        {event.enablePaymentScreenshot && (
+                        {/* Check if payment screenshot upload is enabled and render the upload field */}
+                        {(event.enablePaymentScreenshot || false) && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
                                 {paymentScreenshot ? (
@@ -1169,7 +1170,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || ((event.enablePaymentScreenshot || false) && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1243,7 +1244,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             culturalPaymentLink: '',
             culturalPaymentQRCode: '',
             availableDates: [''],
-            enablePaymentScreenshot: false, // NEW: Add this to the initial state
+            enablePaymentScreenshot: false,
         };
 
         if (postToEdit) {
@@ -1256,7 +1257,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 price: isCulturalEvent ? 0 : (postToEdit.price || 0),
                 ticketOptions: isCulturalEvent ? (postToEdit.ticketOptions || [{ ticketType: '', ticketPrice: 0 }]) : [{ ticketType: '', ticketPrice: 0 }],
                 availableDates: isCulturalEvent ? (postToEdit.availableDates || ['']) : [''],
-                enablePaymentScreenshot: postToEdit.enablePaymentScreenshot || false, // NEW: Load this from the post to edit
+                enablePaymentScreenshot: postToEdit.enablePaymentScreenshot || false,
             };
             const allFields = Object.keys(initial);
             allFields.forEach(field => {
@@ -1376,6 +1377,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 culturalPaymentLink: '',
                 culturalPaymentQRCode: '',
                 availableDates: [''],
+                enablePaymentScreenshot: false,
             }));
         } else {
             const defaultMethod = formData.type === 'culturalEvent' ? 'form' : 'link';
@@ -1984,7 +1986,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                     )}
                                                                                 </div>
                                                                             </div>
-                                                                            {/* NEW: Toggle for payment screenshot upload */}
+                                                                            {/* Toggle for payment screenshot upload */}
                                                                             <div className="form-group">
                                                                                 <label className="form-label">Enable Payment Screenshot Upload?</label>
                                                                                 <label className="toggle-switch">
