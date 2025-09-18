@@ -941,7 +941,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     >
                         <option value="">Select an option</option>
@@ -966,7 +966,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     />
                 </div>
@@ -978,11 +978,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <form onSubmit={handleProceedToPayment} className="modal-form">
             <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} required />
+                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} required />
+                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -991,7 +991,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     className="form-input"
                     name="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="e.g., 9876543210"
                     required
                 />
@@ -1086,7 +1086,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             type="text"
                             className="form-input"
                             value={formData.transactionId}
-                            onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value }))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
                             required
@@ -3947,7 +3947,7 @@ const App = () => {
                 },
                 ...prev
             ]);
-            throw new Error(`You are already registered for "${post.title}".`);
+            return; // CRITICAL FIX: Return here to stop execution
         }
 
         try {
@@ -3980,7 +3980,6 @@ const App = () => {
                     },
                     ...prev
                 ]);
-                // CRITICAL FIX: Throw an error to propagate failure to the modal
                 throw new Error(errorData.message || 'Registration failed due to server error.');
             }
         } catch (err) {
@@ -3988,13 +3987,12 @@ const App = () => {
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
-                    message: `Registration for "${post.title}" failed due to network error.`,
+                    message: `Registration for "${post.title}" failed due to a network error.`,
                     timestamp: new Date(),
                     type: 'error'
                 },
                 ...prev
             ]);
-            // CRITICAL FIX: Re-throw the error to ensure the modal's catch block is executed.
             throw err;
         }
     };
