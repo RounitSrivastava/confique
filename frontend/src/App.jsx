@@ -1122,7 +1122,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             decoding="async"
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
-                        {/* Corrected position and logic for payment screenshot upload */}
                         {event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
@@ -1987,7 +1986,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                     )}
                                                                                 </div>
                                                                             </div>
-                                                                            {/* Toggle for payment screenshot upload */}
                                                                             <div className="form-group">
                                                                                 <label className="form-label">Enable Payment Screenshot Upload?</label>
                                                                                 <label className="toggle-switch">
