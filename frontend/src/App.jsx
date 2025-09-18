@@ -1123,7 +1123,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
                         {/* Check if payment screenshot upload is enabled and render the upload field */}
-                        {event.enablePaymentScreenshot && (
+                        {!!event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
                                 {paymentScreenshot ? (
