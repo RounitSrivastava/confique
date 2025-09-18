@@ -828,7 +828,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
-    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
+    
+    // Corrected logic for enabling the "Proceed to Payment" button
+    const isProceedToPaymentEnabled = hasTicketsSelected && hasDatesSelected && totalPrice > 0 && isPaymentMethodSet;
 
 
     const handleProceedToPayment = (e) => {
@@ -1118,7 +1120,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
                         {/* Check if payment screenshot upload is enabled and render the upload field */}
-                        {(event.enablePaymentScreenshot || false) && (
+                        {!!event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
                                 {paymentScreenshot ? (
@@ -1170,7 +1172,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || ((event.enablePaymentScreenshot || false) && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (!!event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1286,7 +1288,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setFormData(getInitialFormData(postToEdit, currentUser));
             setImagePreviews(postToEdit?.images || []);
             setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
-            setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
+            setHasRegistration(!!postToEdit?.registrationLink || !!postToToEdit?.enableRegistrationForm);
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
             setUploadAlertMessage('');
