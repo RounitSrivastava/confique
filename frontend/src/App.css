@@ -770,115 +770,60 @@ body {
 
 /* --- FIX: UPDATED IMAGE STYLES --- */
 .post-images {
-  display: flex; /* Change from grid to flexbox */
-  flex-wrap: nowrap; /* Prevent wrapping to a new row */
-  overflow-x: hidden; /* Hide the default horizontal scrollbar */
+  display: grid;
   gap: 0.5rem;
+  flex-wrap: wrap;
   margin-top: 0.75rem;
   border-radius: 0.5rem;
-  justify-content: flex-start; /* Align items to the start */
-  width: 100%;
-}
-
-/* Style for the images when there are 1 or 2 */
-.post-images .post-image {
-  flex-basis: 50%; /* Each image takes up 50% of the container width */
-  height: 250px; /* Maintain a consistent height */
-  object-fit: cover;
-  border-radius: 0.5rem;
-}
-
-/* For a single image, let it take up the full width */
-.post-images.single .post-image {
-  flex-basis: 100%;
-}
-
-/* Override the old `triple` and `quad` styles with a general carousel approach */
-.post-images.triple,
-.post-images.quad {
-  display: flex;
-  justify-content: flex-start;
-  /* Use the new carousel container instead */
-}
-
-/* Add a new class to handle the image carousel and the "more" button */
-.image-carousel-container {
-  position: relative;
-  display: flex; /* Use flexbox to align images horizontally */
-  overflow-x: auto; /* Enable horizontal scrolling */
-  gap: 0.5rem;
-  border-radius: 0.5rem;
-  width: 100%;
-  padding-bottom: 0.75rem; /* Add some padding for the scrollbar on some browsers */
-  /* Hide the scrollbar for a cleaner look */
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
-}
-
-/* Hide the scrollbar for WebKit browsers (Chrome, Safari) */
-.image-carousel-container::-webkit-scrollbar {
-  display: none;
-}
-
-/* Style for each image inside the carousel */
-.carousel-image {
-  flex-shrink: 0; /* Prevent images from shrinking */
-  width: 250px; /* Set a fixed width for each image */
-  height: 250px;
-  object-fit: cover;
-  border-radius: 0.5rem;
-}
-
-/* Style for the "More" button overlay */
-.more-images-overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: 100%;
-  width: 50%;
-  /* Use a linear gradient to create a blur effect */
-  background: linear-gradient(to right, rgba(0, 0, 0, 0) 0%, var(--bg-primary) 80%);
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  padding-right: 1rem;
-  pointer-events: none; /* Allows clicks to pass through to the image */
-  opacity: 1;
-  transition: opacity 0.3s ease;
-}
-
-/* Hide the overlay when there are fewer than 3 images */
-.image-carousel-container:not(.has-more) .more-images-overlay {
-  display: none;
-}
-
-/* Style for the "More" button itself */
-.more-button {
-  display: flex;
-  align-items: center;
+  overflow: hidden;
   justify-content: center;
-  padding: 0.5rem 1rem;
-  background-color: var(--action-btn-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 9999px;
-  cursor: pointer;
-  color: var(--text-primary);
-  font-size: 0.9rem;
-  font-weight: 500;
-  pointer-events: auto; /* Re-enables pointer events for the button */
-  box-shadow: 0 2px 4px var(--shadow-color);
-  z-index: 1;
-  transition: all 0.2s ease;
+  width: 100%; /* Ensure container takes full width of the card */
 }
 
-.more-button:hover {
-  background-color: var(--action-btn-hover);
+/* Single image should take up the full column and be a certain height */
+.post-images.single {
+  grid-template-columns: 1fr;
+  height: 250px;
 }
 
-.more-button svg {
-  width: 20px;
-  height: 20px;
+/* Double images should be a 2-column grid, taking up full height */
+.post-images.double {
+  grid-template-columns: repeat(2, 1fr);
+  height: 250px;
 }
+
+/* Triple images: one large image and two smaller ones */
+.post-images.triple {
+  grid-template-columns: repeat(2, 1fr);
+  height: 350px; /* Use a more appropriate height for this layout */
+}
+
+/* Quad images: 2x2 grid */
+.post-images.quad {
+  height: 350px;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr); /* 2 rows, even distribution */
+}
+
+.post-image {
+  width: 100%;
+  height: 100%; /* Set height to 100% to fill the grid item */
+  /* FIX: Change object-fit from 'contain' to 'cover' */
+  object-fit: cover;
+  border-radius: 0.5rem;
+  display: block; /* Ensure it's a block element */
+}
+
+@media (max-width: 767px) {
+  .post-image {
+    height: 200px; /* Adjust as needed for a better mobile view */
+    object-fit: cover;
+  }
+  .post-images.triple, .post-images.quad {
+    height: 250px; /* Adjust height on smaller screens */
+  }
+}
+/* END OF FIX */
 
 /* Post Actions Styles */
 .post-actions {
@@ -3161,8 +3106,8 @@ body.modal-open {
   }
 
   .comment-submit-btn svg {
-    width: 30px;
-    height: 30px;
+    width: 70px;
+    height: 70px;
   }
 
   .comments-list {
@@ -3209,7 +3154,7 @@ body.modal-open {
 
 /* In App.css */
 @media (max-width: 767px) {
-  .app-logo-link img {
+  .app-logo-link img { 
     display: none;
   }
   
