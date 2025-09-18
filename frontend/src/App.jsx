@@ -824,13 +824,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const totalPrice = calculateTotalPrice();
-    const hasTicketsSelected = (formData.ticketSelections || []).some(selection => selection.quantity > 0);
+    const hasTicketsSelected = (formData.ticketSelections || []).some(selection => (selection?.quantity || 0) > 0);
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
     
     // Corrected logic for enabling the "Proceed to Payment" button
-    const isProceedToPaymentEnabled = hasTicketsSelected && hasDatesSelected && totalPrice > 0 && isPaymentMethodSet;
+    const isProceedToPaymentEnabled = hasTicketsSelected && (availableDates.length === 0 || hasDatesSelected) && totalPrice > 0 && isPaymentMethodSet;
 
 
     const handleProceedToPayment = (e) => {
@@ -879,7 +879,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
         
         const selectedTickets = (formData.ticketSelections || [])
-            .filter(selection => selection.quantity > 0)
+            .filter(selection => (selection?.quantity || 0) > 0)
             .map((selection, index) => ({
                 ticketType: event.ticketOptions[index]?.ticketType,
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
@@ -1085,7 +1085,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!hasTicketsSelected || (event.availableDates && event.availableDates.length > 0 && !hasDatesSelected) || isRegistered}
+                    disabled={isRegistered || (!isFree && !isProceedToPaymentEnabled) || (isFree && (!hasTicketsSelected || (availableDates.length > 0 && !hasDatesSelected)))}
                 >
                     {isProceedToPaymentEnabled ? 'Proceed to Payment' : 'Submit Registration'}
                 </button>
@@ -1288,7 +1288,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setFormData(getInitialFormData(postToEdit, currentUser));
             setImagePreviews(postToEdit?.images || []);
             setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
-            // Corrected the typo here
             setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
