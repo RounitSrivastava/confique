@@ -480,7 +480,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         e.preventDefault();
 
         if (!isLoggedIn) {
-            onRequireLogin();
+            onRequireLogin(event);
             return;
         }
 
@@ -825,7 +825,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const handleProceedToPayment = (e) => {
         e.preventDefault();
         if (!isLoggedIn) {
-            onRequireLogin();
+            onRequireLogin(event);
             return;
         }
 
@@ -1409,7 +1409,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -2052,7 +2052,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
     const handleRegistrationClick = () => {
         if (!isLoggedIn) {
-            onRequireLogin();
+            onRequireLogin(event);
             return;
         }
 
@@ -2073,7 +2073,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
         console.log("Button clicked. Attempting to add event:", event);
         if (!isLoggedIn) {
             console.log("User not logged in, requiring login.");
-            onRequireLogin();
+            onRequireLogin(event);
             return;
         }
         if (!event || !event.eventStartDate) {
@@ -2286,7 +2286,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
 const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
-    const contentRef = useRef(null);
+    const textContainerRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
     
@@ -2300,11 +2300,11 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     
     // Fix: Use a useEffect hook to check for content overflow
     useEffect(() => {
-        if (contentRef.current) {
-            const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
+        if (textContainerRef.current) {
+            const isOverflowing = textContainerRef.current.scrollHeight > textContainerRef.current.clientHeight;
             setNeedsShowMore(isOverflowing);
         }
-    }, [post.content, showFullContent]);
+    }, [post.content]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -2357,7 +2357,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleAddToCalendarClick = () => {
         console.log("Button clicked. Attempting to add event:", post);
         if (!isLoggedIn) {
-            alert("Please log in to add events to your calendar.");
+            console.log("User not logged in, requiring login.");
+            onRequireLogin(post);
             return;
         }
         if (!post || !post.eventStartDate) {
@@ -2458,23 +2459,22 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
             <div className="post-content">
                 <h2 className="post-title">{post.title}</h2>
-                <div className="post-text-container">
+                <div className={`post-text-container ${!showFullContent && needsShowMore ? 'collapsed' : ''}`} ref={textContainerRef}>
                     <p
-                        ref={contentRef}
-                        className={`post-text ${showFullContent ? 'expanded' : ''}`}
+                        className="post-text"
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
                         {contentToDisplay}
                     </p>
-                    {needsShowMore && (
-                        <button
-                            className="show-more-button"
-                            onClick={() => setShowFullContent(!showFullContent)}
-                        >
-                            {showFullContent ? 'Show Less' : 'Show More'}
-                        </button>
-                    )}
                 </div>
+                {needsShowMore && (
+                    <button
+                        className="show-more-button"
+                        onClick={() => setShowFullContent(!showFullContent)}
+                    >
+                        {showFullContent ? 'Show Less' : 'Show More'}
+                    </button>
+                )}
 
                 {post.images && post.images.length > 0 && (
                     <div className={`post-images ${post.images.length === 1 ? 'single' : post.images.length === 2 ? 'double' : post.images.length === 3 ? 'triple' : 'quad'}`}>
@@ -3288,7 +3288,7 @@ const NotificationsRightSidebar = ({ onShowHelpModal }) => {
     );
 };
 
-const LoginModal = ({ isOpen, onClose, onLogin }) => {
+const LoginModal = ({ isOpen, onClose, onLogin, onLoginSuccess }) => {
     const [isRegistering, setIsRegistering] = useState(false);
     const [formData, setFormData] = useState({ name: '', email: '', password: '' });
     const [error, setError] = useState('');
@@ -3324,6 +3324,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
             if (res.ok) {
                 onLogin(data);
                 onClose();
+                onLoginSuccess();
             } else {
                 setError(data.message || 'An error occurred. Please try again.');
             }
@@ -3593,6 +3594,7 @@ const App = () => {
     });
     const [myRegisteredEvents, setMyRegisteredEvents] = useState(new Set());
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [postLoginAction, setPostLoginAction] = useState(null);
 
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
@@ -3873,6 +3875,8 @@ const App = () => {
 
         if (!isLoggedIn) {
             console.log("2. User is not logged in. Showing login modal.");
+            // Store action to open the calendar modal after login
+            setPostLoginAction(() => () => setShowCalendarModal(true));
             setShowLoginModal(true);
             return;
         }
@@ -4442,6 +4446,11 @@ const App = () => {
         setIsLoggedIn(true);
         setCurrentUser(user);
         localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        if (postLoginAction) {
+            postLoginAction();
+            setPostLoginAction(null);
+        }
     };
 
     const handleLogout = () => {
@@ -4464,6 +4473,11 @@ const App = () => {
     const handleCloseReportModal = () => {
         setIsReportModalOpen(false);
         setReportPostData(null);
+    };
+
+    const handleRequireLogin = (actionCallback) => {
+        setPostLoginAction(() => actionCallback);
+        setShowLoginModal(true);
     };
 
     const handleReportPost = async (postId, reason) => {
@@ -4720,6 +4734,13 @@ const App = () => {
         isLoggedIn,
         onExportData: handleExportRegistrations,
         onShowRegistrationModal: (event) => {
+            if (!isLoggedIn) {
+                handleRequireLogin(() => {
+                    setSelectedCulturalEvent(event);
+                    setShowCulturalEventRegistration(true);
+                });
+                return;
+            }
             setSelectedCulturalEvent(event);
             setShowCulturalEventRegistration(true);
         },
@@ -4826,7 +4847,7 @@ const App = () => {
                         event={selectedEvent}
                         onClose={handleCloseEventDetail}
                         isLoggedIn={isLoggedIn}
-                        onRequireLogin={() => setShowLoginModal(true)}
+                        onRequireLogin={handleRequireLogin}
                         onAddToCalendar={handleAddToCalendar}
                         onRegister={handleRegisterEvent}
                         isRegistered={myRegisteredEvents.has(selectedEvent._id)}
@@ -4887,6 +4908,13 @@ const App = () => {
                 isOpen={showLoginModal}
                 onClose={() => setShowLoginModal(false)}
                 onLogin={handleLogin}
+                onLoginSuccess={() => {
+                    setShowLoginModal(false);
+                    if (postLoginAction) {
+                        postLoginAction();
+                        setPostLoginAction(null);
+                    }
+                }}
             />
             <ReportPostModal
                 isOpen={isReportModalOpen}
@@ -4949,7 +4977,7 @@ const App = () => {
                     onClose={() => setShowCulturalEventRegistration(false)}
                     event={selectedCulturalEvent}
                     isLoggedIn={isLoggedIn}
-                    onRequireLogin={() => setShowLoginModal(true)}
+                    onRequireLogin={handleRequireLogin}
                     onRegister={handleRegisterEvent}
                     isRegistered={myRegisteredEvents.has(selectedCulturalEvent._id)}
                 />
