@@ -847,7 +847,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowFormAlert(true);
             return;
         }
-
+        
+        // Basic form field validation before proceeding to payment
         if (!formData.name || !formData.email || !formData.phone) {
             setFormAlertMessage("Please provide your name, email, and phone number.");
             setShowFormAlert(true);
@@ -1110,7 +1111,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </div>
                 )}
 
-                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode ? (
+                {event.culturalPaymentMethod === 'qr' && event.culturalPaymentQRCode && (
                     <div className="form-group">
                         <label className="form-label">Payment via QR Code</label>
                         <img
@@ -1122,7 +1123,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
                         />
                         {/* Check if payment screenshot upload is enabled and render the upload field */}
-                        {!!event.enablePaymentScreenshot && (
+                        {event.enablePaymentScreenshot && (
                             <div className="form-group payment-screenshot-upload">
                                 <label className="form-label">Upload Payment Screenshot</label>
                                 {paymentScreenshot ? (
@@ -1161,10 +1162,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             required
                         />
                     </div>
-                ) : (
-                    <p className="placeholder-text error-message">
-                        The event host has not provided a QR code for this event. Please contact them for payment details.
-                    </p>
                 )}
             </div>
             <div className="modal-actions">
@@ -1174,7 +1171,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (!!event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (event.enablePaymentScreenshot && !paymentScreenshot) || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -3616,12 +3613,15 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
             const hasEvent = myCalendarEvents.some(event =>
-                event.eventStartDate && new Date(event.eventStartDate).toDateString() === date.toDateString()
+                event.eventStartDate &&
+                new Date(event.eventStartDate).toDateString() === date.toDateString()
             );
             return hasEvent ? <div className="event-dot"></div> : null;
         }
         return null;
     };
+
+    const upcomingCalendarEvents = myCalendarEvents;
 
     return (
         <div className="modal-overlay calendar-modal-overlay">
