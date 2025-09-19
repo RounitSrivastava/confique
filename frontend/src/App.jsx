@@ -310,7 +310,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
     const isAuthorOrAdmin = currentUser && (post.userId === currentUser._id || currentUser.isAdmin);
 
-    if (!currentUser) return null; // Hide the options button if the user is not logged in
+    if (!currentUser) return null;
 
     return (
         <div className="post-options-container" ref={dropdownRef}>
@@ -1486,7 +1486,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            // Corrected this line to use formData.type instead of newPost.type
             status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
@@ -4108,6 +4107,7 @@ const App = () => {
 
             let submissionData = {
                 ...newPost,
+                images: imagePreviews,
                 userId: currentUser?._id,
                 author: currentUser?.name || 'Anonymous',
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
@@ -4115,34 +4115,34 @@ const App = () => {
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
             };
 
-            if (formData.type === 'event') {
+            if (newPost.type === 'event') {
                 submissionData = {
                     ...submissionData,
-                    price: parseFloat(formData.price) || 0,
-                    registrationLink: hasRegistration && registrationMethod === 'link' ? formData.registrationLink : '',
+                    price: parseFloat(newPost.price) || 0,
+                    registrationLink: hasRegistration && registrationMethod === 'link' ? newPost.registrationLink : '',
                     enableRegistrationForm: hasRegistration && registrationMethod === 'form',
-                    registrationFields: hasRegistration && registrationMethod === 'form' ? formData.registrationFields : '',
-                    paymentMethod: hasRegistration && registrationMethod === 'form' && formData.price > 0 ? formData.paymentMethod : '',
-                    paymentLink: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'link' ? formData.paymentLink : '',
-                    paymentQRCode: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'qr' ? paymentQRPreview : '',
+                    registrationFields: hasRegistration && registrationMethod === 'form' ? newPost.registrationFields : '',
+                    paymentMethod: hasRegistration && registrationMethod === 'form' && newPost.price > 0 ? newPost.paymentMethod : '',
+                    paymentLink: hasRegistration && registrationMethod === 'form' && newPost.price > 0 && newPost.paymentMethod === 'link' ? newPost.paymentLink : '',
+                    paymentQRCode: hasRegistration && registrationMethod === 'form' && newPost.price > 0 && newPost.paymentMethod === 'qr' ? paymentQRPreview : '',
                     ticketOptions: undefined,
                     culturalPaymentMethod: undefined,
                     culturalPaymentLink: undefined,
                     culturalPaymentQRCode: undefined,
                     availableDates: undefined,
                 };
-            } else if (formData.type === 'culturalEvent') {
+            } else if (newPost.type === 'culturalEvent') {
                 submissionData = {
                     ...submissionData,
                     price: undefined,
-                    registrationLink: hasRegistration && registrationMethod === 'link' ? formData.registrationLink : '',
+                    registrationLink: hasRegistration && registrationMethod === 'link' ? newPost.registrationLink : '',
                     enableRegistrationForm: hasRegistration && registrationMethod === 'form',
-                    registrationFields: hasRegistration && registrationMethod === 'form' ? formData.registrationFields : '',
-                    ticketOptions: formData.ticketOptions,
-                    culturalPaymentMethod: hasRegistration ? formData.culturalPaymentMethod : '',
-                    culturalPaymentLink: hasRegistration && formData.culturalPaymentMethod === 'link' ? formData.culturalPaymentLink : '',
-                    culturalPaymentQRCode: hasRegistration && (formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
-                    availableDates: formData.availableDates,
+                    registrationFields: hasRegistration && registrationMethod === 'form' ? newPost.registrationFields : '',
+                    ticketOptions: newPost.ticketOptions,
+                    culturalPaymentMethod: hasRegistration ? newPost.culturalPaymentMethod : '',
+                    culturalPaymentLink: hasRegistration && newPost.culturalPaymentMethod === 'link' ? newPost.culturalPaymentLink : '',
+                    culturalPaymentQRCode: hasRegistration && (newPost.culturalPaymentMethod === 'qr' || newPost.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
+                    availableDates: newPost.availableDates,
                     paymentMethod: undefined,
                     paymentLink: undefined,
                     paymentQRCode: undefined,
@@ -4193,7 +4193,7 @@ const App = () => {
                             ...prev
                         ]);
                         if (currentUser.isAdmin) {
-                            fetchPendingEvents();
+                            fetchAdminNotifications();
                         }
                     } else {
                         setPosts(prev => [formattedResponsePost, ...prev]);
@@ -4353,14 +4353,14 @@ const App = () => {
         }
     };
 
-
     const handleDeletePost = async (postId) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for deleting posts.');
             return;
         }
         try {
-            const res = await callApi(`/users/admin/delete-post/${postId}`, {
+            // FIX: This call now correctly uses the general-purpose /posts/:id endpoint.
+            const res = await callApi(`/posts/${postId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
