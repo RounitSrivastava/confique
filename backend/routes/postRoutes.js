@@ -1,8 +1,7 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const Post = require('../models/Post');
-const Registration = require('../models/Registration'); 
+const { Post, Registration } = require('../models/Post'); 
 const { protect, admin } = require('../middleware/auth'); 
 
 const router = express.Router();
@@ -41,6 +40,8 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             'Email': reg.email || '',
             'Phone': reg.phone || '',
             'Transaction ID': reg.transactionId || '',
+            // NEW: Add the payment screenshot URL to the base data
+            'Payment Screenshot URL': reg.paymentScreenshot || '',
             'Registered At': reg.createdAt.toISOString(),
         };
 

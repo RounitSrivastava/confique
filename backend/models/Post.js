@@ -97,6 +97,8 @@ const registrationSchema = new mongoose.Schema({
     email: { type: String, required: true },
     phone: { type: String },
     transactionId: { type: String },
+    // **NEW FIELD ADDED HERE for the payment screenshot**
+    paymentScreenshot: { type: String },
     // A flexible object to store any custom fields
     customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
     // Fields for cultural event registration
@@ -131,7 +133,7 @@ const postSchema = new mongoose.Schema({
     }],
     comments: { type: Number, default: 0 },
     commentData: [commentSchema],
-    
+
     // Event-specific Fields
     status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
     source: { type: String },
@@ -153,7 +155,8 @@ const postSchema = new mongoose.Schema({
 
     // Cultural Event-specific Fields
     ticketOptions: [ticketOptionSchema],
-    culturalPaymentMethod: { type: String, enum: ['link', 'qr'] },
+    // **UPDATED ENUM to include 'qr-screenshot'**
+    culturalPaymentMethod: { type: String, enum: ['link', 'qr', 'qr-screenshot'] },
     culturalPaymentLink: { type: String },
     culturalPaymentQRCode: { type: String },
     availableDates: [{ type: String }],
