@@ -1479,7 +1479,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 }
             }
         }
-
+        
         let submissionData = {
             ...formData,
             images: imagePreviews,
@@ -1548,7 +1548,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         }
 
         try {
-            await onSubmit(submissionData);
+            await onSubmit(submissionData, imagePreviews, paymentQRPreview); // FIXED: Pass images and QR code as arguments
             onClose();
             const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
             const successMessage = submissionData.status === 'pending'
@@ -3794,8 +3794,6 @@ const App = () => {
     const fetchAdminData = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
-            // FIX: Corrected API endpoints to match a logical backend structure
-            // Assumes admin routes are mounted under '/api/posts' on the backend
             const [reportedRes, pendingRes] = await Promise.all([
                 callApi('/posts/admin/reported-posts'),
                 callApi('/posts/admin/pending-events')
@@ -4096,7 +4094,7 @@ const App = () => {
         }
     };
 
-    const handleAddPost = async (newPost) => {
+    const handleAddPost = async (newPost, imagePreviews, paymentQRPreview) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for posting.');
             return;
@@ -4115,17 +4113,19 @@ const App = () => {
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
             };
-
+            
+            // Re-apply fields based on post type
             if (newPost.type === 'event') {
                 submissionData = {
                     ...submissionData,
                     price: parseFloat(newPost.price) || 0,
-                    registrationLink: hasRegistration && registrationMethod === 'link' ? newPost.registrationLink : '',
-                    enableRegistrationForm: hasRegistration && registrationMethod === 'form',
-                    registrationFields: hasRegistration && registrationMethod === 'form' ? newPost.registrationFields : '',
-                    paymentMethod: hasRegistration && registrationMethod === 'form' && newPost.price > 0 ? newPost.paymentMethod : '',
-                    paymentLink: hasRegistration && registrationMethod === 'form' && newPost.price > 0 && newPost.paymentMethod === 'link' ? newPost.paymentLink : '',
-                    paymentQRCode: hasRegistration && registrationMethod === 'form' && newPost.price > 0 && newPost.paymentMethod === 'qr' ? paymentQRPreview : '',
+                    registrationLink: newPost.registrationLink,
+                    enableRegistrationForm: newPost.enableRegistrationForm,
+                    registrationFields: newPost.registrationFields,
+                    paymentMethod: newPost.paymentMethod,
+                    paymentLink: newPost.paymentLink,
+                    paymentQRCode: paymentQRPreview,
+                    // Undefine fields not relevant to this post type
                     ticketOptions: undefined,
                     culturalPaymentMethod: undefined,
                     culturalPaymentLink: undefined,
@@ -4133,17 +4133,18 @@ const App = () => {
                     availableDates: undefined,
                 };
             } else if (newPost.type === 'culturalEvent') {
-                submissionData = {
+                 submissionData = {
                     ...submissionData,
                     price: undefined,
-                    registrationLink: hasRegistration && registrationMethod === 'link' ? newPost.registrationLink : '',
-                    enableRegistrationForm: hasRegistration && registrationMethod === 'form',
-                    registrationFields: hasRegistration && registrationMethod === 'form' ? newPost.registrationFields : '',
+                    registrationLink: newPost.registrationLink,
+                    enableRegistrationForm: newPost.enableRegistrationForm,
+                    registrationFields: newPost.registrationFields,
                     ticketOptions: newPost.ticketOptions,
-                    culturalPaymentMethod: hasRegistration ? newPost.culturalPaymentMethod : '',
-                    culturalPaymentLink: hasRegistration && newPost.culturalPaymentMethod === 'link' ? newPost.culturalPaymentLink : '',
-                    culturalPaymentQRCode: hasRegistration && (newPost.culturalPaymentMethod === 'qr' || newPost.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
+                    culturalPaymentMethod: newPost.culturalPaymentMethod,
+                    culturalPaymentLink: newPost.culturalPaymentLink,
+                    culturalPaymentQRCode: paymentQRPreview,
                     availableDates: newPost.availableDates,
+                    // Undefine fields not relevant to this post type
                     paymentMethod: undefined,
                     paymentLink: undefined,
                     paymentQRCode: undefined,
