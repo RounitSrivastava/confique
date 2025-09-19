@@ -310,7 +310,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
     const isAuthorOrAdmin = currentUser && (post.userId === currentUser._id || currentUser.isAdmin);
 
-    if (!currentUser) return null;
+    if (!currentUser) return null; // Hide the options button if the user is not logged in
 
     return (
         <div className="post-options-container" ref={dropdownRef}>
@@ -677,7 +677,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         className="form-input"
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="e.g., 9876543210"
+                        placeholder="e.g., *******210"
                         required
                     />
                 </div>
@@ -764,9 +764,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
-    const [paymentScreenshot, setPaymentScreenshot] = useState(null);
-    const [paymentScreenshotPreview, setPaymentScreenshotPreview] = useState(null);
-    const paymentScreenshotInputRef = useRef(null);
 
     const availableDates = event.availableDates || [];
 
@@ -774,7 +771,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         if (isOpen) {
             if (!isLoggedIn) {
                 onRequireLogin();
-                onClose();
+                onClose(); // Close the current modal if not logged in
                 return;
             }
             setFormData(getInitialFormData());
@@ -783,8 +780,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
-            setPaymentScreenshot(null);
-            setPaymentScreenshotPreview(null);
         }
     }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
 
@@ -815,14 +810,6 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         setFormData(prev => ({ ...prev, ticketSelections: updatedSelections }));
     };
 
-    const handlePaymentScreenshotUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setPaymentScreenshot(file);
-            setPaymentScreenshotPreview(URL.createObjectURL(file));
-        }
-    };
-
     const calculateTotalPrice = () => {
         const totalTicketPrice = (formData.ticketSelections || []).reduce((total, selection, index) => {
             const price = event.ticketOptions[index]?.ticketPrice || 0;
@@ -836,7 +823,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const hasTicketsSelected = (formData.ticketSelections || []).some(selection => selection.quantity > 0);
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
-    const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr' || event.culturalPaymentMethod === 'qr-screenshot';
+    const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
     const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
 
 
@@ -893,44 +880,32 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 quantity: selection.quantity,
             }));
    
-        const registrationData = new FormData();
-        registrationData.append('name', formData.name);
-        registrationData.append('email', formData.email);
-        registrationData.append('phone', formData.phone);
-        registrationData.append('bookingDates', JSON.stringify(formData.selectedDates));
-        registrationData.append('selectedTickets', JSON.stringify(selectedTickets));
-        registrationData.append('totalPrice', totalPrice);
-        registrationData.append('eventTitle', event.title);
-        registrationData.append('type', event.type);
-   
-        if (event.culturalPaymentMethod === 'qr' && !isFree) {
-            if (!formData.transactionId || formData.transactionId.length < 4) {
-                setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
-                setShowFormAlert(true);
-                return;
-            }
-            registrationData.append('transactionId', formData.transactionId);
-        } else if (event.culturalPaymentMethod === 'qr-screenshot' && !isFree) {
-            if (!paymentScreenshot) {
-                setFormAlertMessage("Please upload a payment screenshot to confirm your registration.");
-                setShowFormAlert(true);
-                return;
-            }
-            registrationData.append('paymentScreenshot', paymentScreenshot);
-        } else if (event.culturalPaymentMethod === 'link' && !isFree && !event.culturalPaymentLink) {
-             setFormAlertMessage("The payment link is not available. Please contact the host.");
-             setShowFormAlert(true);
-             return;
-        }
+        const registrationData = {
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            bookingDates: formData.selectedDates,
+            selectedTickets,
+            totalPrice,
+            transactionId: formData.transactionId || null,
+            eventTitle: event.title,
+            type: event.type,
+        };
    
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
                 const fieldValue = formData[fieldName];
                 if (fieldValue) {
-                    registrationData.append(fieldName, fieldValue);
+                    registrationData[fieldName] = fieldValue;
                 }
             });
+        }
+   
+        if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
+            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+            setShowFormAlert(true);
+            return;
         }
    
         try {
@@ -971,7 +946,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
+                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
                         required
                     >
                         <option value="">Select an option</option>
@@ -996,7 +971,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
+                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
                         required
                     />
                 </div>
@@ -1008,11 +983,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <form onSubmit={handleProceedToPayment} className="modal-form">
             <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
+                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
+                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -1021,8 +996,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     className="form-input"
                     name="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="e.g., 9876543210"
+                    onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
+                    placeholder="e.g., *******210"
                     required
                 />
             </div>
@@ -1116,58 +1091,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             type="text"
                             className="form-input"
                             value={formData.transactionId}
-                            onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value }))}
+                            onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
                             required
                         />
-                    </div>
-                ) : event.culturalPaymentMethod === 'qr-screenshot' && event.culturalPaymentQRCode ? (
-                    <div className="form-group">
-                        <label className="form-label">Payment via QR Code & Screenshot</label>
-                        <p className="payment-instructions">Scan the QR code, make the payment, and upload a screenshot of the successful transaction below.</p>
-                        <img
-                            src={event.culturalPaymentQRCode}
-                            alt="Payment QR Code"
-                            className="payment-qr"
-                            loading="lazy"
-                            decoding="async"
-                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
-                        />
-                        <div className="file-upload-container">
-                            {paymentScreenshotPreview ? (
-                                <div className="payment-screenshot-preview">
-                                    <img src={paymentScreenshotPreview} alt="Payment Screenshot" />
-                                    <button
-                                        type="button"
-                                        className="remove-screenshot-btn"
-                                        onClick={() => {
-                                            setPaymentScreenshot(null);
-                                            setPaymentScreenshotPreview(null);
-                                            paymentScreenshotInputRef.current.value = null;
-                                        }}
-                                    >
-                                        <X size={14} /> Remove
-                                    </button>
-                                </div>
-                            ) : (
-                                <label htmlFor="payment-screenshot" className="upload-btn-wrapper">
-                                    <div className="upload-btn">
-                                        <ImageIcon size={16} />
-                                        <span>Upload Payment Screenshot</span>
-                                    </div>
-                                    <input
-                                        id="payment-screenshot"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handlePaymentScreenshotUpload}
-                                        ref={paymentScreenshotInputRef}
-                                        style={{ display: 'none' }}
-                                        required
-                                    />
-                                </label>
-                            )}
-                        </div>
                     </div>
                 ) : (
                     <p className="placeholder-text error-message">
@@ -1182,7 +1110,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr-screenshot' && !paymentScreenshot)}
+                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
                 >
                     Confirm Registration
                 </button>
@@ -1471,7 +1399,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                         setShowUploadAlert(true);
                         return;
                     }
-                    if ((formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') && !paymentQRPreview) {
+                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
                         setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
                         setShowUploadAlert(true);
                         return;
@@ -1479,14 +1407,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 }
             }
         }
-        
+
         let submissionData = {
             ...formData,
             images: imagePreviews,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -1516,7 +1444,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 ticketOptions: formData.ticketOptions,
                 culturalPaymentMethod: hasRegistration ? formData.culturalPaymentMethod : '',
                 culturalPaymentLink: hasRegistration && formData.culturalPaymentMethod === 'link' ? formData.culturalPaymentLink : '',
-                culturalPaymentQRCode: hasRegistration && (formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
+                culturalPaymentQRCode: hasRegistration && formData.culturalPaymentMethod === 'qr' ? paymentQRPreview : '',
                 availableDates: formData.availableDates,
                 paymentMethod: undefined,
                 paymentLink: undefined,
@@ -1538,7 +1466,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 paymentMethod: undefined,
                 paymentLink: undefined,
                 paymentQRCode: undefined,
-                source: undefined,
                 ticketOptions: undefined,
                 culturalPaymentMethod: undefined,
                 culturalPaymentLink: undefined,
@@ -1548,8 +1475,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         }
 
         try {
-            await onSubmit(submissionData, imagePreviews, paymentQRPreview); // FIXED: Pass images and QR code as arguments
-            onClose();
+            await onSubmit(submissionData);
+            onClose(); // Close the modal first
             const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
             const successMessage = submissionData.status === 'pending'
                 ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
@@ -1602,7 +1529,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const removeQRImage = () => {
         setPaymentQRPreview('');
     };
-
+   
+    // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -1852,16 +1780,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                                 <ImageIcon size={16} />
                                                                                                 <span>Upload QR Code</span>
                                                                                             </div>
-                                                                                            <input
-                                                                                                id="qr-file-input"
-                                                                                                ref={qrFileInputRef}
-                                                                                                type="file"
-                                                                                                accept="image/*"
-                                                                                                onChange={handlePaymentQRUpload}
-                                                                                                style={{ display: 'none' }}
-                                                                                                required
-                                                                                            />
                                                                                         </label>
+                                                                                        <input
+                                                                                            id="qr-file-input"
+                                                                                            ref={qrFileInputRef}
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            onChange={handlePaymentQRUpload}
+                                                                                            style={{ display: 'none' }}
+                                                                                        />
                                                                                     </>
                                                                                 )}
                                                                             </div>
@@ -1934,8 +1861,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                         name="culturalPaymentMethod"
                                                                     >
                                                                         <option value="link">Payment Link</option>
-                                                                        <option value="qr">QR Code (ID only)</option>
-                                                                        <option value="qr-screenshot">QR Code (Screenshot proof)</option>
+                                                                        <option value="qr">QR Code</option>
                                                                     </select>
                                                                     {formData.culturalPaymentMethod === 'link' && (
                                                                         <div className="form-group">
@@ -1951,7 +1877,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                             />
                                                                         </div>
                                                                     )}
-                                                                    {(formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') && (
+                                                                    {formData.culturalPaymentMethod === 'qr' && (
                                                                         <div className="form-group">
                                                                             <label className="form-label">QR Code Image</label>
                                                                             <div className="image-upload-container">
@@ -1969,16 +1895,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                                 <ImageIcon size={16} />
                                                                                                 <span>Upload QR Code</span>
                                                                                             </div>
-                                                                                            <input
-                                                                                                id="qr-file-input"
-                                                                                                ref={qrFileInputRef}
-                                                                                                type="file"
-                                                                                                accept="image/*"
-                                                                                                onChange={handlePaymentQRUpload}
-                                                                                                style={{ display: 'none' }}
-                                                                                                required
-                                                                                            />
                                                                                         </label>
+                                                                                        <input
+                                                                                            id="qr-file-input"
+                                                                                            ref={qrFileInputRef}
+                                                                                            type="file"
+                                                                                            accept="image/*"
+                                                                                            onChange={handlePaymentQRUpload}
+                                                                                            style={{ display: 'none' }}
+                                                                                        />
                                                                                     </>
                                                                                 )}
                                                                             </div>
@@ -2115,8 +2040,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
+                // Fix: Corrected the URL format for Google Maps to use a proper template literal
                 window.open(
-                    `http://maps.google.com/maps?saddr=${origin}&daddr=${destination}`,
+                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2368,7 +2294,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-
+   
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2488,7 +2414,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
-
+   
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
         if (isEventPast) return "EVENT ENDED";
@@ -2544,15 +2470,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
                         {showFullContent ? contentToDisplay : truncatedContent}
-                        {needsShowMore && (
-                            <button
-                                className="show-more-button"
-                                onClick={() => setShowFullContent(!showFullContent)}
-                            >
-                                {showFullContent ? 'Show Less' : 'Show More'}
-                            </button>
-                        )}
                     </p>
+                    {needsShowMore && (
+                        <button
+                            className="show-more-button"
+                            onClick={() => setShowFullContent(!showFullContent)}
+                        >
+                            {showFullContent ? 'Show Less' : 'Show More'}
+                        </button>
+                    )}
                 </div>
 
                 {post.images && post.images.length > 0 && (
@@ -3689,6 +3615,7 @@ const App = () => {
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
 
+    // State for the post submission success popup
     const [showPostSuccessAlert, setShowPostSuccessAlert] = useState(false);
     const [postSuccessAlertMessage, setPostSuccessAlertMessage] = useState('');
 
@@ -3721,21 +3648,14 @@ const App = () => {
 
     const callApi = async (endpoint, options = {}) => {
         const user = JSON.parse(localStorage.getItem('currentUser'));
-        
         const headers = {
-            ...(options.headers || {}),
+            'Content-Type': 'application/json',
+            ...options.headers,
         };
-        
-        if (options.body instanceof FormData) {
-            delete headers['Content-Type'];
-        } else {
-            headers['Content-Type'] = 'application/json';
-        }
-
         if (user && user.token) {
             headers['Authorization'] = `Bearer ${user.token}`;
         }
-        
+
         const response = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers,
@@ -3754,7 +3674,6 @@ const App = () => {
                 const errorData = await response.json();
                 errorMsg = errorData.message || errorMsg;
             } catch (e) {
-                // If the response body is not valid JSON, the default error message is used.
             }
             throw new Error(errorMsg);
         }
@@ -3791,22 +3710,14 @@ const App = () => {
         }
     };
 
-    const fetchAdminData = async () => {
+    const fetchPendingEvents = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
-            const [reportedRes, pendingRes] = await Promise.all([
-                callApi('/posts/admin/reported-posts'),
-                callApi('/posts/admin/pending-events')
-            ]);
-            
-            const reportedData = await reportedRes.json();
-            const pendingData = await pendingRes.json();
-
-            setAdminNotifications(reportedData.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
-            setPendingEvents(pendingData.map(formatPostDates));
+            const res = await callApi('/posts/pending-events');
+            const data = await res.json();
+            setPendingEvents(data.map(formatPostDates));
         } catch (error) {
-            console.error('Failed to fetch admin data:', error);
-            setAdminNotifications([]);
+            console.error('Failed to fetch pending events:', error);
             setPendingEvents([]);
         }
     };
@@ -3848,6 +3759,19 @@ const App = () => {
             setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+        }
+    };
+
+    const fetchAdminNotifications = async () => {
+        if (!currentUser || !currentUser.isAdmin) return;
+        try {
+            const reportedRes = await callApi('/users/admin/reported-posts');
+            const data = await reportedRes.json();
+            setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            await fetchPendingEvents();
+        } catch (error) {
+            console.error('Failed to fetch admin notifications:', error);
+            setAdminNotifications([]);
         }
     };
 
@@ -3916,14 +3840,13 @@ const App = () => {
                 fetchNotifications();
                 fetchMyRegistrations(currentUser);
                 if (currentUser.isAdmin) {
-                    fetchAdminData();
+                    fetchAdminNotifications();
                 }
             } else {
                 setLikedPosts(new Set());
                 setMyRegisteredEvents(new Set());
                 setRegistrations({});
                 setNotifications([]);
-                setAdminNotifications([]);
                 setPendingEvents([]);
             }
         };
@@ -4019,6 +3942,7 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
+    // Corrected `handleRegisterEvent` function
     const handleRegisterEvent = async (eventId, registrationData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
@@ -4047,10 +3971,7 @@ const App = () => {
         try {
             const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
-                body: registrationData,
-                headers: {
-                    'Content-Type': undefined,
-                },
+                body: JSON.stringify(registrationData),
             });
 
             if (res.ok) {
@@ -4077,6 +3998,7 @@ const App = () => {
                     },
                     ...prev
                 ]);
+                // CRITICAL FIX: Throw an error to propagate failure to the modal
                 throw new Error(errorData.message || 'Registration failed due to server error.');
             }
         } catch (err) {
@@ -4090,11 +4012,12 @@ const App = () => {
                 },
                 ...prev
             ]);
+            // CRITICAL FIX: Re-throw the error to ensure the modal's catch block is executed.
             throw err;
         }
     };
 
-    const handleAddPost = async (newPost, imagePreviews, paymentQRPreview) => {
+    const handleAddPost = async (newPost) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for posting.');
             return;
@@ -4106,73 +4029,14 @@ const App = () => {
 
             let submissionData = {
                 ...newPost,
-                images: imagePreviews,
                 userId: currentUser?._id,
                 author: currentUser?.name || 'Anonymous',
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
+                price: parseFloat(newPost.price) || 0,
+                registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
             };
-            
-            // Re-apply fields based on post type
-            if (newPost.type === 'event') {
-                submissionData = {
-                    ...submissionData,
-                    price: parseFloat(newPost.price) || 0,
-                    registrationLink: newPost.registrationLink,
-                    enableRegistrationForm: newPost.enableRegistrationForm,
-                    registrationFields: newPost.registrationFields,
-                    paymentMethod: newPost.paymentMethod,
-                    paymentLink: newPost.paymentLink,
-                    paymentQRCode: paymentQRPreview,
-                    // Undefine fields not relevant to this post type
-                    ticketOptions: undefined,
-                    culturalPaymentMethod: undefined,
-                    culturalPaymentLink: undefined,
-                    culturalPaymentQRCode: undefined,
-                    availableDates: undefined,
-                };
-            } else if (newPost.type === 'culturalEvent') {
-                 submissionData = {
-                    ...submissionData,
-                    price: undefined,
-                    registrationLink: newPost.registrationLink,
-                    enableRegistrationForm: newPost.enableRegistrationForm,
-                    registrationFields: newPost.registrationFields,
-                    ticketOptions: newPost.ticketOptions,
-                    culturalPaymentMethod: newPost.culturalPaymentMethod,
-                    culturalPaymentLink: newPost.culturalPaymentLink,
-                    culturalPaymentQRCode: paymentQRPreview,
-                    availableDates: newPost.availableDates,
-                    // Undefine fields not relevant to this post type
-                    paymentMethod: undefined,
-                    paymentLink: undefined,
-                    paymentQRCode: undefined,
-                };
-            } else {
-                submissionData = {
-                    ...submissionData,
-                    location: undefined,
-                    eventStartDate: undefined,
-                    eventEndDate: undefined,
-                    duration: undefined,
-                    price: undefined,
-                    language: undefined,
-                    registrationLink: undefined,
-                    registrationOpen: undefined,
-                    enableRegistrationForm: undefined,
-                    registrationFields: undefined,
-                    paymentMethod: undefined,
-                    paymentLink: undefined,
-                    paymentQRCode: undefined,
-                    source: undefined,
-                    ticketOptions: undefined,
-                    culturalPaymentMethod: undefined,
-                    culturalPaymentLink: undefined,
-                    culturalPaymentQRCode: undefined,
-                    availableDates: undefined,
-                };
-            }
 
             const res = await callApi(endpoint, {
                 method,
@@ -4195,7 +4059,7 @@ const App = () => {
                             ...prev
                         ]);
                         if (currentUser.isAdmin) {
-                            fetchAdminData();
+                            fetchPendingEvents();
                         }
                     } else {
                         setPosts(prev => [formattedResponsePost, ...prev]);
@@ -4209,6 +4073,7 @@ const App = () => {
                             ...prev
                         ]);
                     }
+                    // Show success alert after a successful post
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = submissionData.status === 'pending'
                         ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
@@ -4226,6 +4091,7 @@ const App = () => {
                         },
                         ...prev
                     ]);
+                    // Show success alert after a successful update
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = `Your ${postTypeLabel} "${newPost.title}" has been updated successfully!`;
                     handleShowPostSuccessAlert(successMessage);
@@ -4257,6 +4123,7 @@ const App = () => {
         }
     };
 
+
     const handleApproveEvent = async (postId) => {
         if (!currentUser || !currentUser.isAdmin) {
             console.error('Admin not authenticated.');
@@ -4269,7 +4136,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminData();
+                await fetchPendingEvents();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4318,7 +4185,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminData();
+                await fetchPendingEvents();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4354,6 +4221,7 @@ const App = () => {
             ]);
         }
     };
+
 
     const handleDeletePost = async (postId) => {
         if (!isLoggedIn || !currentUser) {
@@ -4630,7 +4498,7 @@ const App = () => {
             });
             if (res.ok) {
                 if (currentUser.isAdmin) {
-                    fetchAdminData();
+                    fetchAdminNotifications();
                 }
                 setNotifications(prev => [
                     {
@@ -4679,7 +4547,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminData();
+                await fetchPendingEvents();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4801,7 +4669,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/users/export-registrations/${eventId}`, {
+            const res = await callApi(`/posts/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
