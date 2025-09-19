@@ -1,4 +1,3 @@
-// userRoutes.js
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -35,10 +34,11 @@ const uploadFileToCloudinary = async (file, folderName) => {
     }
 };
 
+// ... (other routes remain unchanged)
+
 // @desc    Register for an event
 // @route   POST /api/users/register-event/:eventId
 // @access  Private
-// FIX: Using multer middleware to handle file uploads
 router.post('/register-event/:eventId', protect, upload.single('paymentScreenshot'), asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user._id;
@@ -55,7 +55,6 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
         throw new Error('You are already registered for this event');
     }
 
-    // FIX: Body fields for multipart/form-data are strings. We must parse JSON fields.
     const { 
         name, 
         email, 
@@ -81,7 +80,6 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
         paymentScreenshot: undefined,
     };
 
-    // FIX: Check if a file was uploaded and process it.
     if (req.file) {
         const imageUrl = await uploadFileToCloudinary(req.file.path, 'confique_payment_screenshots');
         if (imageUrl) {
@@ -114,7 +112,6 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
     }
 }));
 
-// The rest of the user routes were correct and are included here for completeness
-// ... (omitting for brevity, but they should be in the file)
+// ... (other routes remain unchanged)
 
 module.exports = router;
