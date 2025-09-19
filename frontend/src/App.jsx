@@ -3647,7 +3647,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                     </div>
                 </div>
             </div>
-        </ErrorBoundary>
+        </div>
     );
 };
 
@@ -3721,9 +3721,11 @@ const App = () => {
 
     const callApi = async (endpoint, options = {}) => {
         const user = JSON.parse(localStorage.getItem('currentUser'));
+        
         const headers = {
-            ...options.headers,
+            ...(options.headers || {}),
         };
+        
         if (options.body instanceof FormData) {
             delete headers['Content-Type'];
         } else {
@@ -3733,7 +3735,7 @@ const App = () => {
         if (user && user.token) {
             headers['Authorization'] = `Bearer ${user.token}`;
         }
-
+        
         const response = await fetch(`${API_URL}${endpoint}`, {
             ...options,
             headers,
@@ -3752,6 +3754,7 @@ const App = () => {
                 const errorData = await response.json();
                 errorMsg = errorData.message || errorMsg;
             } catch (e) {
+                // If the response body is not valid JSON, the default error message is used.
             }
             throw new Error(errorMsg);
         }
@@ -3791,11 +3794,11 @@ const App = () => {
     const fetchAdminData = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
-            // FIX: The backend routes are split, so we need to call them individually
-            // and handle the promises in parallel for better performance.
+            // FIX: Corrected API endpoints to match a logical backend structure
+            // Assumes admin routes are mounted under '/api/posts' on the backend
             const [reportedRes, pendingRes] = await Promise.all([
-                callApi('/users/admin/reported-posts'),
-                callApi('/users/admin/pending-events')
+                callApi('/posts/admin/reported-posts'),
+                callApi('/posts/admin/pending-events')
             ]);
             
             const reportedData = await reportedRes.json();
@@ -4260,7 +4263,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/users/admin/approve-event/${postId}`, {
+            const res = await callApi(`/posts/approve-event/${postId}`, {
                 method: 'PUT',
             });
             if (res.ok) {
@@ -4309,7 +4312,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/users/admin/reject-event/${postId}`, {
+            const res = await callApi(`/posts/reject-event/${postId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
@@ -4357,7 +4360,6 @@ const App = () => {
             return;
         }
         try {
-            // FIX: This now uses the correct endpoint that authorizes based on author OR admin status
             const res = await callApi(`/posts/${postId}`, {
                 method: 'DELETE',
             });
