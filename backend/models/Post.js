@@ -15,19 +15,16 @@ const commentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
-// A separate schema for Registrations (not embedded in Post, but defined here)
-const registrationSchema = new new mongoose.Schema({
+// A separate schema for Registrations (not embedded in Post)
+const registrationSchema = new mongoose.Schema({
     eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
     email: { type: String, required: true },
     phone: { type: String },
     transactionId: { type: String },
-    // **NEW FIELD ADDED HERE for the payment screenshot**
-    paymentScreenshot: { type: String },
-    // A flexible object to store any custom fields
+    paymentScreenshot: { type: String }, // Stores the Cloudinary URL of the payment screenshot
     customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
-    // Fields for cultural event registration
     bookingDates: [{ type: String }],
     selectedTickets: [{
         ticketType: { type: String },
@@ -35,7 +32,6 @@ const registrationSchema = new new mongoose.Schema({
         quantity: { type: Number },
     }],
     totalPrice: { type: Number },
-    // Status to track payment verification (e.g., 'pending', 'confirmed')
     paymentStatus: {
         type: String,
         enum: ['pending', 'under_review', 'confirmed', 'rejected'],
@@ -87,7 +83,6 @@ const postSchema = new mongoose.Schema({
 
     // Cultural Event-specific Fields
     ticketOptions: [ticketOptionSchema],
-    // **UPDATED ENUM to include 'qr-screenshot'**
     culturalPaymentMethod: { type: String, enum: ['link', 'qr', 'qr-screenshot'] },
     culturalPaymentLink: { type: String },
     culturalPaymentQRCode: { type: String },
@@ -102,7 +97,6 @@ postSchema.pre('save', function(next) {
     next();
 });
 
-// Create and export both models
 const PostModel = mongoose.model('Post', postSchema);
 const RegistrationModel = mongoose.model('Registration', registrationSchema);
 
