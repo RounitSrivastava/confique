@@ -763,7 +763,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [formAlertMessage, setFormAlertMessage] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    const [showPaymentStep, setShowPaymentStep] = useState(useState(false));
+    const [showPaymentStep, setShowPaymentStep] = useState(false);
     const [paymentScreenshot, setPaymentScreenshot] = useState(null);
     const [paymentScreenshotPreview, setPaymentScreenshotPreview] = useState(null);
     const paymentScreenshotInputRef = useRef(null);
@@ -3788,14 +3788,22 @@ const App = () => {
         }
     };
 
-    const fetchPendingEvents = async () => {
+    const fetchAdminData = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
-            const res = await callApi('/users/admin/pending-events');
-            const data = await res.json();
-            setPendingEvents(data.map(formatPostDates));
+            const [reportedRes, pendingRes] = await Promise.all([
+                callApi('/users/admin/reported-posts'),
+                callApi('/users/admin/pending-events')
+            ]);
+            
+            const reportedData = await reportedRes.json();
+            const pendingData = await pendingRes.json();
+
+            setAdminNotifications(reportedData.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            setPendingEvents(pendingData.map(formatPostDates));
         } catch (error) {
-            console.error('Failed to fetch pending events:', error);
+            console.error('Failed to fetch admin data:', error);
+            setAdminNotifications([]);
             setPendingEvents([]);
         }
     };
@@ -3837,19 +3845,6 @@ const App = () => {
             setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
-        }
-    };
-
-    const fetchAdminNotifications = async () => {
-        if (!currentUser || !currentUser.isAdmin) return;
-        try {
-            const reportedRes = await callApi('/users/admin/reported-posts');
-            const data = await reportedRes.json();
-            setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
-            await fetchPendingEvents();
-        } catch (error) {
-            console.error('Failed to fetch admin notifications:', error);
-            setAdminNotifications([]);
         }
     };
 
@@ -3918,13 +3913,14 @@ const App = () => {
                 fetchNotifications();
                 fetchMyRegistrations(currentUser);
                 if (currentUser.isAdmin) {
-                    fetchAdminNotifications();
+                    fetchAdminData();
                 }
             } else {
                 setLikedPosts(new Set());
                 setMyRegisteredEvents(new Set());
                 setRegistrations({});
                 setNotifications([]);
+                setAdminNotifications([]);
                 setPendingEvents([]);
             }
         };
@@ -4193,7 +4189,7 @@ const App = () => {
                             ...prev
                         ]);
                         if (currentUser.isAdmin) {
-                            fetchAdminNotifications();
+                            fetchAdminData();
                         }
                     } else {
                         setPosts(prev => [formattedResponsePost, ...prev]);
@@ -4267,7 +4263,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchPendingEvents();
+                await fetchAdminData(); // FIX: Call the consolidated fetchAdminData
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4316,7 +4312,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchPendingEvents();
+                await fetchAdminData(); // FIX: Call the consolidated fetchAdminData
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4359,7 +4355,7 @@ const App = () => {
             return;
         }
         try {
-            // FIX: This call now correctly uses the general-purpose /posts/:id endpoint.
+            // FIX: This now uses the correct endpoint that authorizes based on author OR admin status
             const res = await callApi(`/posts/${postId}`, {
                 method: 'DELETE',
             });
@@ -4629,7 +4625,7 @@ const App = () => {
             });
             if (res.ok) {
                 if (currentUser.isAdmin) {
-                    fetchAdminNotifications();
+                    fetchAdminData();
                 }
                 setNotifications(prev => [
                     {
@@ -4678,7 +4674,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchPendingEvents();
+                await fetchAdminData();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
