@@ -878,13 +878,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-    
+   
         if (isRegistered) {
             setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
-    
+   
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -892,7 +892,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-    
+   
         const registrationData = new FormData();
         registrationData.append('name', formData.name);
         registrationData.append('email', formData.email);
@@ -902,7 +902,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         registrationData.append('totalPrice', totalPrice);
         registrationData.append('eventTitle', event.title);
         registrationData.append('type', event.type);
-    
+   
         if (event.culturalPaymentMethod === 'qr' && !isFree) {
             if (!formData.transactionId || formData.transactionId.length < 4) {
                 setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
@@ -922,7 +922,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
              setShowFormAlert(true);
              return;
         }
-    
+   
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -932,7 +932,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-    
+   
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -1539,6 +1539,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 paymentMethod: undefined,
                 paymentLink: undefined,
                 paymentQRCode: undefined,
+                source: undefined,
                 ticketOptions: undefined,
                 culturalPaymentMethod: undefined,
                 culturalPaymentLink: undefined,
@@ -1603,7 +1604,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         setPaymentQRPreview('');
     };
 
-    // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -1853,15 +1853,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                                 <ImageIcon size={16} />
                                                                                                 <span>Upload QR Code</span>
                                                                                             </div>
+                                                                                            <input
+                                                                                                id="qr-file-input"
+                                                                                                ref={qrFileInputRef}
+                                                                                                type="file"
+                                                                                                accept="image/*"
+                                                                                                onChange={handlePaymentQRUpload}
+                                                                                                style={{ display: 'none' }}
+                                                                                                required
+                                                                                            />
                                                                                         </label>
-                                                                                        <input
-                                                                                            id="qr-file-input"
-                                                                                            ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
                                                                                     </>
                                                                                 )}
                                                                             </div>
@@ -1969,15 +1970,16 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                                 <ImageIcon size={16} />
                                                                                                 <span>Upload QR Code</span>
                                                                                             </div>
+                                                                                            <input
+                                                                                                id="qr-file-input"
+                                                                                                ref={qrFileInputRef}
+                                                                                                type="file"
+                                                                                                accept="image/*"
+                                                                                                onChange={handlePaymentQRUpload}
+                                                                                                style={{ display: 'none' }}
+                                                                                                required
+                                                                                            />
                                                                                         </label>
-                                                                                        <input
-                                                                                            id="qr-file-input"
-                                                                                            ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
                                                                                     </>
                                                                                 )}
                                                                             </div>
@@ -2114,9 +2116,8 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // Fix: Corrected the URL format for Google Maps to use a proper template literal
                 window.open(
-                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
+                    `http://maps.google.com/maps?saddr=${origin}&daddr=${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2544,15 +2545,15 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                         style={{ whiteSpace: 'pre-wrap' }}
                     >
                         {showFullContent ? contentToDisplay : truncatedContent}
+                        {needsShowMore && (
+                            <button
+                                className="show-more-button"
+                                onClick={() => setShowFullContent(!showFullContent)}
+                            >
+                                {showFullContent ? 'Show Less' : 'Show More'}
+                            </button>
+                        )}
                     </p>
-                    {needsShowMore && (
-                        <button
-                            className="show-more-button"
-                            onClick={() => setShowFullContent(!showFullContent)}
-                        >
-                            {showFullContent ? 'Show Less' : 'Show More'}
-                        </button>
-                    )}
                 </div>
 
                 {post.images && post.images.length > 0 && (
@@ -3689,7 +3690,6 @@ const App = () => {
     const [showCalendarModal, setShowCalendarModal] = useState(false);
     const [showAddedToCalendarAlert, setShowAddedToCalendarAlert] = useState(false);
 
-    // State for the post submission success popup
     const [showPostSuccessAlert, setShowPostSuccessAlert] = useState(false);
     const [postSuccessAlertMessage, setPostSuccessAlertMessage] = useState('');
 
@@ -3726,8 +3726,6 @@ const App = () => {
             ...options.headers,
         };
         if (options.body instanceof FormData) {
-            // FormData is used for file uploads, so the 'Content-Type' header should not be set manually.
-            // The browser will set it to 'multipart/form-data' with the correct boundary.
             delete headers['Content-Type'];
         } else {
             headers['Content-Type'] = 'application/json';
@@ -3794,7 +3792,7 @@ const App = () => {
     const fetchPendingEvents = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
-            const res = await callApi('/posts/pending-events');
+            const res = await callApi('/users/admin/pending-events');
             const data = await res.json();
             setPendingEvents(data.map(formatPostDates));
         } catch (error) {
@@ -4023,7 +4021,6 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
-    // Corrected `handleRegisterEvent` function
     const handleRegisterEvent = async (eventId, registrationData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
@@ -4054,7 +4051,6 @@ const App = () => {
                 method: 'POST',
                 body: registrationData,
                 headers: {
-                    // Overwrite the default JSON header since we're sending FormData
                     'Content-Type': undefined,
                 },
             });
@@ -4083,7 +4079,6 @@ const App = () => {
                     },
                     ...prev
                 ]);
-                // CRITICAL FIX: Throw an error to propagate failure to the modal
                 throw new Error(errorData.message || 'Registration failed due to server error.');
             }
         } catch (err) {
@@ -4097,7 +4092,6 @@ const App = () => {
                 },
                 ...prev
             ]);
-            // CRITICAL FIX: Re-throw the error to ensure the modal's catch block is executed.
             throw err;
         }
     };
@@ -4119,9 +4113,64 @@ const App = () => {
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
-                price: parseFloat(newPost.price) || 0,
-                registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
             };
+
+            if (formData.type === 'event') {
+                submissionData = {
+                    ...submissionData,
+                    price: parseFloat(formData.price) || 0,
+                    registrationLink: hasRegistration && registrationMethod === 'link' ? formData.registrationLink : '',
+                    enableRegistrationForm: hasRegistration && registrationMethod === 'form',
+                    registrationFields: hasRegistration && registrationMethod === 'form' ? formData.registrationFields : '',
+                    paymentMethod: hasRegistration && registrationMethod === 'form' && formData.price > 0 ? formData.paymentMethod : '',
+                    paymentLink: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'link' ? formData.paymentLink : '',
+                    paymentQRCode: hasRegistration && registrationMethod === 'form' && formData.price > 0 && formData.paymentMethod === 'qr' ? paymentQRPreview : '',
+                    ticketOptions: undefined,
+                    culturalPaymentMethod: undefined,
+                    culturalPaymentLink: undefined,
+                    culturalPaymentQRCode: undefined,
+                    availableDates: undefined,
+                };
+            } else if (formData.type === 'culturalEvent') {
+                submissionData = {
+                    ...submissionData,
+                    price: undefined,
+                    registrationLink: hasRegistration && registrationMethod === 'link' ? formData.registrationLink : '',
+                    enableRegistrationForm: hasRegistration && registrationMethod === 'form',
+                    registrationFields: hasRegistration && registrationMethod === 'form' ? formData.registrationFields : '',
+                    ticketOptions: formData.ticketOptions,
+                    culturalPaymentMethod: hasRegistration ? formData.culturalPaymentMethod : '',
+                    culturalPaymentLink: hasRegistration && formData.culturalPaymentMethod === 'link' ? formData.culturalPaymentLink : '',
+                    culturalPaymentQRCode: hasRegistration && (formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
+                    availableDates: formData.availableDates,
+                    paymentMethod: undefined,
+                    paymentLink: undefined,
+                    paymentQRCode: undefined,
+                };
+            } else {
+                submissionData = {
+                    ...submissionData,
+                    location: undefined,
+                    eventStartDate: undefined,
+                    eventEndDate: undefined,
+                    duration: undefined,
+                    price: undefined,
+                    language: undefined,
+                    registrationLink: undefined,
+                    registrationOpen: undefined,
+                    enableRegistrationForm: undefined,
+                    registrationFields: undefined,
+                    paymentMethod: undefined,
+                    paymentLink: undefined,
+                    paymentQRCode: undefined,
+                    source: undefined,
+                    ticketOptions: undefined,
+                    culturalPaymentMethod: undefined,
+                    culturalPaymentLink: undefined,
+                    culturalPaymentQRCode: undefined,
+                    availableDates: undefined,
+                };
+            }
 
             const res = await callApi(endpoint, {
                 method,
@@ -4158,7 +4207,6 @@ const App = () => {
                             ...prev
                         ]);
                     }
-                    // Show success alert after a successful post
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = submissionData.status === 'pending'
                         ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
@@ -4176,7 +4224,6 @@ const App = () => {
                         },
                         ...prev
                     ]);
-                    // Show success alert after a successful update
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = `Your ${postTypeLabel} "${newPost.title}" has been updated successfully!`;
                     handleShowPostSuccessAlert(successMessage);
@@ -4208,7 +4255,6 @@ const App = () => {
         }
     };
 
-
     const handleApproveEvent = async (postId) => {
         if (!currentUser || !currentUser.isAdmin) {
             console.error('Admin not authenticated.');
@@ -4216,7 +4262,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/posts/approve-event/${postId}`, {
+            const res = await callApi(`/users/admin/approve-event/${postId}`, {
                 method: 'PUT',
             });
             if (res.ok) {
@@ -4265,7 +4311,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/posts/reject-event/${postId}`, {
+            const res = await callApi(`/users/admin/reject-event/${postId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
@@ -4314,7 +4360,7 @@ const App = () => {
             return;
         }
         try {
-            const res = await callApi(`/posts/${postId}`, {
+            const res = await callApi(`/users/admin/delete-post/${postId}`, {
                 method: 'DELETE',
             });
             if (res.ok) {
@@ -4754,7 +4800,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/posts/export-registrations/${eventId}`, {
+            const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
