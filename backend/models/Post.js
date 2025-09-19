@@ -23,7 +23,7 @@ const registrationSchema = new mongoose.Schema({
     email: { type: String, required: true },
     phone: { type: String },
     transactionId: { type: String },
-    paymentScreenshot: { type: String }, // Stores the Cloudinary URL of the payment screenshot
+    paymentScreenshot: { type: String }, 
     customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
     bookingDates: [{ type: String }],
     selectedTickets: [{
@@ -41,7 +41,6 @@ const registrationSchema = new mongoose.Schema({
 
 // Main Post Schema
 const postSchema = new mongoose.Schema({
-    // General Post Fields (applicable to all types)
     type: {
         type: String,
         required: true,
@@ -89,7 +88,6 @@ const postSchema = new mongoose.Schema({
     availableDates: [{ type: String }],
 }, { timestamps: true });
 
-// Pre-save hook to automatically update the comments count
 postSchema.pre('save', function(next) {
     if (this.isModified('commentData')) {
         this.comments = this.commentData.length;

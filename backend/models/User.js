@@ -1,5 +1,3 @@
-// models/User.js
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -33,14 +31,11 @@ const userSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
-    // The likedPosts field is managed from the Post model's likedBy array for efficiency.
-    // This field is no longer needed here.
 }, {
     timestamps: true,
     collation: { locale: 'en', strength: 2 }
 });
 
-// Pre-save hook for password hashing (only if password is provided/modified)
 userSchema.pre('save', async function(next) {
     if (this.isModified('password') && this.password) {
         const salt = await bcrypt.genSalt(10);
