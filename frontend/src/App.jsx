@@ -764,6 +764,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
+    const [paymentScreenshot, setPaymentScreenshot] = useState(null); // New state for payment screenshot
+    const [paymentScreenshotPreview, setPaymentScreenshotPreview] = useState(null);
+    const paymentScreenshotInputRef = useRef(null);
 
     const availableDates = event.availableDates || [];
 
@@ -780,6 +783,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setFormAlertMessage('');
             setShowSuccessModal(false);
             setSuccessMessage('');
+            setPaymentScreenshot(null);
+            setPaymentScreenshotPreview(null);
         }
     }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
 
@@ -809,6 +814,15 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         updatedSelections[index] = { ...updatedSelections[index], quantity: Math.max(0, parseInt(newQuantity) || 0) };
         setFormData(prev => ({ ...prev, ticketSelections: updatedSelections }));
     };
+    
+    // New function to handle payment screenshot upload
+    const handlePaymentScreenshotUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setPaymentScreenshot(file);
+            setPaymentScreenshotPreview(URL.createObjectURL(file));
+        }
+    };
 
     const calculateTotalPrice = () => {
         const totalTicketPrice = (formData.ticketSelections || []).reduce((total, selection, index) => {
@@ -823,7 +837,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const hasTicketsSelected = (formData.ticketSelections || []).some(selection => selection.quantity > 0);
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
-    const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
+    const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr' || event.culturalPaymentMethod === 'qr-screenshot';
     const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
 
 
@@ -865,13 +879,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-   
+    
         if (isRegistered) {
             setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
-   
+    
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -879,35 +893,47 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-   
-        const registrationData = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            bookingDates: formData.selectedDates,
-            selectedTickets,
-            totalPrice,
-            transactionId: formData.transactionId || null,
-            eventTitle: event.title,
-            type: event.type,
-        };
-   
+    
+        const registrationData = new FormData();
+        registrationData.append('name', formData.name);
+        registrationData.append('email', formData.email);
+        registrationData.append('phone', formData.phone);
+        registrationData.append('bookingDates', JSON.stringify(formData.selectedDates));
+        registrationData.append('selectedTickets', JSON.stringify(selectedTickets));
+        registrationData.append('totalPrice', totalPrice);
+        registrationData.append('eventTitle', event.title);
+        registrationData.append('type', event.type);
+    
+        if (event.culturalPaymentMethod === 'qr' && !isFree) {
+            if (!formData.transactionId || formData.transactionId.length < 4) {
+                setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
+                setShowFormAlert(true);
+                return;
+            }
+            registrationData.append('transactionId', formData.transactionId);
+        } else if (event.culturalPaymentMethod === 'qr-screenshot' && !isFree) {
+            if (!paymentScreenshot) {
+                setFormAlertMessage("Please upload a payment screenshot to confirm your registration.");
+                setShowFormAlert(true);
+                return;
+            }
+            registrationData.append('paymentScreenshot', paymentScreenshot);
+        } else if (event.culturalPaymentMethod === 'link' && !isFree && !event.culturalPaymentLink) {
+             setFormAlertMessage("The payment link is not available. Please contact the host.");
+             setShowFormAlert(true);
+             return;
+        }
+    
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
                 const fieldValue = formData[fieldName];
                 if (fieldValue) {
-                    registrationData[fieldName] = fieldValue;
+                    registrationData.append(fieldName, fieldValue);
                 }
             });
         }
-   
-        if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
-            setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
-            setShowFormAlert(true);
-            return;
-        }
-   
+    
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -946,7 +972,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     >
                         <option value="">Select an option</option>
@@ -971,7 +997,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     />
                 </div>
@@ -983,11 +1009,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <form onSubmit={handleProceedToPayment} className="modal-form">
             <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} required />
+                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} required />
+                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -996,7 +1022,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     className="form-input"
                     name="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="e.g., 9876543210"
                     required
                 />
@@ -1091,11 +1117,58 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             type="text"
                             className="form-input"
                             value={formData.transactionId}
-                            onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value }))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
                             required
                         />
+                    </div>
+                ) : event.culturalPaymentMethod === 'qr-screenshot' && event.culturalPaymentQRCode ? (
+                    <div className="form-group">
+                        <label className="form-label">Payment via QR Code & Screenshot</label>
+                        <p className="payment-instructions">Scan the QR code, make the payment, and upload a screenshot of the successful transaction below.</p>
+                        <img
+                            src={event.culturalPaymentQRCode}
+                            alt="Payment QR Code"
+                            className="payment-qr"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => e.target.src = "https://placehold.co/200x200/cccccc/000000?text=QR+Code+Error"}
+                        />
+                        <div className="file-upload-container">
+                            {paymentScreenshotPreview ? (
+                                <div className="payment-screenshot-preview">
+                                    <img src={paymentScreenshotPreview} alt="Payment Screenshot" />
+                                    <button
+                                        type="button"
+                                        className="remove-screenshot-btn"
+                                        onClick={() => {
+                                            setPaymentScreenshot(null);
+                                            setPaymentScreenshotPreview(null);
+                                            paymentScreenshotInputRef.current.value = null;
+                                        }}
+                                    >
+                                        <X size={14} /> Remove
+                                    </button>
+                                </div>
+                            ) : (
+                                <label htmlFor="payment-screenshot" className="upload-btn-wrapper">
+                                    <div className="upload-btn">
+                                        <ImageIcon size={16} />
+                                        <span>Upload Payment Screenshot</span>
+                                    </div>
+                                    <input
+                                        id="payment-screenshot"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handlePaymentScreenshotUpload}
+                                        ref={paymentScreenshotInputRef}
+                                        style={{ display: 'none' }}
+                                        required
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <p className="placeholder-text error-message">
@@ -1110,7 +1183,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 <button
                     type="submit"
                     className="btn-primary"
-                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr' && !formData.transactionId)}
+                    disabled={!isPaymentMethodSet || (event.culturalPaymentMethod === 'qr-screenshot' && !paymentScreenshot)}
                 >
                     Confirm Registration
                 </button>
@@ -1399,7 +1472,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                         setShowUploadAlert(true);
                         return;
                     }
-                    if (formData.culturalPaymentMethod === 'qr' && !paymentQRPreview) {
+                    if ((formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') && !paymentQRPreview) {
                         setUploadAlertMessage("Please upload a QR Code image for payment for the cultural event.");
                         setShowUploadAlert(true);
                         return;
@@ -1444,7 +1517,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 ticketOptions: formData.ticketOptions,
                 culturalPaymentMethod: hasRegistration ? formData.culturalPaymentMethod : '',
                 culturalPaymentLink: hasRegistration && formData.culturalPaymentMethod === 'link' ? formData.culturalPaymentLink : '',
-                culturalPaymentQRCode: hasRegistration && formData.culturalPaymentMethod === 'qr' ? paymentQRPreview : '',
+                culturalPaymentQRCode: hasRegistration && (formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') ? paymentQRPreview : '',
                 availableDates: formData.availableDates,
                 paymentMethod: undefined,
                 paymentLink: undefined,
@@ -1529,7 +1602,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const removeQRImage = () => {
         setPaymentQRPreview('');
     };
-   
+
     // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -1861,7 +1934,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                         name="culturalPaymentMethod"
                                                                     >
                                                                         <option value="link">Payment Link</option>
-                                                                        <option value="qr">QR Code</option>
+                                                                        <option value="qr">QR Code (ID only)</option>
+                                                                        <option value="qr-screenshot">QR Code (Screenshot proof)</option>
                                                                     </select>
                                                                     {formData.culturalPaymentMethod === 'link' && (
                                                                         <div className="form-group">
@@ -1877,7 +1951,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                             />
                                                                         </div>
                                                                     )}
-                                                                    {formData.culturalPaymentMethod === 'qr' && (
+                                                                    {(formData.culturalPaymentMethod === 'qr' || formData.culturalPaymentMethod === 'qr-screenshot') && (
                                                                         <div className="form-group">
                                                                             <label className="form-label">QR Code Image</label>
                                                                             <div className="image-upload-container">
@@ -2294,7 +2368,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-   
+
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2414,7 +2488,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
-   
+
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
         if (isEventPast) return "EVENT ENDED";
@@ -3971,7 +4045,11 @@ const App = () => {
         try {
             const res = await callApi(`/users/register-event/${eventId}`, {
                 method: 'POST',
-                body: JSON.stringify(registrationData),
+                body: registrationData,
+                headers: {
+                    // Overwrite the default JSON header since we're sending FormData
+                    'Content-Type': undefined,
+                },
             });
 
             if (res.ok) {
