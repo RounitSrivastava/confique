@@ -293,18 +293,13 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
 const User = require('../models/User');
+// FIX: Correctly import both Post and Registration models from the consolidated file
 const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
 
 const router = express.Router();
-
-// Configure multer to store files in memory for processing with Cloudinary
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
 // Helper function to upload base64 images to Cloudinary
 const uploadImage = async (image, folderName) => {
@@ -320,9 +315,9 @@ const uploadImage = async (image, folderName) => {
     }
 };
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
 router.get('/profile', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id).select('-password');
     if (user) {
@@ -339,9 +334,9 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Update user avatar
-// @route   PUT /api/users/profile/avatar
-// @access  Private
+// @desc    Update user avatar
+// @route   PUT /api/users/profile/avatar
+// @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user) {
@@ -390,18 +385,18 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Get a list of all posts the user has liked
-// @route   GET /api/users/liked-posts
-// @access  Private
+// @desc    Get a list of all posts the user has liked
+// @route   GET /api/users/liked-posts
+// @access  Private
 router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     const likedPosts = await Post.find({ likedBy: req.user._id });
     const likedPostIds = likedPosts.map(post => post._id);
     res.json({ likedPostIds });
 }));
 
-// @desc    Get event IDs the current user has registered for
-// @route   GET /api/users/my-events-registrations
-// @access  Private
+// @desc    Get event IDs the current user has registered for
+// @route   GET /api/users/my-events-registrations
+// @access  Private
 router.get('/my-events-registrations', protect, asyncHandler(async (req, res) => {
     const userId = req.user._id;
     const registeredEvents = await Registration.find({ userId: userId }).select('eventId');
@@ -409,9 +404,9 @@ router.get('/my-events-registrations', protect, asyncHandler(async (req, res) =>
     res.json({ registeredEventIds });
 }));
 
-// @desc    Get registration counts for events created by the logged-in user
-// @route   GET /api/users/my-events/registration-counts
-// @access  Private
+// @desc    Get registration counts for events created by the logged-in user
+// @route   GET /api/users/my-events/registration-counts
+// @access  Private
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
     try {
         const myEvents = await Post.find({ userId: req.user._id, type: { $in: ['event', 'culturalEvent'] } });
@@ -429,24 +424,25 @@ router.get('/my-events/registration-counts', protect, asyncHandler(async (req, r
     }
 }));
 
-// @desc    Register for an event
-// @route   POST /api/users/register-event/:eventId
-// @access  Private
-router.post('/register-event/:eventId', protect, upload.single('paymentScreenshot'), asyncHandler(async (req, res) => {
+// @desc    Register for an event
+// @route   POST /api/users/register-event/:eventId
+// @access  Private
+router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const userId = req.user._id;
 
     const event = await Post.findById(eventId);
     if (!event) {
-        return res.status(404).json({ message: 'Event not found' });
+        res.status(404);
+        throw new Error('Event not found');
     }
 
     const isAlreadyRegistered = await Registration.findOne({ eventId: eventId, userId: userId });
     if (isAlreadyRegistered) {
-        return res.status(400).json({ message: 'You have already registered for this event' });
+        res.status(400);
+        throw new Error('You are already registered for this event');
     }
-    
-    // Parse JSON strings from the form-data request body
+
     const { 
         name, 
         email, 
@@ -458,22 +454,6 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
         ...customFields
     } = req.body;
 
-    let screenshotUrl = null;
-    if (req.file && event.culturalPaymentMethod === 'qr-screenshot') {
-        try {
-            // Upload the file buffer to Cloudinary
-            const result = await cloudinary.uploader.upload(`data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`, {
-                folder: 'confique_registrations',
-            });
-            screenshotUrl = result.secure_url;
-        } catch (error) {
-            console.error('Cloudinary upload failed:', error);
-            return res.status(500).json({ message: 'Failed to upload payment screenshot.' });
-        }
-    } else if (event.culturalPaymentMethod === 'qr-screenshot' && !req.file) {
-        return res.status(400).json({ message: 'A payment screenshot is required for this registration.' });
-    }
-
     const newRegistrationData = {
         eventId,
         userId,
@@ -481,13 +461,12 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
         email,
         phone,
         transactionId,
-        paymentScreenshot: screenshotUrl,
         customFields,
-        bookingDates: bookingDates ? JSON.parse(bookingDates) : [],
-        selectedTickets: selectedTickets ? JSON.parse(selectedTickets) : [],
-        totalPrice: totalPrice ? parseFloat(totalPrice) : 0,
+        bookingDates,
+        selectedTickets,
+        totalPrice
     };
-    
+
     try {
         const newRegistration = await Registration.create(newRegistrationData);
     
@@ -510,10 +489,9 @@ router.post('/register-event/:eventId', protect, upload.single('paymentScreensho
     }
 }));
 
-
-// @desc    Admin endpoint to get all reported posts
-// @route   GET /api/users/admin/reported-posts
-// @access  Private, Admin
+// @desc    Admin endpoint to get all reported posts
+// @route   GET /api/users/admin/reported-posts
+// @access  Private, Admin
 router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res) => {
     const reportedPosts = await Notification.find({ type: 'report' })
         .populate('reporter', 'name email')
@@ -521,9 +499,9 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
     res.json(reportedPosts);
 }));
 
-// @desc    Admin endpoint to get all registrations for a specific event
-// @route   GET /api/users/admin/registrations/:eventId
-// @access  Private, Admin
+// @desc    Admin endpoint to get all registrations for a specific event
+// @route   GET /api/users/admin/registrations/:eventId
+// @access  Private, Admin
 router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.eventId);
     
@@ -539,9 +517,9 @@ router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, re
     res.json(registrations);
 }));
 
-// @desc    Admin endpoint to delete a post and its reports
-// @route   DELETE /api/users/admin/delete-post/:id
-// @access  Private, Admin
+// @desc    Admin endpoint to delete a post and its reports
+// @route   DELETE /api/users/admin/delete-post/:id
+// @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const postId = req.params.id;
     const post = await Post.findById(postId);
@@ -553,6 +531,93 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
         res.json({ message: 'Post and associated data removed' });
     } else {
         res.status(404).json({ message: 'Post not found' });
+    }
+}));
+
+// NEW ROUTE: GET /api/users/export-registrations/:eventId
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+    
+    const registrations = await Registration.find({ eventId }).lean();
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+
+    const headers = new Set(['Name', 'Email']);
+
+    // Gather all possible custom fields and other headers
+    registrations.forEach(reg => {
+        if (reg.phone) headers.add('Phone');
+        if (reg.transactionId) headers.add('Transaction ID');
+        if (reg.customFields) {
+            Object.keys(reg.customFields).forEach(key => headers.add(key));
+        }
+        if (reg.bookingDates && reg.bookingDates.length > 0) {
+             headers.add('Booking Dates');
+        }
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
+            headers.add('Total Price');
+        }
+    });
+
+    headers.add('Registered At');
+    const finalHeaders = Array.from(headers);
+    
+    const data = registrations.flatMap(reg => {
+        const baseRow = {
+            'Name': reg.name,
+            'Email': reg.email,
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
+        };
+        
+        // Add all custom fields dynamically to the base row
+        if (reg.customFields) {
+            for (const key of Object.keys(reg.customFields)) {
+                baseRow[key] = reg.customFields[key] || '';
+            }
+        }
+
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            return reg.selectedTickets.map(ticket => ({
+                ...baseRow,
+                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                'Ticket Type': ticket.ticketType || '',
+                'Ticket Quantity': ticket.quantity || '',
+                'Ticket Price': ticket.ticketPrice || '',
+                'Total Price': reg.totalPrice || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }));
+        } else {
+            return [{
+                ...baseRow,
+                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }];
+        }
+    });
+
+    try {
+        const json2csvParser = new Parser({ fields: finalHeaders });
+        const csv = json2csvParser.parse(data);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
 
