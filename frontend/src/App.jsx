@@ -677,7 +677,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         className="form-input"
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="e.g., 9876543210"
+                        placeholder="e.g., *******210"
                         required
                     />
                 </div>
