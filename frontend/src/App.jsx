@@ -3647,7 +3647,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                     </div>
                 </div>
             </div>
-        </div>
+        </ErrorBoundary>
     );
 };
 
@@ -3791,6 +3791,8 @@ const App = () => {
     const fetchAdminData = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
+            // FIX: The backend routes are split, so we need to call them individually
+            // and handle the promises in parallel for better performance.
             const [reportedRes, pendingRes] = await Promise.all([
                 callApi('/users/admin/reported-posts'),
                 callApi('/users/admin/pending-events')
@@ -4263,7 +4265,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminData(); // FIX: Call the consolidated fetchAdminData
+                await fetchAdminData();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4312,7 +4314,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminData(); // FIX: Call the consolidated fetchAdminData
+                await fetchAdminData();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
