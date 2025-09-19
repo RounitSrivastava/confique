@@ -1,6 +1,7 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
+// FIX: Correctly import both Post and Registration models from the consolidated file
 const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
@@ -23,9 +24,11 @@ const uploadImage = async (image) => {
     }
 };
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (for approved posts), Private (for all posts as admin)
+// --- POST ROUTES ---
+
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (for approved posts), Private (for all posts as admin)
 router.get('/', asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
@@ -51,9 +54,45 @@ router.get('/', asyncHandler(async (req, res) => {
     res.json(posts);
 }));
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
+router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
+    const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
+    res.json(pendingEvents);
+}));
+
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
+router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
+    const eventId = req.params.id;
+
+    const event = await Post.findById(eventId).select('userId type');
+
+    if (!event) {
+        res.status(404);
+        throw new Error('Event not found');
+    }
+
+    if (!['event', 'culturalEvent'].includes(event.type)) {
+        res.status(400);
+        throw new Error('This is not an event.');
+    }
+
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        res.status(403);
+        throw new Error('Not authorized to view registrations for this event');
+    }
+
+    const registrations = await Registration.find({ eventId: event._id });
+    res.json(registrations);
+}));
+
+
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -63,15 +102,16 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const { type, images, paymentQRCode, culturalPaymentQRCode, ...postData } = req.body;
     
+    // Process images
     let imageUrls = [];
     if (images && Array.isArray(images) && images.length > 0) {
         imageUrls = await Promise.all(images.map(uploadImage));
@@ -79,6 +119,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         imageUrls = [await uploadImage(images)];
     }
 
+    // Process QR code
     let qrCodeUrl = null;
     if (type === 'event' && paymentQRCode) {
         qrCodeUrl = await uploadImage(paymentQRCode);
@@ -86,6 +127,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         qrCodeUrl = await uploadImage(culturalPaymentQRCode);
     }
     
+    // Add default post details
     postData.images = imageUrls.filter(url => url !== null);
     postData.type = type;
     postData.author = authorNameFromUser;
@@ -97,6 +139,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     postData.commentData = [];
     postData.timestamp = new Date();
 
+    // Assign QR code URL based on event type
     if (type === 'event' && qrCodeUrl) {
         postData.paymentQRCode = qrCodeUrl;
     } else if (type === 'culturalEvent' && qrCodeUrl) {
@@ -108,9 +151,9 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     res.status(201).json(createdPost);
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -123,6 +166,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
     const { type, title, content, images, status, ...rest } = req.body;
 
+    // Handle image deletion and upload
     if (images !== undefined) {
         const oldImagePublicIds = post.images
             .map(url => url.includes('cloudinary') ? `confique_posts/${url.split('/').pop().split('.')[0]}` : null)
@@ -138,6 +182,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.images = newImageUrls.filter(url => url !== null);
     }
 
+    // Handle QR code deletion and upload
     let newQrCodeUrl = null;
     let oldQrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
     let newQrCodeData = post.type === 'event' ? rest.paymentQRCode : rest.culturalPaymentQRCode;
@@ -151,6 +196,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         newQrCodeUrl = newQrCodeData ? await uploadImage(newQrCodeData) : null;
     }
 
+    // Update fields
     post.set({
         type: type !== undefined ? type : post.type,
         title: title !== undefined ? title : post.title,
@@ -183,9 +229,9 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
-        post.duration = undefined;
         post.price = undefined;
         post.language = undefined;
+        post.duration = undefined;
         post.ticketsNeeded = undefined;
         post.venueAddress = undefined;
         post.registrationLink = undefined;
@@ -207,9 +253,72 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     res.json(updatedPost);
 }));
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
+router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
+        }
+        event.status = 'approved';
+        const updatedEvent = await event.save();
+        res.json(updatedEvent);
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
+router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
+        }
+        
+        const publicIdsToDelete = [];
+        if (event.images && event.images.length > 0) {
+            event.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        
+        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
+        if (qrCodeUrl) {
+            const parts = qrCodeUrl.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
+
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
+            }
+        }
+
+        await event.deleteOne();
+        await Registration.deleteMany({ eventId: event._id });
+        res.json({ message: 'Event rejected and removed' });
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -253,9 +362,9 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -280,9 +389,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -300,9 +409,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -323,9 +432,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -346,6 +455,93 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
         res.status(201).json({ message: 'Post reported successfully' });
     } else {
         res.status(404).json({ message: 'Post not found' });
+    }
+}));
+
+// NEW ROUTE: GET /api/posts/export-registrations/:eventId
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+    
+    const registrations = await Registration.find({ eventId }).lean();
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+
+    const headers = new Set(['Name', 'Email']);
+
+    // Gather all possible custom fields and other headers
+    registrations.forEach(reg => {
+        if (reg.phone) headers.add('Phone');
+        if (reg.transactionId) headers.add('Transaction ID');
+        if (reg.customFields) {
+            Object.keys(reg.customFields).forEach(key => headers.add(key));
+        }
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            headers.add('Booking Dates');
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
+            headers.add('Total Price');
+        }
+    });
+
+    headers.add('Registered At');
+    const finalHeaders = Array.from(headers);
+    
+    const data = registrations.flatMap(reg => {
+        const baseRow = {
+            'Name': reg.name,
+            'Email': reg.email,
+        };
+        
+        if (reg.phone) baseRow['Phone'] = reg.phone;
+        if (reg.transactionId) baseRow['Transaction ID'] = reg.transactionId;
+        
+        // Add custom fields
+        if (reg.customFields) {
+            for (const key of Object.keys(reg.customFields)) {
+                baseRow[key] = reg.customFields[key];
+            }
+        }
+        
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            return reg.selectedTickets.map(ticket => ({
+                ...baseRow,
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
+                'Ticket Type': ticket.ticketType,
+                'Ticket Quantity': ticket.quantity,
+                'Ticket Price': ticket.ticketPrice,
+                'Total Price': reg.totalPrice,
+                'Registered At': reg.createdAt.toISOString(),
+            }));
+        } else {
+            // For registrations without ticket details (e.g., free events)
+            return [{
+                ...baseRow,
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }];
+        }
+    });
+
+    try {
+        const json2csvParser = new Parser({ fields: finalHeaders });
+        const csv = json2csvParser.parse(data);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
 

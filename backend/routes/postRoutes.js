@@ -1,84 +1,17 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const { Post, Registration } = require('../models/Post'); 
-const { protect, admin } = require('../middleware/auth');
+const Post = require('../models/Post');
+const Registration = require('../models/Registration'); 
+const { protect, admin } = require('../middleware/auth'); 
 
 const router = express.Router();
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
-router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
-    const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
-    res.json(pendingEvents);
-}));
+// ... (other existing routes in postRoutes.js)
 
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
-router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
-        }
-        event.status = 'approved';
-        const updatedEvent = await event.save();
-        res.json(updatedEvent);
-    } else {
-        res.status(404).json({ message: 'Event not found' });
-    }
-}));
-
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
-router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
-        }
-        
-        const publicIdsToDelete = [];
-        if (event.images && event.images.length > 0) {
-            event.images.forEach(url => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-            });
-        }
-        
-        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
-        if (qrCodeUrl) {
-            const parts = qrCodeUrl.split('/');
-            const filename = parts[parts.length - 1];
-            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-        }
-
-        if (publicIdsToDelete.length > 0) {
-            try {
-                await cloudinary.api.delete_resources(publicIdsToDelete);
-            } catch (cloudinaryErr) {
-                console.error('Cloudinary deletion failed for some resources:', cloudinaryErr);
-            }
-        }
-
-        await event.deleteOne();
-        await Registration.deleteMany({ eventId: event._id });
-        res.json({ message: 'Event rejected and removed' });
-    } else {
-        res.status(404).json({ message: 'Event not found' });
-    }
-}));
-
-
-// @desc    Get all registrations for a specific event to a CSV file
-// @route   GET /api/posts/export-registrations/:eventId
-// @access  Private (Event host or Admin)
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/posts/export-registrations/:eventId
+// @access  Private (Event host or Admin)
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -108,7 +41,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             'Email': reg.email || '',
             'Phone': reg.phone || '',
             'Transaction ID': reg.transactionId || '',
-            'Payment Screenshot URL': reg.paymentScreenshot || '',
             'Registered At': reg.createdAt.toISOString(),
         };
 
@@ -174,5 +106,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
+
 
 module.exports = router;
