@@ -297,7 +297,6 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
         }
         
-        // FIX: Add paymentScreenshot to be deleted
         const paymentScreenshotUrl = event.paymentScreenshot;
         if (paymentScreenshotUrl) {
             const parts = paymentScreenshotUrl.split('/');
@@ -349,7 +348,6 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
         }
         
-        // FIX: Add paymentScreenshot to be deleted
         const paymentScreenshotUrl = post.paymentScreenshot;
         if (paymentScreenshotUrl) {
             const parts = paymentScreenshotUrl.split('/');
