@@ -997,7 +997,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     name="phone"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
-                    placeholder="e.g., 9876543210"
+                    placeholder="e.g., *******210"
                     required
                 />
             </div>
