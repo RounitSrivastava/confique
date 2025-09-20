@@ -865,13 +865,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const handleFinalRegistration = async (e) => {
         if (e) e.preventDefault();
-   
+
         if (isRegistered) {
             setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
-   
+
         const selectedTickets = (formData.ticketSelections || [])
             .filter(selection => selection.quantity > 0)
             .map((selection, index) => ({
@@ -879,7 +879,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 ticketPrice: event.ticketOptions[index]?.ticketPrice,
                 quantity: selection.quantity,
             }));
-   
+
         const registrationData = {
             name: formData.name,
             email: formData.email,
@@ -891,7 +891,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             eventTitle: event.title,
             type: event.type,
         };
-   
+
         if (event.registrationFields) {
             event.registrationFields.split(',').forEach(field => {
                 const fieldName = field.split(':')[0].trim();
@@ -901,13 +901,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-   
+
         if (event.culturalPaymentMethod === 'qr' && !isFree && (!formData.transactionId || formData.transactionId.length < 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-   
+
         try {
             await onRegister(event._id, registrationData);
             setSuccessMessage(`Thank you ${formData.name} for registering for ${event.title}!`);
@@ -946,7 +946,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     >
                         <option value="">Select an option</option>
@@ -971,7 +971,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         name={name}
                         className="form-input"
                         value={formData[name] || ''}
-                        onChange={(e) => setFormData(prev => ({...prev, [name]: e.target.value}))}
+                        onChange={(e) => setFormData(prev => ({ ...prev, [name]: e.target.value }))}
                         required
                     />
                 </div>
@@ -983,11 +983,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <form onSubmit={handleProceedToPayment} className="modal-form">
             <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))} required />
+                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))} required />
+                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -996,7 +996,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     className="form-input"
                     name="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData(prev => ({...prev, phone: e.target.value}))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="e.g., *******210"
                     required
                 />
@@ -1091,7 +1091,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                             type="text"
                             className="form-input"
                             value={formData.transactionId}
-                            onChange={(e) => setFormData(prev => ({...prev, transactionId: e.target.value}))}
+                            onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value }))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
                             required
@@ -1414,7 +1414,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -1529,7 +1529,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const removeQRImage = () => {
         setPaymentQRPreview('');
     };
-   
+
     // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -1943,7 +1943,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                 <div key={index} className="image-preview-item">
                                                     <img
                                                         src={preview}
-                                                        alt={`Preview ${index + 1}`}
+                                                        alt={`Post image ${index + 1}`}
                                                         className="post-image"
                                                         onError={handleImageError}
                                                         loading="lazy"
@@ -2294,7 +2294,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
-   
+
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2414,7 +2414,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             }
         }
     };
-   
+
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
         if (isEventPast) return "EVENT ENDED";
