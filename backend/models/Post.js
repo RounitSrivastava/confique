@@ -1,16 +1,10 @@
-// new
+// old
 const mongoose = require('mongoose');
 
 // Sub-schema for cultural event ticket options
 const ticketOptionSchema = new mongoose.Schema({
     ticketType: { type: String, required: true },
     ticketPrice: { type: Number, required: true, min: 0 },
-}, { _id: false });
-
-// Sub-schema for images and QR codes to store both URL and publicId
-const imageSchema = new mongoose.Schema({
-    url: { type: String, required: true },
-    publicId: { type: String, required: true }
 }, { _id: false });
 
 // Sub-schema for comments
@@ -56,7 +50,7 @@ const postSchema = new mongoose.Schema({
     },
     title: { type: String, required: true },
     content: { type: String, required: true },
-    images: [imageSchema],
+    images: [{ type: String }],
     author: { type: String, required: true },
     authorAvatar: { type: String, default: 'https://placehold.co/40x40/cccccc/000000?text=A' },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -86,13 +80,13 @@ const postSchema = new mongoose.Schema({
     registrationFields: { type: String },
     paymentMethod: { type: String, enum: ['link', 'qr'] },
     paymentLink: { type: String },
-    paymentQRCode: imageSchema,
+    paymentQRCode: { type: String },
 
     // Cultural Event-specific Fields
     ticketOptions: [ticketOptionSchema],
     culturalPaymentMethod: { type: String, enum: ['link', 'qr', 'qr-screenshot'] },
     culturalPaymentLink: { type: String },
-    culturalPaymentQRCode: imageSchema,
+    culturalPaymentQRCode: { type: String },
     availableDates: [{ type: String }],
 }, { timestamps: true });
 

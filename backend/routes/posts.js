@@ -5,45 +5,30 @@ const { Parser } = require('json2csv');
 const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const cloudinary = require('cloudinary').v2;
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// CORRECTED HELPER: Returns object { url, publicId } to match schema
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
             folder: 'confique_posts',
         });
-        // FIX: Return object { url, publicId } for database compatibility
-        return { url: result.secure_url, publicId: result.public_id };
+        return result.secure_url;
     } catch (error) {
         console.error('Cloudinary upload failed:', error);
         return null;
     }
 };
 
-// NEW HELPER: Safely deletes resources by public ID
-const deleteCloudinaryResources = async (publicIds) => {
-    if (!publicIds || publicIds.length === 0) return;
-    try {
-        // Cloudinary only accepts public IDs, not folder paths. We assume publicIds 
-        // returned by the uploadImage function already include the 'confique_posts' folder prefix if necessary
-        await cloudinary.api.delete_resources(publicIds);
-        console.log(`Successfully deleted resources: ${publicIds.join(', ')}`);
-    } catch (cloudinaryErr) {
-        console.error('Cloudinary deletion failed:', cloudinaryErr);
-    }
-};
-
-
 // --- POST ROUTES ---
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (for approved posts), Private (for all posts as admin)
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (for approved posts), Private (for all posts as admin)
 router.get('/', asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
@@ -69,17 +54,17 @@ router.get('/', asyncHandler(async (req, res) => {
     res.json(posts);
 }));
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
 }));
 
-// @desc    Get all registrations for a specific event
-// @route   GET /api/posts/:id/registrations
-// @access  Private (Event creator or Admin only)
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
@@ -105,9 +90,9 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -117,30 +102,33 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
-    const authorAvatarFinal = avatarFromUser?.url || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const { type, images, paymentQRCode, culturalPaymentQRCode, ...postData } = req.body;
     
-    // FIX: Ensure uploaded data is saved as an object array
-    const uploadedImages = await Promise.all(
-        (Array.isArray(images) ? images : (images ? [images] : []))
-        .map(image => uploadImage(image))
-    );
-    postData.images = uploadedImages.filter(img => img);
+    // Process images
+    let imageUrls = [];
+    if (images && Array.isArray(images) && images.length > 0) {
+        imageUrls = await Promise.all(images.map(uploadImage));
+    } else if (images && typeof images === 'string') {
+        imageUrls = [await uploadImage(images)];
+    }
 
-    // FIX: Ensure QR code data is saved as a single object
+    // Process QR code
+    let qrCodeUrl = null;
     if (type === 'event' && paymentQRCode) {
-        postData.paymentQRCode = await uploadImage(paymentQRCode);
+        qrCodeUrl = await uploadImage(paymentQRCode);
     } else if (type === 'culturalEvent' && culturalPaymentQRCode) {
-        postData.culturalPaymentQRCode = await uploadImage(culturalPaymentQRCode);
+        qrCodeUrl = await uploadImage(culturalPaymentQRCode);
     }
     
     // Add default post details
+    postData.images = imageUrls.filter(url => url !== null);
     postData.type = type;
     postData.author = authorNameFromUser;
     postData.authorAvatar = authorAvatarFinal;
@@ -151,16 +139,21 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     postData.commentData = [];
     postData.timestamp = new Date();
 
-    // The paymentQRCode/culturalPaymentQRCode fields are already set above to an object if they exist
+    // Assign QR code URL based on event type
+    if (type === 'event' && qrCodeUrl) {
+        postData.paymentQRCode = qrCodeUrl;
+    } else if (type === 'culturalEvent' && qrCodeUrl) {
+        postData.culturalPaymentQRCode = qrCodeUrl;
+    }
 
     const post = new Post(postData);
     const createdPost = await post.save();
     res.status(201).json(createdPost);
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -171,47 +164,98 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
 
-    const { images, paymentQRCode, culturalPaymentQRCode, ...updateData } = req.body;
+    const { type, title, content, images, status, ...rest } = req.body;
 
-    // FIX: Use robust deletion by publicId and correct data mapping
+    // Handle image deletion and upload
     if (images !== undefined) {
-        // 1. Collect public IDs for deletion from the existing post
-        const oldImagePublicIds = post.images.map(img => img.publicId).filter(id => id);
-        await deleteCloudinaryResources(oldImagePublicIds);
-        
-        // 2. Upload new images
+        const oldImagePublicIds = post.images
+            .map(url => url.includes('cloudinary') ? `confique_posts/${url.split('/').pop().split('.')[0]}` : null)
+            .filter(id => id);
+
+        if (oldImagePublicIds.length > 0) {
+            try { await cloudinary.api.delete_resources(oldImagePublicIds); }
+            catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old images:', cloudinaryErr); }
+        }
+
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
-        const newImageObjects = await Promise.all(newImageArray.map(uploadImage));
-        updateData.images = newImageObjects.filter(img => img);
+        const newImageUrls = await Promise.all(newImageArray.map(uploadImage));
+        post.images = newImageUrls.filter(url => url !== null);
     }
 
-    // FIX: Handle QR code deletion and upload using publicId
-    if (post.type === 'event' && paymentQRCode !== undefined) {
-        if (post.paymentQRCode && post.paymentQRCode.publicId) {
-            await deleteCloudinaryResources([post.paymentQRCode.publicId]);
+    // Handle QR code deletion and upload
+    let newQrCodeUrl = null;
+    let oldQrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
+    let newQrCodeData = post.type === 'event' ? rest.paymentQRCode : rest.culturalPaymentQRCode;
+
+    if (newQrCodeData !== undefined && newQrCodeData !== oldQrCodeUrl) {
+        if (oldQrCodeUrl && oldQrCodeUrl.includes('cloudinary')) {
+            const publicId = `confique_posts/${oldQrCodeUrl.split('/').pop().split('.')[0]}`;
+            try { await cloudinary.uploader.destroy(publicId); }
+            catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
         }
-        updateData.paymentQRCode = paymentQRCode ? await uploadImage(paymentQRCode) : null;
-    } else if (post.type === 'culturalEvent' && culturalPaymentQRCode !== undefined) {
-        if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) {
-            await deleteCloudinaryResources([post.culturalPaymentQRCode.publicId]);
-        }
-        updateData.culturalPaymentQRCode = culturalPaymentQRCode ? await uploadImage(culturalPaymentQRCode) : null;
+        newQrCodeUrl = newQrCodeData ? await uploadImage(newQrCodeData) : null;
     }
 
-    // Update post fields
-    Object.assign(post, updateData);
+    // Update fields
+    post.set({
+        type: type !== undefined ? type : post.type,
+        title: title !== undefined ? title : post.title,
+        content: content !== undefined ? content : post.content,
+        ...rest,
+    });
 
-    if (req.user.isAdmin && updateData.status !== undefined) {
-        post.status = updateData.status;
+    if (req.user.isAdmin && status !== undefined) {
+        post.status = status;
+    }
+
+    if (post.type === 'event') {
+        post.paymentQRCode = newQrCodeUrl !== null ? newQrCodeUrl : post.paymentQRCode;
+        post.ticketOptions = undefined;
+        post.culturalPaymentMethod = undefined;
+        post.culturalPaymentLink = undefined;
+        post.culturalPaymentQRCode = undefined;
+        post.availableDates = undefined;
+    } else if (post.type === 'culturalEvent') {
+        post.culturalPaymentQRCode = newQrCodeUrl !== null ? newQrCodeUrl : post.culturalPaymentQRCode;
+        post.price = undefined;
+        post.paymentMethod = undefined;
+        post.paymentLink = undefined;
+        post.paymentQRCode = undefined;
+        post.language = undefined;
+        post.source = undefined;
+        post.ticketsNeeded = undefined;
+        post.venueAddress = undefined;
+    } else { // confession/news
+        post.location = undefined;
+        post.eventStartDate = undefined;
+        post.eventEndDate = undefined;
+        post.price = undefined;
+        post.language = undefined;
+        post.duration = undefined;
+        post.ticketsNeeded = undefined;
+        post.venueAddress = undefined;
+        post.registrationLink = undefined;
+        post.registrationOpen = undefined;
+        post.enableRegistrationForm = undefined;
+        post.registrationFields = undefined;
+        post.paymentMethod = undefined;
+        post.paymentLink = undefined;
+        post.paymentQRCode = undefined;
+        post.source = undefined;
+        post.ticketOptions = undefined;
+        post.culturalPaymentMethod = undefined;
+        post.culturalPaymentLink = undefined;
+        post.culturalPaymentQRCode = undefined;
+        post.availableDates = undefined;
     }
 
     const updatedPost = await post.save();
     res.json(updatedPost);
 }));
 
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -228,9 +272,9 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 }));
 
 
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -239,12 +283,29 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
             return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
         }
         
-        // FIX: Extract publicIds from structured object fields
-        const publicIdsToDelete = event.images.map(img => img.publicId).filter(id => id);
-        if (event.paymentQRCode && event.paymentQRCode.publicId) publicIdsToDelete.push(event.paymentQRCode.publicId);
-        if (event.culturalPaymentQRCode && event.culturalPaymentQRCode.publicId) publicIdsToDelete.push(event.culturalPaymentQRCode.publicId);
+        const publicIdsToDelete = [];
+        if (event.images && event.images.length > 0) {
+            event.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        
+        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
+        if (qrCodeUrl) {
+            const parts = qrCodeUrl.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
 
-        await deleteCloudinaryResources(publicIdsToDelete);
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
+            }
+        }
 
         await event.deleteOne();
         await Registration.deleteMany({ eventId: event._id });
@@ -255,9 +316,9 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 }));
 
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -266,12 +327,29 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to delete this post' });
         }
 
-        // FIX: Extract publicIds from structured object fields
-        const publicIdsToDelete = post.images.map(img => img.publicId).filter(id => id);
-        if (post.paymentQRCode && post.paymentQRCode.publicId) publicIdsToDelete.push(post.paymentQRCode.publicId);
-        if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) publicIdsToDelete.push(post.culturalPaymentQRCode.publicId);
+        const publicIdsToDelete = [];
+        if (post.images && post.images.length > 0) {
+            post.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        
+        const qrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
+        if (qrCodeUrl) {
+            const parts = qrCodeUrl.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
 
-        await deleteCloudinaryResources(publicIdsToDelete);
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources:', cloudinaryErr);
+            }
+        }
 
         await post.deleteOne();
         if (post.type === 'event' || post.type === 'culturalEvent') {
@@ -284,9 +362,9 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -297,7 +375,7 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         }
         const newComment = {
             author: req.user.name,
-            authorAvatar: req.user.avatar?.url || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            authorAvatar: req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
             text,
             timestamp: new Date(),
             userId: req.user._id,
@@ -311,9 +389,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -331,9 +409,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -354,9 +432,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -397,59 +475,66 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
-    const flattenedData = [];
+    const headers = new Set(['Name', 'Email']);
 
+    // Gather all possible custom fields and other headers
     registrations.forEach(reg => {
-        const baseData = {
-            'Name': reg.name,
-            'Email': reg.email,
-            'Phone': reg.phone || '',
-            'Transaction ID': reg.transactionId || '',
-            'Registered At': reg.createdAt.toISOString(),
-        };
-
+        if (reg.phone) headers.add('Phone');
+        if (reg.transactionId) headers.add('Transaction ID');
         if (reg.customFields) {
-            for (const key of Object.keys(reg.customFields)) {
-                baseData[key] = reg.customFields[key] || '';
-                headers.add(key);
-            }
+            Object.keys(reg.customFields).forEach(key => headers.add(key));
         }
-        
         if (reg.selectedTickets && reg.selectedTickets.length > 0) {
             headers.add('Booking Dates');
             headers.add('Ticket Type');
             headers.add('Ticket Quantity');
             headers.add('Ticket Price');
             headers.add('Total Price');
-            
-            reg.selectedTickets.forEach(ticket => {
-                flattenedData.push({
-                    ...baseData,
-                    'Booking Dates': (reg.bookingDates || []).join(', ') || '',
-                    'Ticket Type': ticket.ticketType || '',
-                    'Ticket Quantity': ticket.quantity || '',
-                    'Ticket Price': ticket.ticketPrice || '',
-                    'Total Price': reg.totalPrice || '',
-                });
-            });
-        } else {
-            flattenedData.push({
-                ...baseData,
-                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
-                'Total Price': reg.totalPrice || '',
-                'Ticket Type': '',
-                'Ticket Quantity': '',
-                'Ticket Price': '',
-            });
         }
     });
 
+    headers.add('Registered At');
     const finalHeaders = Array.from(headers);
+    
+    const data = registrations.flatMap(reg => {
+        const baseRow = {
+            'Name': reg.name,
+            'Email': reg.email,
+        };
+        
+        if (reg.phone) baseRow['Phone'] = reg.phone;
+        if (reg.transactionId) baseRow['Transaction ID'] = reg.transactionId;
+        
+        // Add custom fields
+        if (reg.customFields) {
+            for (const key of Object.keys(reg.customFields)) {
+                baseRow[key] = reg.customFields[key];
+            }
+        }
+        
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            return reg.selectedTickets.map(ticket => ({
+                ...baseRow,
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
+                'Ticket Type': ticket.ticketType,
+                'Ticket Quantity': ticket.quantity,
+                'Ticket Price': ticket.ticketPrice,
+                'Total Price': reg.totalPrice,
+                'Registered At': reg.createdAt.toISOString(),
+            }));
+        } else {
+            // For registrations without ticket details (e.g., free events)
+            return [{
+                ...baseRow,
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
+                'Registered At': reg.createdAt.toISOString(),
+            }];
+        }
+    });
 
     try {
         const json2csvParser = new Parser({ fields: finalHeaders });
-        const csv = json2csvParser.parse(flattenedData);
+        const csv = json2csvParser.parse(data);
 
         res.header('Content-Type', 'text/csv');
         res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
