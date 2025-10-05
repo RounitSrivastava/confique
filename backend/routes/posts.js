@@ -1,7 +1,8 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const { Post, Registration } = require('../models/Post');
+// FIX: Correctly import both Post and Registration models from the consolidated file
+const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
@@ -9,7 +10,7 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// Utility function to upload an image to Cloudinary and return URL and public ID
+// CORRECTED: Utility function to upload an image and return a consistent object
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
@@ -20,6 +21,17 @@ const uploadImage = async (image) => {
     } catch (error) {
         console.error('Cloudinary upload failed:', error);
         return null;
+    }
+};
+
+// CORRECTED: Utility function to safely delete images from Cloudinary
+const deleteCloudinaryResources = async (publicIds) => {
+    if (!publicIds || publicIds.length === 0) return;
+    try {
+        await cloudinary.api.delete_resources(publicIds);
+        console.log(`Successfully deleted resources: ${publicIds.join(', ')}`);
+    } catch (cloudinaryErr) {
+        console.error('Cloudinary deletion failed:', cloudinaryErr);
     }
 };
 
@@ -66,6 +78,7 @@ router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
 // @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
+
     const event = await Post.findById(eventId).select('userId type');
 
     if (!event) {
@@ -86,6 +99,7 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const registrations = await Registration.find({ eventId: event._id });
     res.json(registrations);
 }));
+
 
 // @desc    Get a single post by ID
 // @route   GET /api/posts/:id
@@ -108,21 +122,21 @@ router.post('/', protect, asyncHandler(async (req, res) => {
 
     const { type, images, paymentQRCode, culturalPaymentQRCode, ...postData } = req.body;
     
-    // Process images and QR codes, storing the full object
+    // CORRECTED: Process images, ensuring uploadImage returns an object
     const uploadedImages = await Promise.all(
         (Array.isArray(images) ? images : (images ? [images] : []))
         .map(image => uploadImage(image))
     );
-    postData.images = uploadedImages.filter(img => img !== null);
+    postData.images = uploadedImages.filter(img => img);
 
-    // Conditionally handle QR code upload
+    // CORRECTED: Process QR code, ensuring uploadImage returns an object
     if (type === 'event' && paymentQRCode) {
         postData.paymentQRCode = await uploadImage(paymentQRCode);
     } else if (type === 'culturalEvent' && culturalPaymentQRCode) {
         postData.culturalPaymentQRCode = await uploadImage(culturalPaymentQRCode);
     }
     
-    // Set default post details and status
+    // Add default post details
     postData.type = type;
     postData.author = authorNameFromUser;
     postData.authorAvatar = authorAvatarFinal;
@@ -153,30 +167,25 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
     const { images, paymentQRCode, culturalPaymentQRCode, ...updateData } = req.body;
     
-    // Handle image updates
+    // CORRECTED: Handle image updates robustly
     if (images !== undefined) {
         const oldImagePublicIds = post.images.map(img => img.publicId).filter(id => id);
-        if (oldImagePublicIds.length > 0) {
-            try { await cloudinary.api.delete_resources(oldImagePublicIds); }
-            catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old images:', cloudinaryErr); }
-        }
+        await deleteCloudinaryResources(oldImagePublicIds);
         
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const newImageObjects = await Promise.all(newImageArray.map(uploadImage));
         updateData.images = newImageObjects.filter(img => img);
     }
 
-    // Handle QR code updates
+    // CORRECTED: Handle QR code updates robustly
     if (post.type === 'event' && paymentQRCode !== undefined) {
         if (post.paymentQRCode && post.paymentQRCode.publicId) {
-            try { await cloudinary.uploader.destroy(post.paymentQRCode.publicId); }
-            catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
+            await deleteCloudinaryResources([post.paymentQRCode.publicId]);
         }
         updateData.paymentQRCode = paymentQRCode ? await uploadImage(paymentQRCode) : null;
     } else if (post.type === 'culturalEvent' && culturalPaymentQRCode !== undefined) {
         if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) {
-            try { await cloudinary.uploader.destroy(post.culturalPaymentQRCode.publicId); }
-            catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
+            await deleteCloudinaryResources([post.culturalPaymentQRCode.publicId]);
         }
         updateData.culturalPaymentQRCode = culturalPaymentQRCode ? await uploadImage(culturalPaymentQRCode) : null;
     }
@@ -227,13 +236,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
         if (event.paymentQRCode && event.paymentQRCode.publicId) publicIdsToDelete.push(event.paymentQRCode.publicId);
         if (event.culturalPaymentQRCode && event.culturalPaymentQRCode.publicId) publicIdsToDelete.push(event.culturalPaymentQRCode.publicId);
 
-        if (publicIdsToDelete.length > 0) {
-            try {
-                await cloudinary.api.delete_resources(publicIdsToDelete);
-            } catch (cloudinaryErr) {
-                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
-            }
-        }
+        await deleteCloudinaryResources(publicIdsToDelete);
 
         await event.deleteOne();
         await Registration.deleteMany({ eventId: event._id });
@@ -259,13 +262,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
         if (post.paymentQRCode && post.paymentQRCode.publicId) publicIdsToDelete.push(post.paymentQRCode.publicId);
         if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) publicIdsToDelete.push(post.culturalPaymentQRCode.publicId);
 
-        if (publicIdsToDelete.length > 0) {
-            try {
-                await cloudinary.api.delete_resources(publicIdsToDelete);
-            } catch (cloudinaryErr) {
-                console.error('Cloudinary deletion failed for some resources:', cloudinaryErr);
-            }
-        }
+        await deleteCloudinaryResources(publicIdsToDelete);
 
         await post.deleteOne();
         if (post.type === 'event' || post.type === 'culturalEvent') {
@@ -374,9 +371,7 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Export registrations as CSV
-// @route   GET /api/posts/export-registrations/:eventId
-// @access  Private (Event creator or Admin only)
+// NEW ROUTE: GET /api/posts/export-registrations/:eventId
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
     const event = await Post.findById(eventId);
@@ -394,49 +389,63 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const fields = ['Name', 'Email', 'Phone', 'Transaction ID', 'Booking Dates', 'Ticket Type', 'Ticket Quantity', 'Ticket Price', 'Total Price', 'Registered At'];
-    
-    // Dynamically add custom fields
-    const customFieldsSet = new Set();
+    const headers = new Set(['Name', 'Email']);
+    const flattenedData = [];
+
     registrations.forEach(reg => {
-        if (reg.customFields) {
-            Object.keys(reg.customFields).forEach(key => customFieldsSet.add(key));
-        }
-    });
-    const finalFields = [...fields, ...Array.from(customFieldsSet)];
-    
-    const data = registrations.flatMap(reg => {
-        const baseRow = {
-            'Name': reg.name,
-            'Email': reg.email,
-            'Phone': reg.phone,
-            'Transaction ID': reg.transactionId,
-            'Booking Dates': reg.bookingDates?.join(', ') || '',
-            'Total Price': reg.totalPrice,
+        const baseData = {
+            'Name': reg.name || '',
+            'Email': reg.email || '',
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
             'Registered At': reg.createdAt.toISOString(),
         };
-        
+
+        Object.keys(baseData).forEach(key => headers.add(key));
+
         if (reg.customFields) {
-            for (const key of Object.keys(reg.customFields)) {
-                baseRow[key] = reg.customFields[key];
+            for (const key in reg.customFields) {
+                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
+                    baseData[key] = reg.customFields[key] || '';
+                    allFields.add(key);
+                }
             }
         }
         
-        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
-            return reg.selectedTickets.map(ticket => ({
-                ...baseRow,
-                'Ticket Type': ticket.ticketType,
-                'Ticket Quantity': ticket.quantity,
-                'Ticket Price': ticket.ticketPrice,
-            }));
+        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
+            allFields.add('Booking Dates');
+            allFields.add('Total Price');
+            allFields.add('Ticket Type');
+            allFields.add('Ticket Quantity');
+            allFields.add('Ticket Price');
+            
+            reg.selectedTickets.forEach(ticket => {
+                flattenedData.push({
+                    ...baseData,
+                    'Booking Dates': (reg.bookingDates || []).join(', '),
+                    'Total Price': reg.totalPrice || '',
+                    'Ticket Type': ticket.ticketType || '',
+                    'Ticket Quantity': ticket.quantity || '',
+                    'Ticket Price': ticket.ticketPrice || '',
+                });
+            });
         } else {
-            return [baseRow];
+            flattenedData.push({
+                ...baseData,
+                'Booking Dates': (reg.bookingDates || []).join(', '),
+                'Total Price': reg.totalPrice || '',
+                'Ticket Type': '',
+                'Ticket Quantity': '',
+                'Ticket Price': '',
+            });
         }
     });
 
+    const finalHeaders = Array.from(headers);
+
     try {
-        const json2csvParser = new Parser({ fields: finalFields });
-        const csv = json2csvParser.parse(data);
+        const json2csvParser = new Parser({ fields: finalHeaders });
+        const csv = json2csvParser.parse(flattenedData);
 
         res.header('Content-Type', 'text/csv');
         res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
