@@ -56,7 +56,7 @@ const postSchema = new mongoose.Schema({
     },
     title: { type: String, required: true },
     content: { type: String, required: true },
-    images: [imageSchema], // CHANGED to use the imageSchema
+    images: [imageSchema],
     author: { type: String, required: true },
     authorAvatar: { type: String, default: 'https://placehold.co/40x40/cccccc/000000?text=A' },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -86,13 +86,13 @@ const postSchema = new mongoose.Schema({
     registrationFields: { type: String },
     paymentMethod: { type: String, enum: ['link', 'qr'] },
     paymentLink: { type: String },
-    paymentQRCode: imageSchema, // CHANGED to use the imageSchema
+    paymentQRCode: imageSchema,
 
     // Cultural Event-specific Fields
     ticketOptions: [ticketOptionSchema],
     culturalPaymentMethod: { type: String, enum: ['link', 'qr', 'qr-screenshot'] },
     culturalPaymentLink: { type: String },
-    culturalPaymentQRCode: imageSchema, // CHANGED to use the imageSchema
+    culturalPaymentQRCode: imageSchema,
     availableDates: [{ type: String }],
 }, { timestamps: true });
 

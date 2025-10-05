@@ -10,26 +10,17 @@ const jwt = require('jsonwebtoken');
 const router = express.Router();
 
 // Utility function to upload an image to Cloudinary and return URL and public ID
-const uploadImage = async (image, existingPublicId = null) => {
-    if (!image) {
-        if (existingPublicId) {
-            await cloudinary.uploader.destroy(existingPublicId);
-        }
+const uploadImage = async (image) => {
+    if (!image) return null;
+    try {
+        const result = await cloudinary.uploader.upload(image, {
+            folder: 'confique_posts',
+        });
+        return { url: result.secure_url, publicId: result.public_id };
+    } catch (error) {
+        console.error('Cloudinary upload failed:', error);
         return null;
     }
-    
-    // If the image is already a Cloudinary URL, don't re-upload
-    if (image.startsWith('https://res.cloudinary.com')) {
-        const publicId = `confique_posts/${image.split('/').pop().split('.')[0]}`;
-        return { url: image, publicId };
-    }
-
-    // Otherwise, upload the new image
-    const result = await cloudinary.uploader.upload(image, {
-        folder: 'confique_posts',
-        public_id: existingPublicId // Use existing public ID to overwrite
-    });
-    return { url: result.secure_url, publicId: result.public_id };
 };
 
 // --- POST ROUTES ---
@@ -115,22 +106,22 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
-    const { type, images, ...postData } = req.body;
+    const { type, images, paymentQRCode, culturalPaymentQRCode, ...postData } = req.body;
     
-    // Process images and QR codes in a single, reusable block
-    const imageUrls = await Promise.all(
+    // Process images and QR codes, storing the full object
+    const uploadedImages = await Promise.all(
         (Array.isArray(images) ? images : (images ? [images] : []))
         .map(image => uploadImage(image))
     );
-    postData.images = imageUrls.map(img => img.url).filter(url => url);
+    postData.images = uploadedImages.filter(img => img !== null);
 
     // Conditionally handle QR code upload
-    if (type === 'event' && postData.paymentQRCode) {
-        postData.paymentQRCode = (await uploadImage(postData.paymentQRCode)).url;
-    } else if (type === 'culturalEvent' && postData.culturalPaymentQRCode) {
-        postData.culturalPaymentQRCode = (await uploadImage(postData.culturalPaymentQRCode)).url;
+    if (type === 'event' && paymentQRCode) {
+        postData.paymentQRCode = await uploadImage(paymentQRCode);
+    } else if (type === 'culturalEvent' && culturalPaymentQRCode) {
+        postData.culturalPaymentQRCode = await uploadImage(culturalPaymentQRCode);
     }
-
+    
     // Set default post details and status
     postData.type = type;
     postData.author = authorNameFromUser;
@@ -172,7 +163,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const newImageObjects = await Promise.all(newImageArray.map(uploadImage));
-        updateData.images = newImageObjects.filter(img => img).map(img => ({ url: img.url, publicId: img.publicId }));
+        updateData.images = newImageObjects.filter(img => img);
     }
 
     // Handle QR code updates
@@ -181,13 +172,13 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
             try { await cloudinary.uploader.destroy(post.paymentQRCode.publicId); }
             catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
         }
-        updateData.paymentQRCode = paymentQRCode ? (await uploadImage(paymentQRCode)).url : null;
+        updateData.paymentQRCode = paymentQRCode ? await uploadImage(paymentQRCode) : null;
     } else if (post.type === 'culturalEvent' && culturalPaymentQRCode !== undefined) {
         if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) {
             try { await cloudinary.uploader.destroy(post.culturalPaymentQRCode.publicId); }
             catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
         }
-        updateData.culturalPaymentQRCode = culturalPaymentQRCode ? (await uploadImage(culturalPaymentQRCode)).url : null;
+        updateData.culturalPaymentQRCode = culturalPaymentQRCode ? await uploadImage(culturalPaymentQRCode) : null;
     }
 
     // Update post fields
@@ -251,6 +242,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
         res.status(404).json({ message: 'Event not found' });
     }
 }));
+
 
 // @desc    Delete a post
 // @route   DELETE /api/posts/:id
