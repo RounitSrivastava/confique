@@ -2043,7 +2043,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                 // Corrected Google Maps URL format
                 window.open(
-                    `https://www.google.com/maps/dir/${origin}/${destination}`,
+                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -3678,9 +3678,16 @@ const App = () => {
     };
 
     const handleLogin = useCallback((user) => {
+        const sanitizedUser = {
+            ...user,
+            name: user.name || 'Anonymous User',
+            avatar: user.avatar || placeholderAvatar,
+            isAdmin: user.isAdmin || false,
+            token: user.token || null,
+        };
         setIsLoggedIn(true);
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(sanitizedUser);
+        localStorage.setItem('currentUser', JSON.stringify(sanitizedUser));
     }, []);
 
     const fetchPosts = useCallback(async () => {
@@ -4982,49 +4989,47 @@ const App = () => {
 
             <header className="header">
                 <div className="header-container">
-                    <div className="header-content">
-                        <div className="header-left">
-                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
-                                <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
-                                <span className="app-title">Confique</span>
-                            </a>
+                    <div className="header-left">
+                        <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
+                            <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
+                            <span className="app-title">Confique</span>
+                        </a>
+                    </div>
+                    {activeSection === 'events' && isLoggedIn && (
+                        <div className="mobile-calendar-icon-container">
+                            <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                <CalendarIcon size={24} />
+                            </button>
                         </div>
-                        {activeSection === 'events' && isLoggedIn && (
-                            <div className="mobile-calendar-icon-container">
-                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
-                                    <CalendarIcon size={24} />
-                                </button>
-                            </div>
-                        )}
+                    )}
 
-                        <div className="header-search">
-                            <div className="search-container">
-                                <Search className="search-icon" />
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    className="search-input"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+                    <div className="header-search">
+                        <div className="search-container">
+                            <Search className="search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                className="search-input"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
-                        <div className="header-right">
-                            {isLoggedIn ? (
-                                <ProfileDropdown
-                                    user={currentUser}
-                                    onLogout={handleLogout}
-                                    onProfileClick={handleProfileClick}
-                                />
-                            ) : (
-                                <button
-                                    className="login-button"
-                                    onClick={() => setShowLoginModal(true)}
-                                >
-                                    Login
-                                </button>
-                            )}
-                        </div>
+                    </div>
+                    <div className="header-right">
+                        {isLoggedIn ? (
+                            <ProfileDropdown
+                                user={currentUser}
+                                onLogout={handleLogout}
+                                onProfileClick={handleProfileClick}
+                            />
+                        ) : (
+                            <button
+                                className="login-button"
+                                onClick={() => setShowLoginModal(true)}
+                            >
+                                Login
+                            </button>
+                        )}
                     </div>
                 </div>
             </header>
