@@ -9,13 +9,14 @@ const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
 
-// CORRECTED: Helper function to upload images and return a consistent object
+// CORRECTED HELPER: Returns object { url, publicId } to match schema
 const uploadImage = async (image, folderName) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
             folder: folderName || 'confique_uploads',
         });
+        // FIX: Return object { url, publicId } for database compatibility
         return { url: result.secure_url, publicId: result.public_id };
     } catch (error) {
         console.error('Cloudinary upload failed:', error);
@@ -23,7 +24,7 @@ const uploadImage = async (image, folderName) => {
     }
 };
 
-// CORRECTED: Helper function to safely delete images using public IDs
+// NEW HELPER: Safely deletes resources by public ID
 const deleteCloudinaryResources = async (publicIds) => {
     if (!publicIds || publicIds.length === 0) return;
     try {
@@ -70,27 +71,36 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     }
 
     let updatedAvatarData = newAvatar;
+
+    // Check if the input is a new Base64 string that needs uploading
     if (typeof newAvatar === 'string' && newAvatar.startsWith('data:image')) {
-        // Handle new image upload and old image deletion
-        const oldPublicId = user.avatar?.publicId; // Safely get publicId from schema
-        if (oldPublicId) {
+        // Safely get old publicId from the database object
+        const oldPublicId = user.avatar?.publicId; 
+        if (oldPublicId && oldPublicId !== 'default_avatar') {
             await deleteCloudinaryResources([oldPublicId]);
         }
+
         updatedAvatarData = await uploadImage(newAvatar, 'confique_avatars');
         if (!updatedAvatarData) {
             res.status(500);
             throw new Error('Failed to upload new avatar image');
         }
+    } else if (typeof newAvatar === 'object' && newAvatar.url && newAvatar.publicId) {
+        // If the user selected a pre-defined avatar (which is sent as a {url, publicId} object)
+        updatedAvatarData = newAvatar;
     }
 
+    // Assign the new object (or pre-defined object) to the user
     user.avatar = updatedAvatarData;
     const updatedUser = await user.save();
     
-    // Update all posts and comments associated with the user
-    await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar.url } });
+    // Update all posts and comments (using the URL part for legacy string fields)
+    const newAvatarUrl = updatedUser.avatar.url;
+
+    await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: newAvatarUrl } });
     await Post.updateMany(
         { 'commentData.userId': user._id },
-        { $set: { 'commentData.$[elem].authorAvatar': updatedUser.avatar.url } },
+        { $set: { 'commentData.$[elem].authorAvatar': newAvatarUrl } },
         { arrayFilters: [{ 'elem.userId': user._id }] }
     );
 
@@ -98,7 +108,8 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         _id: updatedUser._id,
         name: updatedUser.name,
         email: updatedUser.email,
-        avatar: updatedUser.avatar,
+        // Send the full object back to the client
+        avatar: updatedUser.avatar, 
         isAdmin: updatedUser.isAdmin,
     });
 }));

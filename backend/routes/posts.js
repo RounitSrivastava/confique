@@ -1,7 +1,8 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const { Post, Registration } = require('../models/Post');
+// FIX: Correctly import both Post and Registration models from the consolidated file
+const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
@@ -9,13 +10,14 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// CORRECTED: Utility function returns an object with publicId
+// CORRECTED HELPER: Returns object { url, publicId } to match schema
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
         const result = await cloudinary.uploader.upload(image, {
             folder: 'confique_posts',
         });
+        // FIX: Return object { url, publicId } for database compatibility
         return { url: result.secure_url, publicId: result.public_id };
     } catch (error) {
         console.error('Cloudinary upload failed:', error);
@@ -23,16 +25,19 @@ const uploadImage = async (image) => {
     }
 };
 
-// CORRECTED: Utility for reliable deletion using publicIds
+// NEW HELPER: Safely deletes resources by public ID
 const deleteCloudinaryResources = async (publicIds) => {
     if (!publicIds || publicIds.length === 0) return;
     try {
+        // Cloudinary only accepts public IDs, not folder paths. We assume publicIds 
+        // returned by the uploadImage function already include the 'confique_posts' folder prefix if necessary
         await cloudinary.api.delete_resources(publicIds);
         console.log(`Successfully deleted resources: ${publicIds.join(', ')}`);
     } catch (cloudinaryErr) {
         console.error('Cloudinary deletion failed:', cloudinaryErr);
     }
 };
+
 
 // --- POST ROUTES ---
 
@@ -117,18 +122,18 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
-    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    const authorAvatarFinal = avatarFromUser?.url || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const { type, images, paymentQRCode, culturalPaymentQRCode, ...postData } = req.body;
     
-    // CORRECTED: Process images, ensuring uploadImage returns an object
+    // FIX: Ensure uploaded data is saved as an object array
     const uploadedImages = await Promise.all(
         (Array.isArray(images) ? images : (images ? [images] : []))
         .map(image => uploadImage(image))
     );
     postData.images = uploadedImages.filter(img => img);
 
-    // CORRECTED: Process QR code, ensuring uploadImage returns an object
+    // FIX: Ensure QR code data is saved as a single object
     if (type === 'event' && paymentQRCode) {
         postData.paymentQRCode = await uploadImage(paymentQRCode);
     } else if (type === 'culturalEvent' && culturalPaymentQRCode) {
@@ -145,6 +150,8 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     postData.likedBy = [];
     postData.commentData = [];
     postData.timestamp = new Date();
+
+    // The paymentQRCode/culturalPaymentQRCode fields are already set above to an object if they exist
 
     const post = new Post(postData);
     const createdPost = await post.save();
@@ -165,18 +172,20 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     }
 
     const { images, paymentQRCode, culturalPaymentQRCode, ...updateData } = req.body;
-    
-    // CORRECTED: Handle image updates robustly
+
+    // FIX: Use robust deletion by publicId and correct data mapping
     if (images !== undefined) {
+        // 1. Collect public IDs for deletion from the existing post
         const oldImagePublicIds = post.images.map(img => img.publicId).filter(id => id);
         await deleteCloudinaryResources(oldImagePublicIds);
         
+        // 2. Upload new images
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const newImageObjects = await Promise.all(newImageArray.map(uploadImage));
         updateData.images = newImageObjects.filter(img => img);
     }
 
-    // CORRECTED: Handle QR code updates robustly
+    // FIX: Handle QR code deletion and upload using publicId
     if (post.type === 'event' && paymentQRCode !== undefined) {
         if (post.paymentQRCode && post.paymentQRCode.publicId) {
             await deleteCloudinaryResources([post.paymentQRCode.publicId]);
@@ -192,10 +201,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     // Update post fields
     Object.assign(post, updateData);
 
-    // Admin can update status
     if (req.user.isAdmin && updateData.status !== undefined) {
         post.status = updateData.status;
     }
+
+    // The messy post.field = undefined block is removed as Mongoose handles it better
+    // and the schema fields are consistently managed via Object.assign(post, updateData)
 
     const updatedPost = await post.save();
     res.json(updatedPost);
@@ -231,6 +242,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
             return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
         }
         
+        // FIX: Extract publicIds from structured object fields
         const publicIdsToDelete = event.images.map(img => img.publicId).filter(id => id);
         if (event.paymentQRCode && event.paymentQRCode.publicId) publicIdsToDelete.push(event.paymentQRCode.publicId);
         if (event.culturalPaymentQRCode && event.culturalPaymentQRCode.publicId) publicIdsToDelete.push(event.culturalPaymentQRCode.publicId);
@@ -257,6 +269,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
             return res.status(403).json({ message: 'You are not authorized to delete this post' });
         }
 
+        // FIX: Extract publicIds from structured object fields
         const publicIdsToDelete = post.images.map(img => img.publicId).filter(id => id);
         if (post.paymentQRCode && post.paymentQRCode.publicId) publicIdsToDelete.push(post.paymentQRCode.publicId);
         if (post.culturalPaymentQRCode && post.culturalPaymentQRCode.publicId) publicIdsToDelete.push(post.culturalPaymentQRCode.publicId);
@@ -287,7 +300,7 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         }
         const newComment = {
             author: req.user.name,
-            authorAvatar: req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            authorAvatar: req.user.avatar?.url || 'https://placehold.co/40x40/cccccc/000000?text=A',
             text,
             timestamp: new Date(),
             userId: req.user._id,
@@ -373,12 +386,11 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
 // NEW ROUTE: GET /api/posts/export-registrations/:eventId
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
+
     const event = await Post.findById(eventId);
-    
     if (!event) {
         return res.status(404).json({ message: 'Event not found.' });
     }
-    
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'Not authorized to export this data.' });
     }
@@ -388,48 +400,50 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const headers = new Set(['Name', 'Email']);
+    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
     const flattenedData = [];
 
     registrations.forEach(reg => {
         const baseData = {
             'Name': reg.name,
             'Email': reg.email,
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
+            'Registered At': reg.createdAt.toISOString(),
         };
-        
-        if (reg.phone) baseData['Phone'] = reg.phone;
-        if (reg.transactionId) baseData['Transaction ID'] = reg.transactionId;
-        
+
         if (reg.customFields) {
             for (const key of Object.keys(reg.customFields)) {
-                baseData[key] = reg.customFields[key];
+                baseData[key] = reg.customFields[key] || '';
+                headers.add(key);
             }
         }
         
         if (reg.selectedTickets && reg.selectedTickets.length > 0) {
-            return reg.selectedTickets.map(ticket => {
-                headers.add('Booking Dates');
-                headers.add('Ticket Type');
-                headers.add('Ticket Quantity');
-                headers.add('Ticket Price');
-                headers.add('Total Price');
-                headers.add('Registered At');
+            headers.add('Booking Dates');
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
+            headers.add('Total Price');
+            
+            reg.selectedTickets.forEach(ticket => {
                 flattenedData.push({
                     ...baseData,
-                    'Booking Dates': reg.bookingDates?.join(', ') || '',
-                    'Ticket Type': ticket.ticketType,
-                    'Ticket Quantity': ticket.quantity,
-                    'Ticket Price': ticket.ticketPrice,
-                    'Total Price': reg.totalPrice,
-                    'Registered At': reg.createdAt.toISOString(),
+                    'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                    'Ticket Type': ticket.ticketType || '',
+                    'Ticket Quantity': ticket.quantity || '',
+                    'Ticket Price': ticket.ticketPrice || '',
+                    'Total Price': reg.totalPrice || '',
                 });
             });
         } else {
             flattenedData.push({
                 ...baseData,
-                'Booking Dates': reg.bookingDates?.join(', ') || '',
-                'Total Price': reg.totalPrice,
-                'Registered At': reg.createdAt.toISOString(),
+                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+                'Total Price': reg.totalPrice || '',
+                'Ticket Type': '',
+                'Ticket Quantity': '',
+                'Ticket Price': '',
             });
         }
     });
@@ -449,4 +463,4 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     }
 }));
 
-module.exports = router; 
+module.exports = router;
