@@ -1,17 +1,15 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-const Post = require('../models/Post');
-const Registration = require('../models/Registration'); 
-const { protect, admin } = require('../middleware/auth'); 
+const { Post, Registration } = require('../models/Post'); 
 
 const router = express.Router();
 
 // ... (other existing routes in postRoutes.js)
 
-// @desc    Export registrations for a specific event to a CSV file
-// @route   GET /api/posts/export-registrations/:eventId
-// @access  Private (Event host or Admin)
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/posts/export-registrations/:eventId
+// @access  Private (Event host or Admin)
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -20,7 +18,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     if (!event) {
         return res.status(404).json({ message: 'Event not found.' });
     }
-    // Check if the user is the event's creator or an admin
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'Not authorized to export this data.' });
     }
@@ -31,11 +28,12 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    // 3. Dynamically discover all unique custom and standard fields
-    const allFields = new Set();
+    // 3. Dynamically discover all unique custom and standard fields and flatten the data
+    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
     const flattenedData = [];
 
     registrations.forEach(reg => {
+        // Build the base data row from standard fields
         const baseData = {
             'Name': reg.name || '',
             'Email': reg.email || '',
@@ -44,15 +42,12 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             'Registered At': reg.createdAt.toISOString(),
         };
 
-        // Add all base fields to the set of headers
-        Object.keys(baseData).forEach(key => allFields.add(key));
-
-        // Add custom fields
+        // Add custom fields to the base data and headers
         if (reg.customFields) {
             for (const key in reg.customFields) {
                 if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
                     baseData[key] = reg.customFields[key] || '';
-                    allFields.add(key);
+                    headers.add(key);
                 }
             }
         }
@@ -60,11 +55,11 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         // Handle cultural event registrations with tickets
         if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
             // Add cultural event specific headers
-            allFields.add('Booking Dates');
-            allFields.add('Total Price');
-            allFields.add('Ticket Type');
-            allFields.add('Ticket Quantity');
-            allFields.add('Ticket Price');
+            headers.add('Booking Dates');
+            headers.add('Total Price');
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
             
             // Create a separate row for each ticket
             reg.selectedTickets.forEach(ticket => {
@@ -79,9 +74,15 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             });
         } else {
             // For standard events or cultural events with no tickets selected
+            // Add the additional headers for consistency, in case other rows have them
+            headers.add('Booking Dates');
+            headers.add('Total Price');
+            headers.add('Ticket Type');
+            headers.add('Ticket Quantity');
+            headers.add('Ticket Price');
+            
             flattenedData.push({
                 ...baseData,
-                // Ensure these columns exist for a consistent schema, even if empty
                 'Booking Dates': (reg.bookingDates || []).join(', '),
                 'Total Price': reg.totalPrice || '',
                 'Ticket Type': '',
@@ -91,7 +92,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         }
     });
 
-    const finalHeaders = Array.from(allFields);
+    const finalHeaders = Array.from(headers);
 
     try {
         const json2csvParser = new Parser({ fields: finalHeaders });
@@ -106,6 +107,5 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
-
 
 module.exports = router;

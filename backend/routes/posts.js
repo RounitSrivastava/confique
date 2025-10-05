@@ -1,8 +1,7 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { Parser } = require('json2csv');
-// FIX: Correctly import both Post and Registration models from the consolidated file
-const { Post, Registration } = require('../models/Post'); 
+const { Post, Registration } = require('../models/Post');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
@@ -10,7 +9,7 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
-// CORRECTED: Utility function to upload an image and return a consistent object
+// CORRECTED: Utility function returns an object with publicId
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
@@ -24,7 +23,7 @@ const uploadImage = async (image) => {
     }
 };
 
-// CORRECTED: Utility function to safely delete images from Cloudinary
+// CORRECTED: Utility for reliable deletion using publicIds
 const deleteCloudinaryResources = async (publicIds) => {
     if (!publicIds || publicIds.length === 0) return;
     try {
@@ -394,49 +393,43 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
 
     registrations.forEach(reg => {
         const baseData = {
-            'Name': reg.name || '',
-            'Email': reg.email || '',
-            'Phone': reg.phone || '',
-            'Transaction ID': reg.transactionId || '',
-            'Registered At': reg.createdAt.toISOString(),
+            'Name': reg.name,
+            'Email': reg.email,
         };
-
-        Object.keys(baseData).forEach(key => headers.add(key));
-
+        
+        if (reg.phone) baseData['Phone'] = reg.phone;
+        if (reg.transactionId) baseData['Transaction ID'] = reg.transactionId;
+        
         if (reg.customFields) {
-            for (const key in reg.customFields) {
-                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
-                    baseData[key] = reg.customFields[key] || '';
-                    allFields.add(key);
-                }
+            for (const key of Object.keys(reg.customFields)) {
+                baseData[key] = reg.customFields[key];
             }
         }
         
-        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
-            allFields.add('Booking Dates');
-            allFields.add('Total Price');
-            allFields.add('Ticket Type');
-            allFields.add('Ticket Quantity');
-            allFields.add('Ticket Price');
-            
-            reg.selectedTickets.forEach(ticket => {
+        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
+            return reg.selectedTickets.map(ticket => {
+                headers.add('Booking Dates');
+                headers.add('Ticket Type');
+                headers.add('Ticket Quantity');
+                headers.add('Ticket Price');
+                headers.add('Total Price');
+                headers.add('Registered At');
                 flattenedData.push({
                     ...baseData,
-                    'Booking Dates': (reg.bookingDates || []).join(', '),
-                    'Total Price': reg.totalPrice || '',
-                    'Ticket Type': ticket.ticketType || '',
-                    'Ticket Quantity': ticket.quantity || '',
-                    'Ticket Price': ticket.ticketPrice || '',
+                    'Booking Dates': reg.bookingDates?.join(', ') || '',
+                    'Ticket Type': ticket.ticketType,
+                    'Ticket Quantity': ticket.quantity,
+                    'Ticket Price': ticket.ticketPrice,
+                    'Total Price': reg.totalPrice,
+                    'Registered At': reg.createdAt.toISOString(),
                 });
             });
         } else {
             flattenedData.push({
                 ...baseData,
-                'Booking Dates': (reg.bookingDates || []).join(', '),
-                'Total Price': reg.totalPrice || '',
-                'Ticket Type': '',
-                'Ticket Quantity': '',
-                'Ticket Price': '',
+                'Booking Dates': reg.bookingDates?.join(', ') || '',
+                'Total Price': reg.totalPrice,
+                'Registered At': reg.createdAt.toISOString(),
             });
         }
     });
@@ -456,4 +449,4 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     }
 }));
 
-module.exports = router;
+module.exports = router; 

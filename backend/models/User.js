@@ -1,7 +1,11 @@
-// models/User.js
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+
+// New sub-schema for avatar to align with the new backend logic
+const avatarSchema = new mongoose.Schema({
+    url: { type: String, required: true },
+    publicId: { type: String, required: true }
+}, { _id: false });
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -20,9 +24,13 @@ const userSchema = new mongoose.Schema({
         sparse: true,
         default: null
     },
+    // FIX: Change avatar type to use the new schema
     avatar: {
-        type: String,
-        default: null
+        type: avatarSchema,
+        default: {
+            url: 'https://placehold.co/40x40/cccccc/000000?text=A',
+            publicId: 'default_avatar'
+        }
     },
     isAdmin: {
         type: Boolean,
@@ -33,8 +41,6 @@ const userSchema = new mongoose.Schema({
         unique: true,
         sparse: true
     },
-    // The likedPosts field is managed from the Post model's likedBy array for efficiency.
-    // This field is no longer needed here.
 }, {
     timestamps: true,
     collation: { locale: 'en', strength: 2 }
