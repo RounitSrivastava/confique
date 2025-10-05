@@ -1057,7 +1057,7 @@ body {
 
 .event-detail-header {
   position: relative;
-  height: 300px;
+  height: 420px;  /* 300px */
   overflow: hidden;
   border-bottom: 1px solid var(--border-color);
 }
