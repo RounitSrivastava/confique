@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
@@ -440,7 +440,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 
 // Registration Form Modal component
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
-    const getInitialFormData = () => {
+    const getInitialFormData = useCallback(() => {
         const base = { name: '', email: '', phone: '', transactionId: '' };
         if (event.registrationFields) {
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
@@ -451,7 +451,8 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             });
         }
         return base;
-    };
+    }, [event]);
+
     const [formData, setFormData] = useState({});
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -465,7 +466,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             setShowPaymentStep(false);
             setShowSuccessModal(false);
         }
-    }, [isOpen, event]);
+    }, [isOpen, event, getInitialFormData]);
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -733,7 +734,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
-    const getInitialFormData = () => {
+    const getInitialFormData = useCallback(() => {
         const base = {
             name: '',
             email: '',
@@ -756,7 +757,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             base.ticketSelections = [{ quantity: 0 }];
         }
         return base;
-    };
+    }, [event]);
 
     const [formData, setFormData] = useState(getInitialFormData);
     const [showFormAlert, setShowFormAlert] = useState(false);
@@ -781,7 +782,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowSuccessModal(false);
             setSuccessMessage('');
         }
-    }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
+    }, [isOpen, event, isLoggedIn, onRequireLogin, onClose, getInitialFormData]);
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -1159,7 +1160,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 };
 
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onShowSuccessAlert }) => {
-    const getInitialFormData = (postToEdit, currentUser) => {
+    const getInitialFormData = useCallback((postToEdit, currentUser) => {
         const initial = {
             type: 'confession',
             title: '',
@@ -1206,7 +1207,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         }
 
         return initial;
-    };
+    }, []);
 
     const [formData, setFormData] = useState(() => getInitialFormData(postToEdit, currentUser));
     const [imagePreviews, setImagePreviews] = useState(postToEdit?.images || []);
@@ -1228,7 +1229,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setShowUploadAlert(false);
             setUploadAlertMessage('');
         }
-    }, [isOpen, postToEdit, currentUser]);
+    }, [isOpen, postToEdit, currentUser, getInitialFormData]);
 
     const handleFormChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -1988,8 +1989,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
 const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered, onShowCalendarAlert }) => {
     const [showFullContent, setShowFullContent] = useState(false);
-    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
-    const [showCulturalEventRegistration, setShowCulturalEventRegistration] = useState(false);
+    const contentRef = useRef(null);
+    const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
 
@@ -2040,9 +2041,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // Fix: Corrected the URL format for Google Maps to use a proper template literal
+                // Corrected Google Maps URL format
                 window.open(
-                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
+                    `https://www.google.com/maps/dir/${origin}/${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2209,28 +2210,24 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     </div>
                 </div>
 
-                {showRegistrationForm && (
-                    <RegistrationFormModal
-                        isOpen={showRegistrationForm}
-                        onClose={() => setShowRegistrationForm(false)}
-                        event={event}
-                        isLoggedIn={isLoggedIn}
-                        onRequireLogin={onRequireLogin}
-                        onRegister={onRegister}
-                        isRegistered={isRegistered}
-                    />
-                )}
-                {showCulturalEventRegistration && (
-                    <CulturalEventRegistrationModal
-                        isOpen={showCulturalEventRegistration}
-                        onClose={() => setShowCulturalEventRegistration(false)}
-                        event={event}
-                        isLoggedIn={isLoggedIn}
-                        onRequireLogin={onRequireLogin}
-                        onRegister={onRegister}
-                        isRegistered={isRegistered}
-                    />
-                )}
+                <RegistrationFormModal
+                    isOpen={showRegistrationForm}
+                    onClose={() => setShowRegistrationForm(false)}
+                    event={event}
+                    isLoggedIn={isLoggedIn}
+                    onRequireLogin={onRequireLogin}
+                    onRegister={onRegister}
+                    isRegistered={isRegistered}
+                />
+                <CulturalEventRegistrationModal
+                    isOpen={showCulturalEventRegistration}
+                    onClose={() => setShowCulturalEventRegistration(false)}
+                    event={event}
+                    isLoggedIn={isLoggedIn}
+                    onRequireLogin={onRequireLogin}
+                    onRegister={onRegister}
+                    isRegistered={isRegistered}
+                />
                 <CustomMessageModal
                     isOpen={showGeolocationAlert}
                     onClose={() => setShowGeolocationAlert(false)}
@@ -3680,21 +3677,13 @@ const App = () => {
         return response;
     };
 
-    useEffect(() => {
-        const eventsToSave = myCalendarEvents.map(event => ({
-            ...event,
-            eventStartDate: event.eventStartDate ? event.eventStartDate.toISOString() : null,
-            eventEndDate: event.eventEndDate ? event.eventEndDate.toISOString() : null,
-            timestamp: event.timestamp.toISOString(),
-        }));
-        localStorage.setItem('myCalendarEvents', JSON.stringify(eventsToSave));
-    }, [myCalendarEvents]);
+    const handleLogin = useCallback((user) => {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+    }, []);
 
-    useEffect(() => {
-        localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
-    }, [likedPosts]);
-
-    const fetchPosts = async () => {
+    const fetchPosts = useCallback(async () => {
         try {
             const res = await callApi('/posts');
             const data = await res.json();
@@ -3708,9 +3697,9 @@ const App = () => {
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
-    };
+    }, [currentUser]);
 
-    const fetchPendingEvents = async () => {
+    const fetchPendingEvents = useCallback(async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
             const res = await callApi('/posts/pending-events');
@@ -3720,9 +3709,9 @@ const App = () => {
             console.error('Failed to fetch pending events:', error);
             setPendingEvents([]);
         }
-    };
+    }, [currentUser]);
 
-    const fetchRegistrations = async () => {
+    const fetchRegistrations = useCallback(async () => {
         if (!currentUser) {
             setRegistrations({});
             return;
@@ -3735,9 +3724,9 @@ const App = () => {
             console.error('Failed to fetch registrations:', error);
             setRegistrations({});
         }
-    };
+    }, [currentUser]);
 
-    const fetchMyRegistrations = async (user) => {
+    const fetchMyRegistrations = useCallback(async (user) => {
         if (!user) {
             setMyRegisteredEvents(new Set());
             return;
@@ -3749,9 +3738,9 @@ const App = () => {
         } catch (error) {
             console.error('Error fetching my registrations:', error);
         }
-    };
+    }, []);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         if (!currentUser) return;
         try {
             const res = await callApi('/notifications');
@@ -3760,9 +3749,9 @@ const App = () => {
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         }
-    };
+    }, [currentUser]);
 
-    const fetchAdminNotifications = async () => {
+    const fetchAdminNotifications = useCallback(async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
             const reportedRes = await callApi('/users/admin/reported-posts');
@@ -3773,9 +3762,9 @@ const App = () => {
             console.error('Failed to fetch admin notifications:', error);
             setAdminNotifications([]);
         }
-    };
+    }, [currentUser, fetchPendingEvents]);
 
-    const fetchLikedPosts = async (user) => {
+    const fetchLikedPosts = useCallback(async (user) => {
         if (!user) {
             console.log("Not logged in, skipping fetchLikedPosts.");
             return;
@@ -3787,7 +3776,7 @@ const App = () => {
         } catch (error) {
             console.error('Error fetching liked posts:', error);
         }
-    };
+    }, []);
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -3809,7 +3798,7 @@ const App = () => {
                 setCurrentUser(savedUser);
             }
         }
-    }, []);
+    }, [handleLogin]);
 
     useEffect(() => {
         const path = window.location.pathname;
@@ -3853,7 +3842,21 @@ const App = () => {
 
         fetchData();
 
-    }, [isLoggedIn, currentUser]);
+    }, [isLoggedIn, currentUser, fetchPosts, fetchLikedPosts, fetchRegistrations, fetchNotifications, fetchMyRegistrations, fetchAdminNotifications]);
+
+    useEffect(() => {
+        const eventsToSave = myCalendarEvents.map(event => ({
+            ...event,
+            eventStartDate: event.eventStartDate ? event.eventStartDate.toISOString() : null,
+            eventEndDate: event.eventEndDate ? event.eventEndDate.toISOString() : null,
+            timestamp: event.timestamp.toISOString(),
+        }));
+        localStorage.setItem('myCalendarEvents', JSON.stringify(eventsToSave));
+    }, [myCalendarEvents]);
+
+    useEffect(() => {
+        localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
+    }, [likedPosts]);
 
     useEffect(() => {
         if (hasOpenModal) {
@@ -4456,12 +4459,6 @@ const App = () => {
 
     const handleCloseEventDetail = () => {
         setSelectedEvent(null);
-    };
-
-    const handleLogin = (user) => {
-        setIsLoggedIn(true);
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
     };
 
     const handleLogout = () => {
