@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
@@ -440,9 +440,9 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
 
 // Registration Form Modal component
 const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
-    const getInitialFormData = useCallback(() => {
+    const getInitialFormData = () => {
         const base = { name: '', email: '', phone: '', transactionId: '' };
-        if (event.registrationFields) {
+        if (event?.registrationFields) { // FIX: Add null check for event
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
             customFields.forEach(field => {
                 if (!base.hasOwnProperty(field.toLowerCase().replace(/ /g, ''))) {
@@ -451,8 +451,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             });
         }
         return base;
-    }, [event]);
-
+    };
     const [formData, setFormData] = useState({});
     const [showPaymentStep, setShowPaymentStep] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -461,12 +460,14 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
     const [formAlertMessage, setFormAlertMessage] = useState('');
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && event) { // FIX: Add null check for event
             setFormData(getInitialFormData());
             setShowPaymentStep(false);
             setShowSuccessModal(false);
         }
-    }, [isOpen, event, getInitialFormData]);
+    }, [isOpen, event]);
+
+    if (!event) return null; // FIX: Exit early if event data is missing
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -497,7 +498,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             return;
         }
 
-        if (!/^\d{10}$/.test(formData.phone)) {
+        if (formData.phone && !/^\d{10}$/.test(formData.phone)) {
             setFormAlertMessage("Phone number must be exactly 10 digits.");
             setShowFormAlert(true);
             return;
@@ -654,7 +655,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         type="text"
                         name="name"
                         className="form-input"
-                        value={formData.name}
+                        value={formData.name || ''} // FIX: Add fallback for undefined state
                         onChange={handleChange}
                         required
                     />
@@ -665,7 +666,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         type="email"
                         name="email"
                         className="form-input"
-                        value={formData.email}
+                        value={formData.email || ''} // FIX: Add fallback for undefined state
                         onChange={handleChange}
                         required
                     />
@@ -676,7 +677,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
                         type="tel"
                         name="phone"
                         className="form-input"
-                        value={formData.phone}
+                        value={formData.phone || ''} // FIX: Add fallback for undefined state
                         onChange={handleChange}
                         placeholder="e.g., *******210"
                         required
@@ -704,7 +705,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
             <div className="modal-overlay">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h2 className="modal-title">Register for {event.title}</h2>
+                        <h2 className="modal-title">Register for {event?.title}</h2>
                         <button className="modal-close" onClick={onClose}>
                             <X size={24} />
                         </button>
@@ -734,7 +735,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
 
 // Cultural Event Registration Modal
 const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLogin, onRegister, isRegistered }) => {
-    const getInitialFormData = useCallback(() => {
+    const getInitialFormData = () => {
         const base = {
             name: '',
             email: '',
@@ -743,7 +744,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             selectedDates: [],
         };
 
-        if (event.registrationFields) {
+        if (event?.registrationFields) { // FIX: Add null check for event
             const customFields = event.registrationFields.split(',').map(field => field.split(':')[0].trim());
             customFields.forEach(field => {
                 if (!base.hasOwnProperty(field.toLowerCase().replace(/ /g, ''))) {
@@ -751,13 +752,13 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                 }
             });
         }
-        if (event.ticketOptions && event.ticketOptions.length > 0) {
+        if (event?.ticketOptions && event.ticketOptions.length > 0) { // FIX: Add null check for event
             base.ticketSelections = event.ticketOptions.map(() => ({ quantity: 0 }));
         } else {
             base.ticketSelections = [{ quantity: 0 }];
         }
         return base;
-    }, [event]);
+    };
 
     const [formData, setFormData] = useState(getInitialFormData);
     const [showFormAlert, setShowFormAlert] = useState(false);
@@ -766,7 +767,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const [successMessage, setSuccessMessage] = useState('');
     const [showPaymentStep, setShowPaymentStep] = useState(false);
 
-    const availableDates = event.availableDates || [];
+    const availableDates = event?.availableDates || []; // FIX: Add null check for event
 
     useEffect(() => {
         if (isOpen) {
@@ -782,7 +783,9 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             setShowSuccessModal(false);
             setSuccessMessage('');
         }
-    }, [isOpen, event, isLoggedIn, onRequireLogin, onClose, getInitialFormData]);
+    }, [isOpen, event, isLoggedIn, onRequireLogin, onClose]);
+
+    if (!event) return null; // FIX: Exit early if event data is missing
 
     const customFields = event.registrationFields ?
         event.registrationFields.split(',').map(field => field.trim()) :
@@ -813,7 +816,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 
     const calculateTotalPrice = () => {
         const totalTicketPrice = (formData.ticketSelections || []).reduce((total, selection, index) => {
-            const price = event.ticketOptions[index]?.ticketPrice || 0;
+            const price = event.ticketOptions?.[index]?.ticketPrice || 0; // FIX: Add optional chaining
             return total + (price * (selection?.quantity || 0));
         }, 0);
         const numberOfDays = (formData.selectedDates || []).length;
@@ -821,7 +824,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     };
 
     const totalPrice = calculateTotalPrice();
-    const hasTicketsSelected = (formData.ticketSelections || []).some(selection => selection.quantity > 0);
+    const hasTicketsSelected = (formData.ticketSelections || []).some(selection => selection?.quantity > 0); // FIX: Add optional chaining
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
@@ -874,11 +877,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         }
 
         const selectedTickets = (formData.ticketSelections || [])
-            .filter(selection => selection.quantity > 0)
+            .filter(selection => selection?.quantity > 0)
             .map((selection, index) => ({
-                ticketType: event.ticketOptions[index]?.ticketType,
-                ticketPrice: event.ticketOptions[index]?.ticketPrice,
-                quantity: selection.quantity,
+                ticketType: event.ticketOptions?.[index]?.ticketType, // FIX: Add optional chaining
+                ticketPrice: event.ticketOptions?.[index]?.ticketPrice, // FIX: Add optional chaining
+                quantity: selection?.quantity, // FIX: Add optional chaining
             }));
 
         const registrationData = {
@@ -984,11 +987,11 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <form onSubmit={handleProceedToPayment} className="modal-form">
             <div className="form-group">
                 <label className="form-label">Full Name</label>
-                <input type="text" className="form-input" name="name" value={formData.name} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
+                <input type="text" className="form-input" name="name" value={formData.name || ''} onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Email</label>
-                <input type="email" className="form-input" name="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
+                <input type="email" className="form-input" name="email" value={formData.email || ''} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} required />
             </div>
             <div className="form-group">
                 <label className="form-label">Phone Number</label>
@@ -996,7 +999,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     type="tel"
                     className="form-input"
                     name="phone"
-                    value={formData.phone}
+                    value={formData.phone || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="e.g., *******210"
                     required
@@ -1091,7 +1094,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                         <input
                             type="text"
                             className="form-input"
-                            value={formData.transactionId}
+                            value={formData.transactionId || ''}
                             onChange={(e) => setFormData(prev => ({ ...prev, transactionId: e.target.value }))}
                             placeholder="Last 4 digits of Transaction ID"
                             maxLength={4}
@@ -1123,7 +1126,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         <div className="modal-overlay">
             <div className="modal-content small-modal">
                 <div className="modal-header">
-                    <h2 className="modal-title">Register for {event.title}</h2>
+                    <h2 className="modal-title">Register for {event?.title}</h2>
                     <button className="modal-close" onClick={onClose}>
                         <X size={24} />
                     </button>
@@ -1160,7 +1163,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
 };
 
 const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onShowSuccessAlert }) => {
-    const getInitialFormData = useCallback((postToEdit, currentUser) => {
+    const getInitialFormData = (postToEdit, currentUser) => {
         const initial = {
             type: 'confession',
             title: '',
@@ -1207,7 +1210,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         }
 
         return initial;
-    }, []);
+    };
 
     const [formData, setFormData] = useState(() => getInitialFormData(postToEdit, currentUser));
     const [imagePreviews, setImagePreviews] = useState(postToEdit?.images || []);
@@ -1225,11 +1228,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setImagePreviews(postToEdit?.images || []);
             setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
             setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
-            setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
+            setRegistrationMethod(postTo-Edit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
             setUploadAlertMessage('');
         }
-    }, [isOpen, postToEdit, currentUser, getInitialFormData]);
+    }, [isOpen, postToEdit, currentUser]);
 
     const handleFormChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -1357,8 +1360,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         }
 
         if (formData.type === 'culturalEvent') {
-            const hasEmptyTicketFields = formData.ticketOptions.some(option => !option.ticketType || option.ticketPrice < 0);
-            const hasEmptyDateFields = formData.availableDates.some(date => !date);
+            const hasEmptyTicketFields = (formData.ticketOptions || []).some(option => !option.ticketType || option.ticketPrice < 0);
+            const hasEmptyDateFields = (formData.availableDates || []).some(date => !date);
             if (hasEmptyTicketFields) {
                 setUploadAlertMessage("Please fill in all required ticket details for the cultural event.");
                 setShowUploadAlert(true);
@@ -1804,7 +1807,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                         <div className="cultural-event-section">
                                                             <div className="form-group">
                                                                 <label className="form-label">Available Dates</label>
-                                                                {formData.availableDates.map((date, index) => (
+                                                                {(formData.availableDates || []).map((date, index) => (
                                                                     <div key={index} className="date-input-row">
                                                                         <input
                                                                             type="date"
@@ -1824,13 +1827,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                             </div>
                                                             <div className="form-group">
                                                                 <label className="form-label">Ticket Options</label>
-                                                                {formData.ticketOptions.map((option, index) => (
+                                                                {(formData.ticketOptions || []).map((option, index) => (
                                                                     <div key={index} className="ticket-option-row">
                                                                         <input
                                                                             type="text"
                                                                             name="ticketType"
                                                                             placeholder="e.g., Adult Ticket"
-                                                                            value={option.ticketType}
+                                                                            value={option.ticketType || ''} // FIX: Add fallback for undefined state
                                                                             onChange={(e) => handleTicketOptionChange(index, e)}
                                                                             required
                                                                         />
@@ -1838,7 +1841,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                             type="number"
                                                                             name="ticketPrice"
                                                                             placeholder="Price (₹)"
-                                                                            value={option.ticketPrice}
+                                                                            value={option.ticketPrice || 0} // FIX: Add fallback for undefined state
                                                                             onChange={(e) => handleTicketOptionChange(index, e)}
                                                                             min="0"
                                                                             required
@@ -1852,7 +1855,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                     Add Ticket Option
                                                                 </button>
                                                             </div>
-                                                            {formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0 && (
+                                                            {(formData.ticketOptions || []).reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0 && (
                                                                 <div className="form-group">
                                                                     <label className="form-label">Payment Method</label>
                                                                     <select
@@ -1989,13 +1992,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
 const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCalendar, onRegister, isRegistered, onShowCalendarAlert }) => {
     const [showFullContent, setShowFullContent] = useState(false);
-    const contentRef = useRef(null);
-    const [needsShowMore, setNeedsShowMore] = useState(false);
+    const [showRegistrationForm, setShowRegistrationForm] = useState(false);
+    const [showCulturalEventRegistration, setShowCulturalEventRegistration] = useState(false);
     const [showGeolocationAlert, setShowGeolocationAlert] = useState(false);
     const [geolocationError, setGeolocationError] = useState('');
 
-    const hasMoreContent = event.content.length > 200;
-    const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
+    if (!event) return null; // FIX: Add a null check for event data
+
+    const hasMoreContent = event.content?.length > 200; // FIX: Add optional chaining
+    const displayContent = showFullContent ? event.content : (event.content ? event.content.substring(0, 200) + (hasMoreContent ? '...' : '') : ''); // FIX: Handle null content
     const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
     const isRegistrationOpen = event.registrationOpen;
     const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
@@ -2041,9 +2046,9 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // Corrected Google Maps URL format
+                // Fix: Corrected the URL format for Google Maps
                 window.open(
-                    `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`,
+                    `https://www.google.com/maps/dir/${origin}/${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2210,24 +2215,28 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                     </div>
                 </div>
 
-                <RegistrationFormModal
-                    isOpen={showRegistrationForm}
-                    onClose={() => setShowRegistrationForm(false)}
-                    event={event}
-                    isLoggedIn={isLoggedIn}
-                    onRequireLogin={onRequireLogin}
-                    onRegister={onRegister}
-                    isRegistered={isRegistered}
-                />
-                <CulturalEventRegistrationModal
-                    isOpen={showCulturalEventRegistration}
-                    onClose={() => setShowCulturalEventRegistration(false)}
-                    event={event}
-                    isLoggedIn={isLoggedIn}
-                    onRequireLogin={onRequireLogin}
-                    onRegister={onRegister}
-                    isRegistered={isRegistered}
-                />
+                {showRegistrationForm && (
+                    <RegistrationFormModal
+                        isOpen={showRegistrationForm}
+                        onClose={() => setShowRegistrationForm(false)}
+                        event={event}
+                        isLoggedIn={isLoggedIn}
+                        onRequireLogin={onRequireLogin}
+                        onRegister={onRegister}
+                        isRegistered={isRegistered}
+                    />
+                )}
+                {showCulturalEventRegistration && (
+                    <CulturalEventRegistrationModal
+                        isOpen={showCulturalEventRegistration}
+                        onClose={() => setShowCulturalEventRegistration(false)}
+                        event={event}
+                        isLoggedIn={isLoggedIn}
+                        onRequireLogin={onRequireLogin}
+                        onRegister={onRegister}
+                        isRegistered={isRegistered}
+                    />
+                )}
                 <CustomMessageModal
                     isOpen={showGeolocationAlert}
                     onClose={() => setShowGeolocationAlert(false)}
@@ -2244,7 +2253,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     const upcomingEvents = events.filter(e =>
         e.type === 'event' &&
         e._id !== currentEvent?._id &&
-        new Date(e.eventStartDate) > new Date()
+        e.eventStartDate && new Date(e.eventStartDate) > new Date()
     ).slice(0, 3);
 
     return (
@@ -2297,15 +2306,18 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         e.target.onerror = null;
     };
 
-    const contentToDisplay = post.content || '';
+    // FIX: Add null/undefined checks for post content
+    const contentToDisplay = post?.content || '';
     const truncatedContent = contentToDisplay.length > 200 ? contentToDisplay.substring(0, 200) + '...' : contentToDisplay;
 
     useEffect(() => {
-        if (contentRef.current && post.content) {
+        if (contentRef.current && post?.content) {
             const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
             setNeedsShowMore(isOverflowing || post.content.length > 200);
         }
-    }, [post.content]);
+    }, [post?.content]);
+
+    if (!post) return null; // FIX: Exit early if post data is missing
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -2427,7 +2439,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             <div className="post-header">
                 <div className="post-avatar-container">
                     <img
-                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
+                        src={isUserPost ? currentUser?.avatar : post.authorAvatar || placeholderAvatar} // FIX: Add optional chaining
                         alt={`${post.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
@@ -2437,7 +2449,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 <div className="post-info">
                     <h3 className="post-author">{post.author}</h3>
                     <p className="post-timestamp">
-                        {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {post.timestamp instanceof Date ? post.timestamp.toLocaleDateString() : new Date(post.timestamp).toLocaleDateString()} at {post.timestamp instanceof Date ? post.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
                 <div className="post-header-actions">
@@ -2527,7 +2539,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     {post.type === 'culturalEvent' && (
                         <div className="cultural-event-details">
                             <ul className="ticket-options-list">
-                                {post.ticketOptions.map((option, index) => (
+                                {(post.ticketOptions || []).map((option, index) => (
                                     <li key={index} className="ticket-option-item">
                                         <Ticket size={16} />
                                         <span>{option.ticketType}: ₹{option.ticketPrice}</span>
@@ -2622,6 +2634,10 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 2);
 
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin
+    };
+    
     return (
         <div>
             {newsHighlights.length > 0 && (
@@ -2631,25 +2647,9 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                             <PostCard
                                 key={post._id}
                                 post={post}
-                                onLike={onLike}
-                                onShare={onShare}
-                                onAddComment={onAddComment}
-                                likedPosts={likedPosts}
+                                {...postCardProps}
                                 isCommentsOpen={openCommentPostId === post._id}
-                                setOpenCommentPostId={setOpenCommentPostId}
-                                onOpenEventDetail={onOpenEventDetail}
-                                onAddToCalendar={onAddToCalendar}
-                                currentUser={currentUser}
-                                registrations={registrations}
-                                onReportPost={onReportPost}
-                                onDeletePost={onDeletePost}
-                                onEditPost={onEditPost}
-                                onShowCalendarAlert={onShowCalendarAlert}
-                                isLoggedIn={!!currentUser}
-                                onExportData={onExportData}
-                                onShowRegistrationModal={onShowRegistrationModal}
-                                isRegistered={myRegisteredEvents.has(post._id)}
-                                onRequireLogin={onRequireLogin}
+                                isRegistered={myRegisteredEvents?.has(post._id)} // FIX: Optional chaining
                             />
                         ))}
                     </div>
@@ -2662,26 +2662,11 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                     <PostCard
                         key={post._id}
                         post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
+                        {...postCardProps}
                         isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isRegistered={myRegisteredEvents.has(post._id)}
+                        isRegistered={myRegisteredEvents?.has(post._id)} // FIX: Optional chaining
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onShowRegistrationModal={onShowRegistrationModal}
-                        onRequireLogin={onRequireLogin}
+                        registrationCount={registrations?.[post._id]} // FIX: Optional chaining
                     />
                 ))}
             </div>
@@ -2691,6 +2676,9 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin
+    };
 
     return (
         <div id="events-section-content">
@@ -2699,25 +2687,11 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                     <PostCard
                         key={post._id}
                         post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
+                        {...postCardProps}
                         isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isRegistered={myRegisteredEvents.has(post._id)}
+                        isRegistered={myRegisteredEvents?.has(post._id)} // FIX: Optional chaining
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onRequireLogin={onRequireLogin}
+                        registrationCount={registrations?.[post._id]} // FIX: Optional chaining
                     />
                 ))}
             </div>
@@ -2727,6 +2701,9 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin
+    };
 
     return (
         <div>
@@ -2735,25 +2712,11 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                     <PostCard
                         key={post._id}
                         post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
+                        {...postCardProps}
                         isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
                         isRegistered={false} // Confessions don't have registrations
                         isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onRequireLogin={onRequireLogin}
+                        registrationCount={registrations?.[post._id]} // FIX: Optional chaining
                     />
                 ))}
             </div>
@@ -2763,6 +2726,9 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
 
 const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
     const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin
+    };
 
     return (
         <div>
@@ -2772,25 +2738,10 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                         <PostCard
                             key={post._id}
                             post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
+                            {...postCardProps}
                             isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
-                            onShowRegistrationModal={onShowRegistrationModal}
-                            isRegistered={myRegisteredEvents.has(post._id)}
+                            isRegistered={myRegisteredEvents?.has(post._id)} // FIX: Optional chaining
                             isProfileView={false}
-                            onReportPost={onReportPost}
-                            onDeletePost={onDeletePost}
-                            onEditPost={onEditPost}
-                            onShowCalendarAlert={onShowCalendarAlert}
-                            isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
-                            onRequireLogin={onRequireLogin}
                         />
                     ))
                 ) : (
@@ -2820,7 +2771,7 @@ const NotificationsComponent = ({ notifications, adminNotifications, pendingEven
                                     <div key={event._id} className="pending-event-item">
                                         <div className="pending-event-info">
                                             <h4>{event.title}</h4>
-                                            <p>{event.content.substring(0, 100)}...</p>
+                                            <p>{event.content?.substring(0, 100)}...</p> {/* FIX: Add optional chaining */}
                                         </div>
                                         <div className="pending-event-actions">
                                             <button className="btn-approve" onClick={() => onApproveEvent(event._id)}>
@@ -2894,12 +2845,14 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     const fileInputRef = useRef(null);
 
     useEffect(() => {
-        if (isOpen) {
-            setSelectedAvatar(currentUser?.avatar || '');
+        if (isOpen && currentUser) { // FIX: Add null check for currentUser
+            setSelectedAvatar(currentUser.avatar || '');
             setCustomAvatar('');
             setAvatarError('');
         }
     }, [isOpen, currentUser]);
+
+    if (!currentUser) return null; // FIX: Exit early if currentUser is not available
 
     const predefinedAvatars = [
         { src: avatar1, alt: 'Anime style avatar' },
@@ -3036,7 +2989,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0), // FIX: Add fallback for post.likes
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
             return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
@@ -3049,6 +3002,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
     const handleEditPost = (post) => {
         onEditPost(post);
+    };
+
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin
     };
 
     return (
@@ -3095,26 +3052,11 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                         <PostCard
                             key={post._id}
                             post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
+                            {...postCardProps}
                             isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
                             isProfileView={true}
-                            onDeletePost={handleDeletePost}
-                            onEditPost={handleEditPost}
-                            registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                            onShowCalendarAlert={onShowCalendarAlert}
-                            onShowRegistrationModal={onShowRegistrationModal}
-                            isRegistered={myRegisteredEvents.has(post._id)}
-                            isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
-                            onRequireLogin={onRequireLogin}
+                            registrationCount={registrations?.[post._id]}
+                            isRegistered={myRegisteredEvents?.has(post._id)}
                         />
                     ))}
                 </div>
@@ -3131,7 +3073,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 };
 
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+    const popularPosts = [...posts].sort((a, b) => (b.likes || 0) - (a.likes || 0)).slice(0, 3); // FIX: Add fallback for post.likes
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -3147,7 +3089,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
                         >
                             <p className="widget-item-title">{post.title}</p>
                             <div className="popular-post-stats">
-                                <span className="popular-stat">{post.likes} likes</span>
+                                <span className="popular-stat">{post.likes || 0} likes</span>
                                 <span className="popular-stat">{post.commentData ? post.commentData.length : 0} comments</span>
                             </div>
                         </div>
@@ -3167,14 +3109,15 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         if (view === 'month') {
             const hasEvent = allEvents.some(post =>
                 post.eventStartDate &&
-                new Date(post.eventStartDate).toDateString() === date.toDateString()
+                post.eventStartDate instanceof Date &&
+                post.eventStartDate.toDateString() === date.toDateString()
             );
             return hasEvent ? <div className="event-dot"></div> : null;
         }
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents;
+    const upcomingCalendarEvents = myCalendarEvents.sort((a, b) => new Date(a.eventStartDate) - new Date(b.eventStartDate));
 
     return (
         <>
@@ -3245,7 +3188,7 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
                         >
                             <p className="widget-item-title">{post.title}</p>
                             <p className="confession-preview">
-                                {post.content.substring(0, 60)}...
+                                {post.content?.substring(0, 60)}... {/* FIX: Add optional chaining */}
                             </p>
                         </div>
                     ))}
@@ -3262,10 +3205,10 @@ const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
 
     const userStats = {
         posts: userPosts.length,
-        likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
+        likesReceived: userPosts.reduce((sum, post) => sum + (post.likes || 0), 0), // FIX: Add fallback for post.likes
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
-            return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
+            return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations?.[post._id] || 0) : sum; // FIX: Optional chaining
         }, 0)
     };
 
@@ -3460,6 +3403,8 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         };
     }, []);
 
+    if (!user) return null; // FIX: Add a guard for null user
+
     return (
         <div className="profile-dropdown-container" ref={dropdownRef}>
             <button
@@ -3512,7 +3457,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
     if (!isOpen) return null;
 
     const eventsOnSelectedDate = myCalendarEvents.filter(event =>
-        event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
+        event.eventStartDate && event.eventStartDate instanceof Date && new Date(event.eventStartDate).toDateString() === value.toDateString()
     );
 
     const tileContent = ({ date, view }) => {
@@ -3580,14 +3525,24 @@ const App = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [currentUser, setCurrentUser] = useState(() => {
-        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        return savedUser || null;
+        try {
+            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            return savedUser || null;
+        } catch (e) {
+            console.error("Failed to parse currentUser from localStorage", e);
+            return null;
+        }
     });
     const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
     const [likedPosts, setLikedPosts] = useState(() => {
-        const savedLikes = localStorage.getItem('likedPosts');
-        return savedLikes ? new Set(JSON.parse(savedLikes)) : new Set();
+        try {
+            const savedLikes = localStorage.getItem('likedPosts');
+            return savedLikes ? new Set(JSON.parse(savedLikes)) : new Set();
+        } catch (e) {
+            console.error("Failed to parse likedPosts from localStorage", e);
+            return new Set();
+        }
     });
 
     const [openCommentPostId, setOpenCommentPostId] = useState(null);
@@ -3595,14 +3550,18 @@ const App = () => {
     const [selectedPost, setSelectedPost] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [myCalendarEvents, setMyCalendarEvents] = useState(() => {
-        const savedEvents = localStorage.getItem('myCalendarEvents');
-        if (savedEvents) {
-            return JSON.parse(savedEvents).map(event => ({
-                ...event,
-                eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
-                eventEndDate: event.eventEndDate ? new Date(event.eventEndDate) : null,
-                timestamp: new Date(event.timestamp)
-            }));
+        try {
+            const savedEvents = localStorage.getItem('myCalendarEvents');
+            if (savedEvents) {
+                return JSON.parse(savedEvents).map(event => ({
+                    ...event,
+                    eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
+                    eventEndDate: event.eventEndDate ? new Date(event.eventEndDate) : null,
+                    timestamp: new Date(event.timestamp)
+                }));
+            }
+        } catch (e) {
+            console.error("Failed to parse myCalendarEvents from localStorage", e);
         }
         return [];
     });
@@ -3631,6 +3590,7 @@ const App = () => {
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert || showCulturalEventRegistration || showPostSuccessAlert;
 
     const formatPostDates = (post) => {
+        if (!post) return null; // FIX: Add null guard
         return {
             ...post,
             timestamp: new Date(post.timestamp),
@@ -3649,7 +3609,7 @@ const App = () => {
             'Content-Type': 'application/json',
             ...options.headers,
         };
-        if (user && user.token) {
+        if (user?.token) {
             headers['Authorization'] = `Bearer ${user.token}`;
         }
 
@@ -3677,20 +3637,21 @@ const App = () => {
         return response;
     };
 
-    const handleLogin = useCallback((user) => {
-        const sanitizedUser = {
-            ...user,
-            name: user.name || 'Anonymous User',
-            avatar: user.avatar || placeholderAvatar,
-            isAdmin: user.isAdmin || false,
-            token: user.token || null,
-        };
-        setIsLoggedIn(true);
-        setCurrentUser(sanitizedUser);
-        localStorage.setItem('currentUser', JSON.stringify(sanitizedUser));
-    }, []);
+    useEffect(() => {
+        const eventsToSave = myCalendarEvents.map(event => ({
+            ...event,
+            eventStartDate: event.eventStartDate instanceof Date ? event.eventStartDate.toISOString() : event.eventStartDate,
+            eventEndDate: event.eventEndDate instanceof Date ? event.eventEndDate.toISOString() : event.eventEndDate,
+            timestamp: event.timestamp instanceof Date ? event.timestamp.toISOString() : event.timestamp,
+        }));
+        localStorage.setItem('myCalendarEvents', JSON.stringify(eventsToSave));
+    }, [myCalendarEvents]);
 
-    const fetchPosts = useCallback(async () => {
+    useEffect(() => {
+        localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
+    }, [likedPosts]);
+
+    const fetchPosts = async () => {
         try {
             const res = await callApi('/posts');
             const data = await res.json();
@@ -3704,9 +3665,9 @@ const App = () => {
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
-    }, [currentUser]);
+    };
 
-    const fetchPendingEvents = useCallback(async () => {
+    const fetchPendingEvents = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
             const res = await callApi('/posts/pending-events');
@@ -3716,9 +3677,9 @@ const App = () => {
             console.error('Failed to fetch pending events:', error);
             setPendingEvents([]);
         }
-    }, [currentUser]);
+    };
 
-    const fetchRegistrations = useCallback(async () => {
+    const fetchRegistrations = async () => {
         if (!currentUser) {
             setRegistrations({});
             return;
@@ -3731,9 +3692,9 @@ const App = () => {
             console.error('Failed to fetch registrations:', error);
             setRegistrations({});
         }
-    }, [currentUser]);
+    };
 
-    const fetchMyRegistrations = useCallback(async (user) => {
+    const fetchMyRegistrations = async (user) => {
         if (!user) {
             setMyRegisteredEvents(new Set());
             return;
@@ -3745,9 +3706,9 @@ const App = () => {
         } catch (error) {
             console.error('Error fetching my registrations:', error);
         }
-    }, []);
+    };
 
-    const fetchNotifications = useCallback(async () => {
+    const fetchNotifications = async () => {
         if (!currentUser) return;
         try {
             const res = await callApi('/notifications');
@@ -3756,9 +3717,9 @@ const App = () => {
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         }
-    }, [currentUser]);
+    };
 
-    const fetchAdminNotifications = useCallback(async () => {
+    const fetchAdminNotifications = async () => {
         if (!currentUser || !currentUser.isAdmin) return;
         try {
             const reportedRes = await callApi('/users/admin/reported-posts');
@@ -3769,9 +3730,9 @@ const App = () => {
             console.error('Failed to fetch admin notifications:', error);
             setAdminNotifications([]);
         }
-    }, [currentUser, fetchPendingEvents]);
+    };
 
-    const fetchLikedPosts = useCallback(async (user) => {
+    const fetchLikedPosts = async (user) => {
         if (!user) {
             console.log("Not logged in, skipping fetchLikedPosts.");
             return;
@@ -3783,7 +3744,7 @@ const App = () => {
         } catch (error) {
             console.error('Error fetching liked posts:', error);
         }
-    }, []);
+    };
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -3805,7 +3766,7 @@ const App = () => {
                 setCurrentUser(savedUser);
             }
         }
-    }, [handleLogin]);
+    }, []);
 
     useEffect(() => {
         const path = window.location.pathname;
@@ -3849,21 +3810,7 @@ const App = () => {
 
         fetchData();
 
-    }, [isLoggedIn, currentUser, fetchPosts, fetchLikedPosts, fetchRegistrations, fetchNotifications, fetchMyRegistrations, fetchAdminNotifications]);
-
-    useEffect(() => {
-        const eventsToSave = myCalendarEvents.map(event => ({
-            ...event,
-            eventStartDate: event.eventStartDate ? event.eventStartDate.toISOString() : null,
-            eventEndDate: event.eventEndDate ? event.eventEndDate.toISOString() : null,
-            timestamp: event.timestamp.toISOString(),
-        }));
-        localStorage.setItem('myCalendarEvents', JSON.stringify(eventsToSave));
-    }, [myCalendarEvents]);
-
-    useEffect(() => {
-        localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
-    }, [likedPosts]);
+    }, [isLoggedIn, currentUser]);
 
     useEffect(() => {
         if (hasOpenModal) {
@@ -3965,7 +3912,7 @@ const App = () => {
             throw new Error('Event not found.');
         }
 
-        if (myRegisteredEvents.has(eventId)) {
+        if (myRegisteredEvents?.has(eventId)) { // FIX: Add optional chaining
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
@@ -4306,7 +4253,7 @@ const App = () => {
             return;
         }
 
-        const isCurrentlyLiked = likedPosts.has(postId);
+        const isCurrentlyLiked = likedPosts?.has(postId);
         const endpoint = `/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
         const method = 'PUT';
 
@@ -4323,7 +4270,7 @@ const App = () => {
         setPosts(prevPosts =>
             prevPosts.map(post =>
                 post._id === postId
-                    ? { ...post, likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1 }
+                    ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) - 1 : (post.likes || 0) + 1 }
                     : post
             )
         );
@@ -4348,7 +4295,7 @@ const App = () => {
             setPosts(prevPosts =>
                 prevPosts.map(post =>
                     post._id === postId
-                        ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
+                        ? { ...post, likes: isCurrentlyLiked ? (post.likes || 0) + 1 : (post.likes || 0) - 1 }
                         : post
                 )
             );
@@ -4420,7 +4367,7 @@ const App = () => {
             try {
                 await navigator.share({
                     title: postTitle,
-                    text: postContent.substring(0, 100) + (postContent.length > 100 ? '...' : ''),
+                    text: postContent?.substring(0, 100) + (postContent?.length > 100 ? '...' : ''),
                     url: shareUrl,
                 });
             } catch (error) {
@@ -4466,6 +4413,12 @@ const App = () => {
 
     const handleCloseEventDetail = () => {
         setSelectedEvent(null);
+    };
+
+    const handleLogin = (user) => {
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
     };
 
     const handleLogout = () => {
@@ -4614,12 +4567,12 @@ const App = () => {
                             ? { ...post, authorAvatar: newCurrentUser.avatar }
                             : post;
 
-                        const updatedComments = updatedPost.commentData.map(comment => {
+                        const updatedComments = post.commentData?.map(comment => { // FIX: Add optional chaining
                             if (comment.authorId === newCurrentUser._id) {
                                 return { ...comment, authorAvatar: newCurrentUser.avatar };
                             }
                             return comment;
-                        });
+                        }) || [];
 
                         return { ...updatedPost, commentData: updatedComments };
                     })
@@ -4858,7 +4811,7 @@ const App = () => {
                         onRequireLogin={() => setShowLoginModal(true)}
                         onAddToCalendar={handleAddToCalendar}
                         onRegister={handleRegisterEvent}
-                        isRegistered={myRegisteredEvents.has(selectedEvent._id)}
+                        isRegistered={myRegisteredEvents?.has(selectedEvent._id)}
                         onShowCalendarAlert={handleShowCalendarAlert}
                     />
                 </div>
@@ -4873,7 +4826,7 @@ const App = () => {
                         post={selectedPost}
                         {...postCardProps}
                         isProfileView={selectedPost.userId === currentUser?._id}
-                        registrationCount={registrations[selectedPost._id]}
+                        registrationCount={registrations?.[selectedPost._id]}
                     />
                     <hr className="section-divider" />
                     <h3 className="section-subtitle">More Posts</h3>
@@ -4886,7 +4839,7 @@ const App = () => {
                                     post={post}
                                     {...postCardProps}
                                     isProfileView={false}
-                                    registrationCount={registrations[post._id]}
+                                    registrationCount={registrations?.[post._id]}
                                 />
                             ))}
                     </div>
@@ -4983,53 +4936,55 @@ const App = () => {
                         setShowLoginModal(true);
                     }}
                     onRegister={handleRegisterEvent}
-                    isRegistered={myRegisteredEvents.has(selectedCulturalEvent._id)}
+                    isRegistered={myRegisteredEvents?.has(selectedCulturalEvent._id)}
                 />
             )}
 
             <header className="header">
                 <div className="header-container">
-                    <div className="header-left">
-                        <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
-                            <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
-                            <span className="app-title">Confique</span>
-                        </a>
-                    </div>
-                    {activeSection === 'events' && isLoggedIn && (
-                        <div className="mobile-calendar-icon-container">
-                            <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
-                                <CalendarIcon size={24} />
-                            </button>
+                    <div className="header-content">
+                        <div className="header-left">
+                            <a href="#" className="app-logo-link" onClick={(e) => { e.preventDefault(); setActiveSection('home'); setSelectedPost(null); setSelectedEvent(null); }}>
+                                <img src={confiquelogo} width="24" height="24" alt="Confique Logo" />
+                                <span className="app-title">Confique</span>
+                            </a>
                         </div>
-                    )}
-
-                    <div className="header-search">
-                        <div className="search-container">
-                            <Search className="search-icon" />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="search-input"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </div>
-                    <div className="header-right">
-                        {isLoggedIn ? (
-                            <ProfileDropdown
-                                user={currentUser}
-                                onLogout={handleLogout}
-                                onProfileClick={handleProfileClick}
-                            />
-                        ) : (
-                            <button
-                                className="login-button"
-                                onClick={() => setShowLoginModal(true)}
-                            >
-                                Login
-                            </button>
+                        {activeSection === 'events' && isLoggedIn && (
+                            <div className="mobile-calendar-icon-container">
+                                <button className="mobile-calendar-icon" onClick={() => setShowCalendarModal(true)}>
+                                    <CalendarIcon size={24} />
+                                </button>
+                            </div>
                         )}
+
+                        <div className="header-search">
+                            <div className="search-container">
+                                <Search className="search-icon" />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    className="search-input"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="header-right">
+                            {isLoggedIn ? (
+                                <ProfileDropdown
+                                    user={currentUser}
+                                    onLogout={handleLogout}
+                                    onProfileClick={handleProfileClick}
+                                />
+                            ) : (
+                                <button
+                                    className="login-button"
+                                    onClick={() => setShowLoginModal(true)}
+                                >
+                                    Login
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
