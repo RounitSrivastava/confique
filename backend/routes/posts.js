@@ -205,9 +205,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.status = updateData.status;
     }
 
-    // The messy post.field = undefined block is removed as Mongoose handles it better
-    // and the schema fields are consistently managed via Object.assign(post, updateData)
-
     const updatedPost = await post.save();
     res.json(updatedPost);
 }));
