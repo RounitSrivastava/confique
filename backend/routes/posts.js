@@ -112,7 +112,8 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         images, 
         paymentQRCode, 
         culturalPaymentQRCode,
-        ticketOptions,        // CRITICAL: Capture cultural event specific fields
+        paymentMethod,        // Capture all potential event fields
+        ticketOptions,
         culturalPaymentMethod, 
         availableDates,
         ...restOfPostData
@@ -149,9 +150,12 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         timestamp: new Date(),
     };
 
-    // Conditionally add specific fields for event and culturalEvent types
+    // Conditionally apply type-specific fields AND clear conflicting ones using 'undefined'
     if (type === 'event') {
         if (qrCodeUrl) newPostData.paymentQRCode = qrCodeUrl;
+        
+        // FIX: Only set paymentMethod if it's a valid enum value, otherwise it remains undefined.
+        newPostData.paymentMethod = ['link', 'qr'].includes(paymentMethod) ? paymentMethod : undefined;
         
         // Clear conflicting cultural event fields
         newPostData.ticketOptions = undefined;
@@ -162,18 +166,18 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     } else if (type === 'culturalEvent') {
         if (qrCodeUrl) newPostData.culturalPaymentQRCode = qrCodeUrl;
 
-        // CRITICAL FIX: Ensure cultural fields are set from request body
+        // Ensure cultural fields are set from request body
         newPostData.ticketOptions = ticketOptions;
         newPostData.culturalPaymentMethod = culturalPaymentMethod;
         newPostData.availableDates = availableDates;
         
-        // Clear conflicting standard event fields
+        // FIX: Clear standard event payment fields
         newPostData.price = undefined;
         newPostData.paymentMethod = undefined;
         newPostData.paymentLink = undefined;
         newPostData.paymentQRCode = undefined;
     } else {
-        // Clear all event-related fields for non-event types (confession/news)
+        // FIX: Clear all event-related fields for non-event types (confession/news)
         newPostData.location = undefined;
         newPostData.eventStartDate = undefined;
         newPostData.eventEndDate = undefined;
@@ -184,7 +188,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         newPostData.registrationOpen = undefined;
         newPostData.enableRegistrationForm = undefined;
         newPostData.registrationFields = undefined;
-        newPostData.paymentMethod = undefined;
+        newPostData.paymentMethod = undefined; // Ensure this is undefined
         newPostData.paymentLink = undefined;
         newPostData.paymentQRCode = undefined;
         newPostData.source = undefined;
@@ -200,13 +204,14 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         const createdPost = await post.save();
         res.status(201).json(createdPost);
     } catch (error) {
-        // Add specific Mongoose validation error handling to avoid generic 500s
+        // ADDED ROBUST ERROR HANDLING: Catches Mongoose ValidationErrors and returns 400
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
             console.error('Mongoose Validation Error:', messages.join(', '));
             return res.status(400).json({ message: `Validation Failed: ${messages.join(', ')}` });
         }
-        throw error; // Re-throw any other error to be caught by asyncHandler (which returns a 500)
+        // Throw other errors to be caught by express-async-handler (returns 500)
+        throw error; 
     }
 }));
 
@@ -230,9 +235,10 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         content, 
         images, 
         status, 
-        ticketOptions, // Capture ticket options explicitly for PUT
-        culturalPaymentMethod, // Capture payment method explicitly for PUT
-        availableDates, // Capture available dates explicitly for PUT
+        paymentMethod, // Capture for explicit check/update
+        ticketOptions, 
+        culturalPaymentMethod, 
+        availableDates, 
         ...rest 
     } = req.body;
 
@@ -272,9 +278,12 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         type: type !== undefined ? type : post.type,
         title: title !== undefined ? title : post.title,
         content: content !== undefined ? content : post.content,
-        ticketOptions: post.type === 'culturalEvent' ? ticketOptions : undefined, // Apply only if cultural
-        culturalPaymentMethod: post.type === 'culturalEvent' ? culturalPaymentMethod : undefined, // Apply only if cultural
-        availableDates: post.type === 'culturalEvent' ? availableDates : undefined, // Apply only if cultural
+        // FIX: Ensure paymentMethod is only set if it's valid, otherwise update logic handles it
+        paymentMethod: ['link', 'qr'].includes(paymentMethod) ? paymentMethod : undefined, 
+        
+        ticketOptions: post.type === 'culturalEvent' ? ticketOptions : undefined,
+        culturalPaymentMethod: post.type === 'culturalEvent' ? culturalPaymentMethod : undefined,
+        availableDates: post.type === 'culturalEvent' ? availableDates : undefined,
         ...rest,
     });
 
@@ -297,10 +306,10 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.availableDates = undefined;
     } else if (post.type === 'culturalEvent') {
         post.price = undefined;
-        post.paymentMethod = undefined;
+        post.paymentMethod = undefined; // Ensure paymentMethod is cleared for cultural events
         post.paymentLink = undefined;
         post.paymentQRCode = undefined;
-    } else { // confession/news
+    } else { // confession/news - Clear all event-related data
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -326,7 +335,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         const updatedPost = await post.save();
         res.json(updatedPost);
     } catch (error) {
-        // Add specific Mongoose validation error handling to avoid generic 500s
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
             console.error('Mongoose Validation Error:', messages.join(', '));
