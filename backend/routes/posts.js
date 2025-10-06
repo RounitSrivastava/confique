@@ -24,11 +24,10 @@ const uploadImage = async (image) => {
 };
 
 // --- POST ROUTES ---
-// IMPORTANT: Specific routes MUST come before generic parameterized routes like /:id
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (for approved posts), Private (for all posts as admin)
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (for approved posts), Private (for all posts as admin)
 router.get('/', asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
@@ -54,164 +53,17 @@ router.get('/', asyncHandler(async (req, res) => {
     res.json(posts);
 }));
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
 }));
 
-// @desc    Export registrations for a specific event to a CSV file
-// @route   GET /api/posts/export-registrations/:eventId
-// @access  Private (Event host or Admin)
-router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
-    const { eventId } = req.params;
-
-    // 1. Verify the user is the host of the event or an admin
-    const event = await Post.findById(eventId);
-    if (!event) {
-        return res.status(404).json({ message: 'Event not found.' });
-    }
-    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-        return res.status(403).json({ message: 'Not authorized to export this data.' });
-    }
-
-    // 2. Fetch all registration data for the event
-    const registrations = await Registration.find({ eventId }).lean();
-    if (registrations.length === 0) {
-        return res.status(404).json({ message: 'No registrations found for this event.' });
-    }
-
-    // 3. Dynamically discover all unique custom and standard fields and flatten the data
-    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
-    const flattenedData = [];
-    
-    headers.add('Booking Dates');
-    headers.add('Total Price');
-    headers.add('Ticket Type');
-    headers.add('Ticket Quantity');
-    headers.add('Ticket Price');
-
-    registrations.forEach(reg => {
-        const baseData = {
-            'Name': reg.name || '',
-            'Email': reg.email || '',
-            'Phone': reg.phone || '',
-            'Transaction ID': reg.transactionId || '',
-            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '',
-            'Booking Dates': (reg.bookingDates || []).join(', '),
-            'Total Price': reg.totalPrice || '',
-        };
-
-        if (reg.customFields) {
-            for (const key in reg.customFields) {
-                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
-                    baseData[key] = reg.customFields[key] || '';
-                    headers.add(key);
-                }
-            }
-        }
-        
-        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
-            reg.selectedTickets.forEach(ticket => {
-                flattenedData.push({
-                    ...baseData,
-                    'Ticket Type': ticket.ticketType || '',
-                    'Ticket Quantity': ticket.quantity || '',
-                    'Ticket Price': ticket.ticketPrice || '',
-                });
-            });
-        } else {
-            flattenedData.push({
-                ...baseData,
-                'Ticket Type': '',
-                'Ticket Quantity': '',
-                'Ticket Price': '',
-            });
-        }
-    });
-
-    const finalHeaders = Array.from(headers);
-
-    try {
-        const json2csvParser = new Parser({ fields: finalHeaders });
-        const csv = json2csvParser.parse(flattenedData);
-
-        res.header('Content-Type', 'text/csv');
-        const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
-        res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
-        res.send(csv);
-    } catch (error) {
-        console.error('CSV export error:', error);
-        res.status(500).json({ message: 'Error generating CSV file.' });
-    }
-}));
-
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
-router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
-        }
-        event.status = 'approved';
-        const updatedEvent = await event.save();
-        res.json(updatedEvent);
-    } else {
-        res.status(404).json({ message: 'Event not found' });
-    }
-}));
-
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
-router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
-        }
-        
-        const publicIdsToDelete = [];
-        if (event.images && event.images.length > 0) {
-            event.images.forEach(url => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-            });
-        }
-        
-        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
-        if (qrCodeUrl) {
-            const parts = qrCodeUrl.split('/');
-            const filename = parts[parts.length - 1];
-            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-        }
-
-        if (publicIdsToDelete.length > 0) {
-            try {
-                await cloudinary.api.delete_resources(publicIdsToDelete);
-            } catch (cloudinaryErr) {
-                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
-            }
-        }
-
-        await event.deleteOne();
-        await Registration.deleteMany({ eventId: event._id });
-        res.json({ message: 'Event rejected and removed' });
-    } else {
-        res.status(404).json({ message: 'Event not found' });
-    }
-}));
-
-// @desc    Get all registrations for a specific event
-// @route   GET /api/posts/:id/registrations
-// @access  Private (Event creator or Admin only)
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
@@ -236,9 +88,9 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     res.json(registrations);
 }));
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -248,9 +100,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -260,7 +112,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         images, 
         paymentQRCode, 
         culturalPaymentQRCode,
-        paymentMethod,
+        paymentMethod,        // Capture all potential event fields
         ticketOptions,
         culturalPaymentMethod, 
         availableDates,
@@ -301,6 +153,8 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     // Conditionally apply type-specific fields AND clear conflicting ones using 'undefined'
     if (type === 'event') {
         if (qrCodeUrl) newPostData.paymentQRCode = qrCodeUrl;
+        
+        // FIX: Only set paymentMethod if it's a valid enum value, otherwise it remains undefined.
         newPostData.paymentMethod = ['link', 'qr'].includes(paymentMethod) ? paymentMethod : undefined;
         
         // Clear conflicting cultural event fields
@@ -312,17 +166,18 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     } else if (type === 'culturalEvent') {
         if (qrCodeUrl) newPostData.culturalPaymentQRCode = qrCodeUrl;
 
+        // Ensure cultural fields are set from request body
         newPostData.ticketOptions = ticketOptions;
         newPostData.culturalPaymentMethod = culturalPaymentMethod;
         newPostData.availableDates = availableDates;
         
-        // Clear standard event payment fields
+        // FIX: Clear standard event payment fields
         newPostData.price = undefined;
         newPostData.paymentMethod = undefined;
         newPostData.paymentLink = undefined;
         newPostData.paymentQRCode = undefined;
     } else {
-        // Clear all event-related fields for non-event types (confession/news)
+        // FIX: Clear all event-related fields for non-event types (confession/news)
         newPostData.location = undefined;
         newPostData.eventStartDate = undefined;
         newPostData.eventEndDate = undefined;
@@ -333,7 +188,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         newPostData.registrationOpen = undefined;
         newPostData.enableRegistrationForm = undefined;
         newPostData.registrationFields = undefined;
-        newPostData.paymentMethod = undefined;
+        newPostData.paymentMethod = undefined; // Ensure this is undefined
         newPostData.paymentLink = undefined;
         newPostData.paymentQRCode = undefined;
         newPostData.source = undefined;
@@ -349,18 +204,20 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         const createdPost = await post.save();
         res.status(201).json(createdPost);
     } catch (error) {
+        // ADDED ROBUST ERROR HANDLING: Catches Mongoose ValidationErrors and returns 400
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
             console.error('Mongoose Validation Error:', messages.join(', '));
             return res.status(400).json({ message: `Validation Failed: ${messages.join(', ')}` });
         }
+        // Throw other errors to be caught by express-async-handler (returns 500)
         throw error; 
     }
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -371,13 +228,14 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         return res.status(403).json({ message: 'You are not authorized to update this post' });
     }
 
+    // Capture fields for easier update logic
     const { 
         type, 
         title, 
         content, 
         images, 
         status, 
-        paymentMethod,
+        paymentMethod, // Capture for explicit check/update
         ticketOptions, 
         culturalPaymentMethod, 
         availableDates, 
@@ -411,6 +269,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
             try { await cloudinary.uploader.destroy(publicId); }
             catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
         }
+        // If new data is present, upload it. If it's explicitly set to null/empty string (frontend clear), set newQrCodeUrl to null.
         newQrCodeUrl = newQrCodeData ? await uploadImage(newQrCodeData) : (newQrCodeData === '' ? null : undefined); 
     }
 
@@ -419,6 +278,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         type: type !== undefined ? type : post.type,
         title: title !== undefined ? title : post.title,
         content: content !== undefined ? content : post.content,
+        // FIX: Ensure paymentMethod is only set if it's valid, otherwise update logic handles it
         paymentMethod: ['link', 'qr'].includes(paymentMethod) ? paymentMethod : undefined, 
         
         ticketOptions: post.type === 'culturalEvent' ? ticketOptions : undefined,
@@ -431,7 +291,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.status = status;
     }
 
-    // Apply QR code update only if a change occurred
+    // Apply QR code update only if a change occurred (new upload or explicit deletion)
     if (post.type === 'event' && newQrCodeUrl !== undefined) {
         post.paymentQRCode = newQrCodeUrl;
     } else if (post.type === 'culturalEvent' && newQrCodeUrl !== undefined) {
@@ -446,10 +306,10 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.availableDates = undefined;
     } else if (post.type === 'culturalEvent') {
         post.price = undefined;
-        post.paymentMethod = undefined;
+        post.paymentMethod = undefined; // Ensure paymentMethod is cleared for cultural events
         post.paymentLink = undefined;
         post.paymentQRCode = undefined;
-    } else {
+    } else { // confession/news - Clear all event-related data
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -484,9 +344,73 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
+
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
+router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
+        }
+        event.status = 'approved';
+        const updatedEvent = await event.save();
+        res.json(updatedEvent);
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
+router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
+        }
+        
+        const publicIdsToDelete = [];
+        if (event.images && event.images.length > 0) {
+            event.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        
+        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
+        if (qrCodeUrl) {
+            const parts = qrCodeUrl.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
+
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
+            }
+        }
+
+        await event.deleteOne();
+        await Registration.deleteMany({ eventId: event._id });
+        res.json({ message: 'Event rejected and removed' });
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -529,9 +453,10 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -556,9 +481,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -576,9 +501,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -599,9 +524,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -624,5 +549,104 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
+
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/posts/export-registrations/:eventId
+// @access  Private (Event host or Admin)
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+
+    // 1. Verify the user is the host of the event or an admin
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+
+    // 2. Fetch all registration data for the event
+    // Using .lean() for performance since we don't need Mongoose documents, just plain JS objects.
+    const registrations = await Registration.find({ eventId }).lean();
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+
+    // 3. Dynamically discover all unique custom and standard fields and flatten the data
+    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
+    const flattenedData = [];
+    
+    // Add common ticket-related headers to the set upfront, they will appear in the final CSV
+    // even if they are empty for some rows.
+    headers.add('Booking Dates');
+    headers.add('Total Price');
+    headers.add('Ticket Type');
+    headers.add('Ticket Quantity');
+    headers.add('Ticket Price');
+
+
+    registrations.forEach(reg => {
+        // Build the base data row from standard fields
+        const baseData = {
+            'Name': reg.name || '',
+            'Email': reg.email || '',
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
+            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '', // Use toISOString
+            'Booking Dates': (reg.bookingDates || []).join(', '),
+            'Total Price': reg.totalPrice || '',
+        };
+
+        // Add custom fields to the base data and headers
+        if (reg.customFields) {
+            for (const key in reg.customFields) {
+                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
+                    baseData[key] = reg.customFields[key] || '';
+                    headers.add(key); // Dynamically add custom field headers
+                }
+            }
+        }
+        
+        // Handle cultural event registrations with tickets: create a row for each ticket
+        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
+            reg.selectedTickets.forEach(ticket => {
+                flattenedData.push({
+                    ...baseData,
+                    'Ticket Type': ticket.ticketType || '',
+                    'Ticket Quantity': ticket.quantity || '',
+                    'Ticket Price': ticket.ticketPrice || '',
+                });
+            });
+        } else {
+            // For standard events or cultural events with no tickets selected, add a single row
+            // with empty ticket details.
+            flattenedData.push({
+                ...baseData,
+                'Ticket Type': '',
+                'Ticket Quantity': '',
+                'Ticket Price': '',
+            });
+        }
+    });
+
+    const finalHeaders = Array.from(headers);
+
+    try {
+        const json2csvParser = new Parser({ fields: finalHeaders });
+        const csv = json2csvParser.parse(flattenedData);
+
+        // 4. Set headers and send the CSV file as a download
+        res.header('Content-Type', 'text/csv');
+        // Sanitize the event title for the filename
+        const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+        res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
+        res.send(csv);
+    } catch (error) {
+        // This catch block handles synchronous errors from the CSV parser
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
+    }
+}));
+
 
 module.exports = router;
