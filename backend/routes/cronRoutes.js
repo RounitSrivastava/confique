@@ -1,14 +1,28 @@
 const express = require('express');
 const router = express.Router();
+const asyncHandler = require('express-async-handler');
+const Notification = require('../models/Notification');
 
-// This is the new endpoint for your cron job
-router.get('/cleanup', (req, res) => {
-  console.log('Cron job for cleanup executed!');
-  // **Place your task-specific code here**
-  // For example:
-  // db.collection('old_data').deleteMany({ date: { $lt: new Date('2025-01-01') } });
+// @desc    Cron job to clean up old notifications
+// @route   GET /api/cron/cleanup
+// @access  Public (or secured with a token/key)
+router.get('/cleanup', asyncHandler(async (req, res) => {
+    try {
+        // Set a date filter to delete notifications older than 60 days
+        const daysToKeep = 60;
+        const cutoffDate = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000);
 
-  res.status(200).json({ message: 'Task completed successfully' });
-});
+        // Delete old notifications from the database
+        const result = await Notification.deleteMany({ timestamp: { $lt: cutoffDate } });
+
+        console.log(`Cron job for notification cleanup executed. Deleted ${result.deletedCount} notifications.`);
+        res.status(200).json({ 
+            message: `Cleanup successful. Deleted ${result.deletedCount} notifications.`
+        });
+    } catch (error) {
+        console.error('Error during cron job cleanup:', error);
+        res.status(500).json({ message: 'Error performing cleanup task.' });
+    }
+}));
 
 module.exports = router;
