@@ -12,7 +12,7 @@ const path = require('path');
 // Import your route files
 // FIX: The imports now correctly point to the single, merged route files
 const authRoutes = require('./routes/auth');
-const postsRoutes = require('./routes/postsRoutes'); // Change 'posts' to 'postsRoutes'
+const postsRoutes = require('./routes/postRoutes'); // Change 'posts' to 'postsRoutes'
 const userRoutes = require('./routes/userRoutes');   // Change 'user' to 'userRoutes'
 const notificationsRoutes = require('./routes/notifications');
 const cronRoutes = require('./routes/cronRoutes');
