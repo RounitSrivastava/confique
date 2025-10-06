@@ -82,7 +82,7 @@ if (process.env.NODE_ENV === 'production') {
 
   // Serve the index.html for all other routes
   // CHANGED '/*' to '*' to resolve the "Missing parameter name" error
-  app.get('*', (req, res) => {
+  app.get('/*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
