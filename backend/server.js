@@ -79,7 +79,6 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(buildPath));
   
   // Serve the index.html for all other routes
-  // FIXED: Changed '/*' to '*' to resolve the "Missing parameter name" error
   app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
