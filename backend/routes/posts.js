@@ -148,6 +148,67 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     }
 }));
 
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
+router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
+        }
+        event.status = 'approved';
+        const updatedEvent = await event.save();
+        res.json(updatedEvent);
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
+router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    const event = await Post.findById(req.params.id);
+
+    if (event) {
+        if (!['event', 'culturalEvent'].includes(event.type)) {
+            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
+        }
+        
+        const publicIdsToDelete = [];
+        if (event.images && event.images.length > 0) {
+            event.images.forEach(url => {
+                const parts = url.split('/');
+                const filename = parts[parts.length - 1];
+                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            });
+        }
+        
+        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
+        if (qrCodeUrl) {
+            const parts = qrCodeUrl.split('/');
+            const filename = parts[parts.length - 1];
+            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+        }
+
+        if (publicIdsToDelete.length > 0) {
+            try {
+                await cloudinary.api.delete_resources(publicIdsToDelete);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
+            }
+        }
+
+        await event.deleteOne();
+        await Registration.deleteMany({ eventId: event._id });
+        res.json({ message: 'Event rejected and removed' });
+    } else {
+        res.status(404).json({ message: 'Event not found' });
+    }
+}));
+
 // @desc    Get all registrations for a specific event
 // @route   GET /api/posts/:id/registrations
 // @access  Private (Event creator or Admin only)
@@ -420,67 +481,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
             return res.status(400).json({ message: `Validation Failed during update: ${messages.join(', ')}` });
         }
         throw error;
-    }
-}));
-
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
-router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be approved through this route' });
-        }
-        event.status = 'approved';
-        const updatedEvent = await event.save();
-        res.json(updatedEvent);
-    } else {
-        res.status(404).json({ message: 'Event not found' });
-    }
-}));
-
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
-router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.id);
-
-    if (event) {
-        if (!['event', 'culturalEvent'].includes(event.type)) {
-            return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
-        }
-        
-        const publicIdsToDelete = [];
-        if (event.images && event.images.length > 0) {
-            event.images.forEach(url => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-            });
-        }
-        
-        const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
-        if (qrCodeUrl) {
-            const parts = qrCodeUrl.split('/');
-            const filename = parts[parts.length - 1];
-            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
-        }
-
-        if (publicIdsToDelete.length > 0) {
-            try {
-                await cloudinary.api.delete_resources(publicIdsToDelete);
-            } catch (cloudinaryErr) {
-                console.error('Cloudinary deletion failed for some resources during rejection:', cloudinaryErr);
-            }
-        }
-
-        await event.deleteOne();
-        await Registration.deleteMany({ eventId: event._id });
-        res.json({ message: 'Event rejected and removed' });
-    } else {
-        res.status(404).json({ message: 'Event not found' });
     }
 }));
 
