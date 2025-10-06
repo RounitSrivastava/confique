@@ -1,4 +1,3 @@
-// old
 const mongoose = require('mongoose');
 
 // Sub-schema for cultural event ticket options
