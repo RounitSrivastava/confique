@@ -25,9 +25,9 @@ const uploadImage = async (image) => {
 
 // --- POST ROUTES ---
 
-// @desc    Get all posts
-// @route   GET /api/posts
-// @access  Public (for approved posts), Private (for all posts as admin)
+// @desc    Get all posts
+// @route   GET /api/posts
+// @access  Public (for approved posts), Private (for all posts as admin)
 router.get('/', asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
@@ -53,17 +53,17 @@ router.get('/', asyncHandler(async (req, res) => {
     res.json(posts);
 }));
 
-// @desc    Get all pending events (for admin approval)
-// @route   GET /api/posts/pending-events
-// @access  Private (Admin only)
+// @desc    Get all pending events (for admin approval)
+// @route   GET /api/posts/pending-events
+// @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     const pendingEvents = await Post.find({ type: { $in: ['event', 'culturalEvent'] }, status: 'pending' }).sort({ timestamp: 1 });
     res.json(pendingEvents);
 }));
 
-// @desc    Get all registrations for a specific event
-// @route   GET /api/posts/:id/registrations
-// @access  Private (Event creator or Admin only)
+// @desc    Get all registrations for a specific event
+// @route   GET /api/posts/:id/registrations
+// @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
 
@@ -88,9 +88,9 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     res.json(registrations);
 }));
 
-// @desc    Get a single post by ID
-// @route   GET /api/posts/:id
-// @access  Public
+// @desc    Get a single post by ID
+// @route   GET /api/posts/:id
+// @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (post) {
@@ -100,9 +100,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Create a new post
-// @route   POST /api/posts
-// @access  Private
+// @desc    Create a new post
+// @route   POST /api/posts
+// @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -112,7 +112,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         images, 
         paymentQRCode, 
         culturalPaymentQRCode,
-        paymentMethod,        // Capture all potential event fields
+        paymentMethod,        // Capture all potential event fields
         ticketOptions,
         culturalPaymentMethod, 
         availableDates,
@@ -215,9 +215,9 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Update a post
-// @route   PUT /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Update a post
+// @route   PUT /api/posts/:id
+// @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) {
@@ -345,9 +345,9 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Approve a pending event
-// @route   PUT /api/posts/approve-event/:id
-// @access  Private (Admin only)
+// @desc    Approve a pending event
+// @route   PUT /api/posts/approve-event/:id
+// @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -364,9 +364,9 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 }));
 
 
-// @desc    Reject and delete a pending event
-// @route   DELETE /api/posts/reject-event/:id
-// @access  Private (Admin only)
+// @desc    Reject and delete a pending event
+// @route   DELETE /api/posts/reject-event/:id
+// @access  Private (Admin only)
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
     const event = await Post.findById(req.params.id);
 
@@ -408,9 +408,9 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 }));
 
 
-// @desc    Delete a post
-// @route   DELETE /api/posts/:id
-// @access  Private (Author or Admin only)
+// @desc    Delete a post
+// @route   DELETE /api/posts/:id
+// @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -454,9 +454,9 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 }));
 
 
-// @desc    Add a comment to a post
-// @route   POST /api/posts/:id/comments
-// @access  Private
+// @desc    Add a comment to a post
+// @route   POST /api/posts/:id/comments
+// @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
@@ -481,9 +481,9 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Like a post
-// @route   PUT /api/posts/:id/like
-// @access  Private
+// @desc    Like a post
+// @route   PUT /api/posts/:id/like
+// @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -501,9 +501,9 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Unlike a post
-// @route   PUT /api/posts/:id/unlike
-// @access  Private
+// @desc    Unlike a post
+// @route   PUT /api/posts/:id/unlike
+// @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     const post = await Post.findById(req.params.id);
 
@@ -524,9 +524,9 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// @desc    Report a post
-// @route   POST /api/posts/:id/report
-// @access  Private
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
@@ -550,7 +550,9 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-// NEW ROUTE: GET /api/posts/export-registrations/:eventId
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/posts/export-registrations/:eventId
+// @access  Private (Event host or Admin)
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
@@ -564,6 +566,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     }
 
     // 2. Fetch all registration data for the event
+    // Using .lean() for performance since we don't need Mongoose documents, just plain JS objects.
     const registrations = await Registration.find({ eventId }).lean();
     if (registrations.length === 0) {
         return res.status(404).json({ message: 'No registrations found for this event.' });
@@ -572,6 +575,15 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     // 3. Dynamically discover all unique custom and standard fields and flatten the data
     const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At']);
     const flattenedData = [];
+    
+    // Add common ticket-related headers to the set upfront, they will appear in the final CSV
+    // even if they are empty for some rows.
+    headers.add('Booking Dates');
+    headers.add('Total Price');
+    headers.add('Ticket Type');
+    headers.add('Ticket Quantity');
+    headers.add('Ticket Price');
+
 
     registrations.forEach(reg => {
         // Build the base data row from standard fields
@@ -580,7 +592,9 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             'Email': reg.email || '',
             'Phone': reg.phone || '',
             'Transaction ID': reg.transactionId || '',
-            'Registered At': reg.createdAt.toISOString(),
+            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '', // Use toISOString
+            'Booking Dates': (reg.bookingDates || []).join(', '),
+            'Total Price': reg.totalPrice || '',
         };
 
         // Add custom fields to the base data and headers
@@ -588,44 +602,26 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             for (const key in reg.customFields) {
                 if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
                     baseData[key] = reg.customFields[key] || '';
-                    headers.add(key);
+                    headers.add(key); // Dynamically add custom field headers
                 }
             }
         }
         
-        // Handle cultural event registrations with tickets
+        // Handle cultural event registrations with tickets: create a row for each ticket
         if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
-            // Add cultural event specific headers
-            headers.add('Booking Dates');
-            headers.add('Total Price');
-            headers.add('Ticket Type');
-            headers.add('Ticket Quantity');
-            headers.add('Ticket Price');
-            
-            // Create a separate row for each ticket
             reg.selectedTickets.forEach(ticket => {
                 flattenedData.push({
                     ...baseData,
-                    'Booking Dates': (reg.bookingDates || []).join(', '),
-                    'Total Price': reg.totalPrice || '',
                     'Ticket Type': ticket.ticketType || '',
                     'Ticket Quantity': ticket.quantity || '',
                     'Ticket Price': ticket.ticketPrice || '',
                 });
             });
         } else {
-            // For standard events or cultural events with no tickets selected
-            // Ensure column structure is maintained by padding with empty values/headers
-            headers.add('Booking Dates');
-            headers.add('Total Price');
-            headers.add('Ticket Type');
-            headers.add('Ticket Quantity');
-            headers.add('Ticket Price');
-            
+            // For standard events or cultural events with no tickets selected, add a single row
+            // with empty ticket details.
             flattenedData.push({
                 ...baseData,
-                'Booking Dates': (reg.bookingDates || []).join(', '),
-                'Total Price': reg.totalPrice || '',
                 'Ticket Type': '',
                 'Ticket Quantity': '',
                 'Ticket Price': '',
@@ -641,12 +637,16 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
 
         // 4. Set headers and send the CSV file as a download
         res.header('Content-Type', 'text/csv');
-        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        // Sanitize the event title for the filename
+        const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+        res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
         res.send(csv);
     } catch (error) {
+        // This catch block handles synchronous errors from the CSV parser
         console.error('CSV export error:', error);
         res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
+
 
 module.exports = router;

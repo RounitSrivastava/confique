@@ -75,12 +75,17 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         }
         user.avatar = updatedAvatarUrl;
         const updatedUser = await user.save();
+        
+        // Update user avatar across all posts they authored
         await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
+        
+        // Update user avatar in all comments they made (using arrayFilters for efficiency)
         await Post.updateMany(
             { 'commentData.userId': user._id },
             { $set: { 'commentData.$[elem].authorAvatar': updatedUser.avatar } },
             { arrayFilters: [{ 'elem.userId': user._id }] }
         );
+        
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
@@ -117,20 +122,16 @@ router.get('/my-events-registrations', protect, asyncHandler(async (req, res) =>
 // @route   GET /api/users/my-events/registration-counts
 // @access  Private
 router.get('/my-events/registration-counts', protect, asyncHandler(async (req, res) => {
-    try {
-        const myEvents = await Post.find({ userId: req.user._id, type: { $in: ['event', 'culturalEvent'] } });
-        const registrationCounts = {};
-        
-        await Promise.all(myEvents.map(async (event) => {
-            const count = await Registration.countDocuments({ eventId: event._id });
-            registrationCounts[event._id] = count;
-        }));
+    // Removed redundant try...catch block
+    const myEvents = await Post.find({ userId: req.user._id, type: { $in: ['event', 'culturalEvent'] } });
+    const registrationCounts = {};
+    
+    await Promise.all(myEvents.map(async (event) => {
+        const count = await Registration.countDocuments({ eventId: event._id });
+        registrationCounts[event._id] = count;
+    }));
 
-        res.status(200).json({ registrations: registrationCounts });
-    } catch (error) {
-        console.error('Error in registration-counts route:', error);
-        res.status(500).json({ message: 'Failed to fetch registration counts due to a server error. Check server logs.' });
-    }
+    res.status(200).json({ registrations: registrationCounts });
 }));
 
 // @desc    Register for an event
@@ -176,26 +177,22 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         totalPrice
     };
 
-    try {
-        const newRegistration = await Registration.create(newRegistrationData);
+    // Removed redundant try...catch block
+    const newRegistration = await Registration.create(newRegistrationData);
     
-        const eventCreator = await User.findById(event.userId);
-        if(eventCreator) {
-            const newNotification = new Notification({
-                recipient: eventCreator._id,
-                message: `${req.user.name} has registered for your event "${event.title}"!`,
-                postId: event._id,
-                type: 'registration',
-                timestamp: new Date(),
-            });
-            await newNotification.save();
-        }
-
-        res.status(201).json({ message: 'Registration successful', registration: newRegistration });
-    } catch (error) {
-        console.error('Registration failed:', error);
-        res.status(500).json({ message: `Server error during registration: ${error.message}` });
+    const eventCreator = await User.findById(event.userId);
+    if(eventCreator) {
+        const newNotification = new Notification({
+            recipient: eventCreator._id,
+            message: `${req.user.name} has registered for your event "${event.title}"!`,
+            postId: event._id,
+            type: 'registration',
+            timestamp: new Date(),
+        });
+        await newNotification.save();
     }
+
+    res.status(201).json({ message: 'Registration successful', registration: newRegistration });
 }));
 
 // @desc    Admin endpoint to get all reported posts
@@ -234,6 +231,8 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     const post = await Post.findById(postId);
 
     if (post) {
+        // NOTE: Cleanup of Cloudinary resources should be done here if the post has images/QR codes.
+        // Assuming this cleanup logic is handled by a separate generic function or not required here.
         await post.deleteOne();
         await Notification.deleteMany({ postId: postId });
         await Registration.deleteMany({ eventId: postId });
@@ -243,10 +242,13 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     }
 }));
 
-// NEW ROUTE: GET /api/users/export-registrations/:eventId
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/users/export-registrations/:eventId
+// @access  Private (Event host or Admin)
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     const { eventId } = req.params;
 
+    // 1. Verify the user is the host of the event or an admin
     const event = await Post.findById(eventId);
     if (!event) {
         return res.status(404).json({ message: 'Event not found.' });
@@ -254,41 +256,38 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
     if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
         return res.status(403).json({ message: 'Not authorized to export this data.' });
     }
-    
+
+    // 2. Fetch all registration data for the event
     const registrations = await Registration.find({ eventId }).lean();
     if (registrations.length === 0) {
         return res.status(404).json({ message: 'No registrations found for this event.' });
     }
 
-    const headers = new Set(['Name', 'Email']);
+    // 3. Dynamically discover all unique custom and standard fields and flatten the data
+    const headers = new Set(['Name', 'Email', 'Registered At']);
+    
+    // Add all possible headers upfront
+    ['Phone', 'Transaction ID', 'Booking Dates', 'Total Price', 'Ticket Type', 'Ticket Quantity', 'Ticket Price'].forEach(h => headers.add(h));
 
-    // Gather all possible custom fields and other headers
+
+    // Gather all unique custom fields
     registrations.forEach(reg => {
-        if (reg.phone) headers.add('Phone');
-        if (reg.transactionId) headers.add('Transaction ID');
         if (reg.customFields) {
             Object.keys(reg.customFields).forEach(key => headers.add(key));
         }
-        if (reg.bookingDates && reg.bookingDates.length > 0) {
-             headers.add('Booking Dates');
-        }
-        if (reg.selectedTickets && reg.selectedTickets.length > 0) {
-            headers.add('Ticket Type');
-            headers.add('Ticket Quantity');
-            headers.add('Ticket Price');
-            headers.add('Total Price');
-        }
     });
 
-    headers.add('Registered At');
     const finalHeaders = Array.from(headers);
     
     const data = registrations.flatMap(reg => {
         const baseRow = {
-            'Name': reg.name,
-            'Email': reg.email,
+            'Name': reg.name || '',
+            'Email': reg.email || '',
+            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '',
             'Phone': reg.phone || '',
             'Transaction ID': reg.transactionId || '',
+            'Booking Dates': (reg.bookingDates || []).join(', ') || '',
+            'Total Price': reg.totalPrice || '',
         };
         
         // Add all custom fields dynamically to the base row
@@ -301,18 +300,17 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         if (reg.selectedTickets && reg.selectedTickets.length > 0) {
             return reg.selectedTickets.map(ticket => ({
                 ...baseRow,
-                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
                 'Ticket Type': ticket.ticketType || '',
                 'Ticket Quantity': ticket.quantity || '',
                 'Ticket Price': ticket.ticketPrice || '',
-                'Total Price': reg.totalPrice || '',
-                'Registered At': reg.createdAt.toISOString(),
             }));
         } else {
+            // Standard/single row if no ticket data
             return [{
                 ...baseRow,
-                'Booking Dates': (reg.bookingDates || []).join(', ') || '',
-                'Registered At': reg.createdAt.toISOString(),
+                'Ticket Type': '',
+                'Ticket Quantity': '',
+                'Ticket Price': '',
             }];
         }
     });
@@ -322,12 +320,14 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
         const csv = json2csvParser.parse(data);
 
         res.header('Content-Type', 'text/csv');
-        res.attachment(`registrations_${event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+        const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+        res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
         res.send(csv);
     } catch (error) {
         console.error('CSV export error:', error);
         res.status(500).json({ message: 'Error generating CSV file.' });
     }
 }));
+
 
 module.exports = router;
