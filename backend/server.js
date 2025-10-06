@@ -7,6 +7,7 @@ const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
 const session = require('express-session');
 const { passport } = require('./config/passport-setup'); // Path to your passport setup
+const path = require('path'); // Add the path module
 
 // Import your route files
 const authRoutes = require('./routes/auth');
@@ -31,8 +32,8 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Middleware
 // INCREASED PAYLOAD SIZE LIMIT for JSON
-app.use(express.json({ limit: '50mb' })); // This line is changed
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); // This line is changed
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // CORS Configuration
 app.use(cors({
@@ -58,14 +59,29 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Route Handlers
+// Route Handlers for API endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/cron', cronRoutes);
 
-// Basic error handling middleware (optional, but good practice)
+// Add the production static file serving block here
+// This must be placed AFTER all API routes to ensure API requests are handled first.
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '..', 'frontend', 'dist'); // Check if your build folder is named 'dist' or 'build'
+  
+  // Serve the static files from the React app
+  app.use(express.static(buildPath));
+
+  // Serve the index.html for all other routes
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+}
+
+
+// Basic error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
