@@ -7,9 +7,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cloudinary = require('cloudinary').v2;
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // ADDED: Import MongoStore
-const { passport } = require('./config/passport-setup'); // Path to your passport setup
-const path = require('path'); // ADDED: Required for serving static files
+const MongoStore = require('connect-mongo');
+const { passport } = require('./config/passport-setup');
+const path = require('path');
 
 // Import your route files
 const authRoutes = require('./routes/auth');
@@ -46,14 +46,13 @@ app.use(cors({
 }));
 
 // Session middleware configuration (required for Passport.js)
-// CHANGED: Using MongoStore for persistent sessions
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ // CHANGED: Using MongoStore instead of default MemoryStore
+  store: MongoStore.create({
     mongoUrl: process.env.MONGO_URI,
-    collectionName: 'sessions', // Optional: specify a collection name
+    collectionName: 'sessions',
   }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
@@ -81,8 +80,8 @@ if (process.env.NODE_ENV === 'production') {
   // Serve the static files from the React app
   app.use(express.static(buildPath));
 
-  // Serve the index.html for all other routes
-  app.get('/*', (req, res) => { // FIXED: Changed '*' to '/*'
+  // Serve the index.html for all other routes (FIXED: Changed '/*' to '*')
+  app.get('*', (req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
