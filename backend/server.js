@@ -13,10 +13,10 @@ const path = require('path');
 
 // Import your route files
 const authRoutes = require('./routes/auth');
-const postsRoutes = require('./routes/posts');
-const userRoutes = require('./routes/user');
-const notificationsRoutes = require('./routes/notifications');
-const cronRoutes = require('./routes/cronRoutes');
+// const postsRoutes = require('./routes/posts');
+// const userRoutes = require('./routes/user');
+// const notificationsRoutes = require('./routes/notifications');
+// const cronRoutes = require('./routes/cronRoutes');
 
 const app = express();
 
