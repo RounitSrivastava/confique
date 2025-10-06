@@ -1,18 +1,11 @@
-// routes/auth.js (Final Corrected Version)
-
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
-// Removed 'upload' as it's no longer needed in this file after moving avatar logic
-// Removed 'cloudinary' as it's no longer needed in this file after moving avatar logic
-const { passport, generateTokenForGoogleUser } = require('../config/passport-setup');
-// Removed 'Post' as it's no longer needed in this file after moving avatar logic
+const { passport, generateTokenForGoogleUser } = require('../config/passport-setup'); // Correct import
 
 const router = express.Router();
-
-// Removed the uploadImage helper function as it's no longer used in this file.
 
 // Helper function to generate a standard JWT for local users
 const generateToken = (id) => {
@@ -37,8 +30,7 @@ router.post('/register', asyncHandler(async (req, res) => {
         email,
         password,
         isAdmin: email === 'confique01@gmail.com',
-        // Default avatar for newly registered users (non-Google)
-        avatar: 'https://placehold.co/40x40/cccccc/000000?text=A', // Or your local placeholder
+        avatar: 'https://placehold.co/40x40/cccccc/000000?text=A',
     });
 
     if (user) {
@@ -87,16 +79,25 @@ router.get('/google', passport.authenticate('google', {
 // @desc    Google OAuth callback after successful authentication
 // @route   GET /api/auth/google/callback
 // @access  Public
-router.get('/google/callback', passport.authenticate('google', {
-    failureRedirect: process.env.FRONTEND_URL + '/login?error=google_failed',
-    session: true
-}), (req, res) => {
-    const token = generateTokenForGoogleUser(req.user);
-    // Ensure avatar is always a valid URL or a placeholder
-    const avatarUrl = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+router.get('/google/callback', 
+    passport.authenticate('google', {
+        failureRedirect: process.env.FRONTEND_URL + '/login?error=google_failed',
+        session: true
+    }), 
+    (req, res) => {
+        // This block only runs on successful authentication
+        if (req.user) {
+            const token = generateTokenForGoogleUser(req.user);
+            const avatarUrl = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
-    res.redirect(`${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
-});
+            // Use res.redirect() to send user back to the client with data in the URL
+            res.redirect(`${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
+        } else {
+            // Fallback if req.user is somehow not set (should not happen with the middleware)
+            res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+        }
+    }
+);
 
 // The PUT /profile/avatar route and its logic have been removed from this file.
 
