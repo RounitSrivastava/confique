@@ -561,6 +561,11 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             });
         }
     });
+    // routes/postRoutes.js
+router.get('/', (req, res) => {
+  res.send('Posts route is working!');
+});
+
     const finalHeaders = Array.from(headers);
     try {
         const json2csvParser = new Parser({ fields: finalHeaders });
