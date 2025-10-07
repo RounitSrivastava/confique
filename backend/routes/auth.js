@@ -99,8 +99,8 @@ router.get('/google/callback',
     }
 );
 
-// The PUT /profile/avatar route and its logic have been removed from this file.
 router.get('/', (req, res) => {
-  res.send('Auth route is working!');
+    res.send('Auth route is working!');
 });
+
 module.exports = router;

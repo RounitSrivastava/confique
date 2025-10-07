@@ -248,6 +248,7 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             });
         }
     });
+
     const finalHeaders = Array.from(headers);
     try {
         const json2csvParser = new Parser({ fields: finalHeaders });
@@ -309,6 +310,5 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
         res.status(404).json({ message: 'Post not found' });
     }
 }));
-
 
 module.exports = router;

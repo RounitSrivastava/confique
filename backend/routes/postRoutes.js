@@ -23,8 +23,6 @@ const uploadImage = async (image) => {
     }
 };
 
-// --- POST ROUTES ---
-
 // @desc    Get all posts
 // @route   GET /api/posts
 // @access  Public (for approved posts), Private (for all posts as admin)
@@ -318,7 +316,6 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     }
 }));
 
-
 // @desc    Approve a pending event
 // @route   PUT /api/posts/approve-event/:id
 // @access  Private (Admin only)
@@ -561,10 +558,6 @@ router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, r
             });
         }
     });
-    // routes/postRoutes.js
-router.get('/', (req, res) => {
-  res.send('Posts route is working!');
-});
 
     const finalHeaders = Array.from(headers);
     try {
