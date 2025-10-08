@@ -5,12 +5,20 @@ const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
 const { passport, generateTokenForGoogleUser } = require('../config/passport-setup');
 
+// MAKE SURE THIS LINE EXISTS:
 const router = express.Router();
 
+// Check if Google OAuth is configured
+const isGoogleOAuthConfigured = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
+
+// Helper function to generate a standard JWT for local users
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
+// @desc    Register a new user with email and password
+// @route   POST /api/auth/register
+// @access  Public
 router.post('/register', asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
     
@@ -43,6 +51,9 @@ router.post('/register', asyncHandler(async (req, res) => {
     }
 }));
 
+// @desc    Authenticate user with email and password & get token
+// @route   POST /api/auth/login
+// @access  Public
 router.post('/login', asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
@@ -62,29 +73,40 @@ router.post('/login', asyncHandler(async (req, res) => {
     }
 }));
 
-router.get('/google', passport.authenticate('google', {
-    scope: ['profile', 'email']
-}));
+// Only enable Google OAuth routes if configured
+if (isGoogleOAuthConfigured) {
+    // @desc    Initiate Google OAuth login
+    // @route   GET /api/auth/google
+    // @access  Public
+    router.get('/google', passport.authenticate('google', {
+        scope: ['profile', 'email']
+    }));
 
-router.get('/google/callback', 
-    passport.authenticate('google', {
-        failureRedirect: process.env.FRONTEND_URL + '/login?error=google_failed',
-        session: true
-    }), 
-    (req, res) => {
-        if (req.user) {
-            const token = generateTokenForGoogleUser(req.user);
-            const avatarUrl = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
-
-            res.redirect(`${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
-        } else {
-            res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+    // @desc    Google OAuth callback after successful authentication
+    // @route   GET /api/auth/google/callback
+    // @access  Public
+    router.get('/google/callback', 
+        passport.authenticate('google', {
+            failureRedirect: process.env.FRONTEND_URL + '/login?error=google_failed',
+            session: true
+        }), 
+        (req, res) => {
+            if (req.user) {
+                const token = generateTokenForGoogleUser(req.user);
+                const avatarUrl = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+                res.redirect(`${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
+            } else {
+                res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
+            }
         }
-    }
-);
+    );
+} else {
+    console.log('Google OAuth not configured - skipping Google routes');
+}
 
 router.get('/', (req, res) => {
     res.send('Auth route is working!');
 });
 
+// MAKE SURE THIS IS THE LAST LINE:
 module.exports = router;

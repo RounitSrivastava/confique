@@ -1,4 +1,15 @@
 require('dotenv').config(); // MUST BE THE VERY FIRST LINE
+
+// DEBUG: Check if environment variables are loading
+console.log('=== ENVIRONMENT VARIABLES DEBUG ===');
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ Missing');
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ Missing');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Loaded' : '❌ Missing');
+console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ Loaded' : '❌ Missing');
+console.log('====================================');
+
+console.log('Server file is being executed!');
+require('dotenv').config(); // MUST BE THE VERY FIRST LINE
 console.log('Server file is being executed!');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -63,11 +74,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // API Route Handlers
-// app.use('/api/auth', authRoutes);
-// app.use('/api/posts', postsRoutes);
-// app.use('/api/users', userRoutes);
-// app.use('/api/notifications', notificationsRoutes);
-// app.use('/api/cron', cronRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postsRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/cron', cronRoutes);
 
 // Production Static File Serving and Catch-All Route
 if (process.env.NODE_ENV === 'production') {
