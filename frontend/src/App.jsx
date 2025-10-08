@@ -4679,7 +4679,7 @@ const App = () => {
         try {
             // Reverted to the correct and logical endpoint for exporting registrations,
             // as this data is tied to a specific post (event).
-            const res = await callApi(`/posts/export-registrations/${eventId}`, {
+            const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
