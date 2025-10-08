@@ -2933,8 +2933,19 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
             return;
         }
         const avatarToSave = customAvatar || selectedAvatar;
-        onSave(avatarToSave);
-        onClose();
+        
+        console.log('💾 Saving avatar:', avatarToSave);
+        
+        onSave(avatarToSave)
+            .then(() => {
+                // Pass the avatar URL to the parent component
+                // onSave(avatarToSave); // This line is no longer necessary as onSave handles the state update
+                onClose();
+            })
+            .catch(error => {
+                console.error('Failed to update avatar:', error);
+                setAvatarError('Failed to update avatar. Please try again.');
+            });
     };
 
     if (!isOpen) return null;
@@ -4619,14 +4630,37 @@ const App = () => {
             console.log('✅ Avatar update successful:', data);
             
             // Update current user with new avatar data
-            const updatedUser = { ...currentUser, avatar: data.avatar };
+            const updatedUser = { ...currentUser, avatar: data.avatar || newAvatar };
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+            // Force refresh posts to update avatars in existing posts
+            await fetchPosts();
+            
+            // Show success notification
+            setNotifications(prev => [
+                {
+                    _id: Date.now().toString(),
+                    message: "Profile image updated successfully!",
+                    timestamp: new Date(),
+                    type: 'success'
+                },
+                ...prev
+            ]);
             
             return data;
             
         } catch (error) {
             console.error('❌ Avatar update failed:', error);
+            setNotifications(prev => [
+                {
+                    _id: Date.now().toString(),
+                    message: `Failed to update profile image: ${error.message}`,
+                    timestamp: new Date(),
+                    type: 'error'
+                },
+                ...prev
+            ]);
             throw error;
         }
     };
@@ -4693,6 +4727,33 @@ const App = () => {
             ]);
         }
     };
+
+    // Add this test function to your App component
+    const testAvatarUpdate = async () => {
+        try {
+            const testAvatarUrl = 'https://placehold.co/100x100/00ff00/ffffff?text=Test';
+            console.log('🧪 Testing avatar update with:', testAvatarUrl);
+            
+            const response = await fetch(`${API_URL}/users/profile/avatar`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentUser.token}`
+                },
+                body: JSON.stringify({ 
+                    avatarUrl: testAvatarUrl 
+                })
+            });
+            
+            const result = await response.json();
+            console.log('🧪 Test result:', result);
+        } catch (error) {
+            console.error('🧪 Test failed:', error);
+        }
+    };
+    
+    // Call this function temporarily to test
+    // testAvatarUpdate();
 
     const postCardProps = {
         onLike: handleLikePost,
