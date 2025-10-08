@@ -4675,7 +4675,7 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/posts/export-registrations/${eventId}`, {
+            const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
