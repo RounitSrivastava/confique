@@ -69,7 +69,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/cron', cronRoutes);
 
-// --- START OF THE FIX ---
+// **This is the important block to add.**
 // Production Static File Serving and Catch-All Route
 // This MUST be placed after all API routes.
 if (process.env.NODE_ENV === 'production') {
@@ -83,7 +83,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(buildPath, 'index.html'));
   });
 }
-// --- END OF THE FIX ---
 
 // Basic error handling middleware
 app.use((err, req, res, next) => {
