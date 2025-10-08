@@ -48,53 +48,86 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
 // @route   PUT /api/users/profile/avatar
 // @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id);
-    if (user) {
-        const newAvatar = req.body.avatar;
-        if (!newAvatar) {
-            res.status(400);
-            throw new Error('No avatar provided');
+    try {
+        const { avatarUrl } = req.body; // Expect avatarUrl as string
+        
+        if (!avatarUrl) {
+            return res.status(400).json({ message: 'No avatar URL provided' });
         }
-        let updatedAvatarUrl = newAvatar;
-        if (newAvatar.startsWith('data:image')) {
-            if (user.avatar && user.avatar.includes('cloudinary')) {
-                const parts = user.avatar.split('/');
-                const publicId = `confique_avatars/${parts[parts.length - 1].split('.')[0]}`;
-                try {
-                    await cloudinary.uploader.destroy(publicId);
-                } catch (cloudinaryErr) {
-                    console.error('Cloudinary deletion failed for old avatar:', cloudinaryErr);
-                }
+
+        console.log('🔄 Updating avatar for user:', req.user._id);
+        console.log('🖼️ New avatar URL:', avatarUrl);
+
+        // Get current user to check existing avatar
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Handle Cloudinary cleanup for old avatar if it exists
+        if (user.avatar && user.avatar.url && user.avatar.url.includes('cloudinary') && user.avatar.publicId !== 'default_avatar') {
+            try {
+                await cloudinary.uploader.destroy(user.avatar.publicId);
+                console.log('🗑️ Deleted old Cloudinary avatar:', user.avatar.publicId);
+            } catch (cloudinaryErr) {
+                console.error('Cloudinary deletion failed for old avatar:', cloudinaryErr);
             }
-            const imageUrl = await uploadImage(newAvatar, 'confique_avatars');
+        }
+
+        // Upload new avatar to Cloudinary if it's a base64 data URL
+        let finalAvatarUrl = avatarUrl;
+        let publicId = 'custom_avatar_' + Date.now();
+
+        if (avatarUrl.startsWith('data:image')) {
+            const imageUrl = await uploadImage(avatarUrl, 'confique_avatars');
             if (imageUrl) {
-                updatedAvatarUrl = imageUrl;
+                finalAvatarUrl = imageUrl;
+                // Extract publicId from Cloudinary URL
+                const parts = imageUrl.split('/');
+                publicId = `confique_avatars/${parts[parts.length - 1].split('.')[0]}`;
             } else {
-                res.status(500);
-                throw new Error('Failed to upload image to Cloudinary');
+                return res.status(500).json({ message: 'Failed to upload image to Cloudinary' });
             }
         }
-        user.avatar = updatedAvatarUrl;
-        const updatedUser = await user.save();
-        
-        await Post.updateMany({ userId: user._id }, { $set: { authorAvatar: updatedUser.avatar } });
-        
-        await Post.updateMany(
-            { 'commentData.userId': user._id },
-            { $set: { 'commentData.$[elem].authorAvatar': updatedUser.avatar } },
-            { arrayFilters: [{ 'elem.userId': user._id }] }
+
+        // ✅ CORRECT: Use object format that matches User model
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            { 
+                avatar: {
+                    url: finalAvatarUrl,
+                    publicId: publicId
+                }
+            },
+            { new: true }
         );
-        
+
+        console.log('✅ Avatar updated successfully');
+
+        // Update avatar in all user's posts (use the URL string)
+        await Post.updateMany(
+            { userId: req.user._id }, 
+            { $set: { authorAvatar: finalAvatarUrl } }
+        );
+
+        // Update avatar in all user's comments (use the URL string)
+        await Post.updateMany(
+            { 'commentData.userId': req.user._id },
+            { $set: { 'commentData.$[elem].authorAvatar': finalAvatarUrl } },
+            { arrayFilters: [{ 'elem.userId': req.user._id }] }
+        );
+
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
             email: updatedUser.email,
-            avatar: updatedUser.avatar,
+            avatar: updatedUser.avatar, // This will be the object {url, publicId}
             isAdmin: updatedUser.isAdmin,
         });
-    } else {
-        res.status(404);
-        throw new Error('User not found');
+
+    } catch (error) {
+        console.error('❌ Avatar update error:', error);
+        res.status(500).json({ message: 'Failed to update avatar', error: error.message });
     }
 }));
 
@@ -198,71 +231,94 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
 // @route   GET /api/users/export-registrations/:eventId
 // @access  Private (Event host or Admin)
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
-    const { eventId } = req.params;
-    const event = await Post.findById(eventId);
-    if (!event) {
-        return res.status(404).json({ message: 'Event not found.' });
-    }
-    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
-        return res.status(403).json({ message: 'Not authorized to export this data.' });
-    }
-    const registrations = await Registration.find({ eventId }).lean();
-    if (registrations.length === 0) {
-        return res.status(404).json({ message: 'No registrations found for this event.' });
-    }
-    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At', 'Booking Dates', 'Total Price', 'Ticket Type', 'Ticket Quantity', 'Ticket Price']);
-    const flattenedData = [];
-    registrations.forEach(reg => {
-        const baseData = {
-            'Name': reg.name || '',
-            'Email': reg.email || '',
-            'Phone': reg.phone || '',
-            'Transaction ID': reg.transactionId || '',
-            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '',
-            'Booking Dates': (reg.bookingDates || []).join(', '),
-            'Total Price': reg.totalPrice || '',
-        };
-        if (reg.customFields) {
-            for (const key in reg.customFields) {
-                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
-                    baseData[key] = reg.customFields[key] || '';
-                    headers.add(key);
+    try {
+        const { eventId } = req.params;
+        console.log('🔍 Export request received for event:', eventId);
+        console.log('👤 Request from user:', req.user._id, req.user.name);
+
+        const event = await Post.findById(eventId);
+        if (!event) {
+            console.log('❌ Event not found:', eventId);
+            return res.status(404).json({ message: 'Event not found.' });
+        }
+
+        console.log('📝 Event found:', event.title, 'by user:', event.userId);
+        
+        // Check authorization
+        if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+            console.log('🚫 Unauthorized access attempt');
+            return res.status(403).json({ message: 'Not authorized to export this data.' });
+        }
+
+        console.log('✅ User authorized, fetching registrations...');
+        const registrations = await Registration.find({ eventId }).lean();
+        console.log(`📊 Found ${registrations.length} registrations`);
+
+        if (registrations.length === 0) {
+            console.log('ℹ️ No registrations found for event');
+            return res.status(404).json({ message: 'No registrations found for this event.' });
+        }
+
+        const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At', 'Booking Dates', 'Total Price', 'Ticket Type', 'Ticket Quantity', 'Ticket Price']);
+        const flattenedData = [];
+        
+        registrations.forEach(reg => {
+            const baseData = {
+                'Name': reg.name || '',
+                'Email': reg.email || '',
+                'Phone': reg.phone || '',
+                'Transaction ID': reg.transactionId || '',
+                'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '',
+                'Booking Dates': (reg.bookingDates || []).join(', '),
+                'Total Price': reg.totalPrice || '',
+            };
+            
+            if (reg.customFields) {
+                for (const key in reg.customFields) {
+                    if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
+                        baseData[key] = reg.customFields[key] || '';
+                        headers.add(key);
+                    }
                 }
             }
-        }
-        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
-            reg.selectedTickets.forEach(ticket => {
+            
+            if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
+                reg.selectedTickets.forEach(ticket => {
+                    flattenedData.push({
+                        ...baseData,
+                        'Ticket Type': ticket.ticketType || '',
+                        'Ticket Quantity': ticket.quantity || '',
+                        'Ticket Price': ticket.ticketPrice || '',
+                    });
+                });
+            } else {
                 flattenedData.push({
                     ...baseData,
-                    'Ticket Type': ticket.ticketType || '',
-                    'Ticket Quantity': ticket.quantity || '',
-                    'Ticket Price': ticket.ticketPrice || '',
+                    'Ticket Type': '',
+                    'Ticket Quantity': '',
+                    'Ticket Price': '',
                 });
-            });
-        } else {
-            flattenedData.push({
-                ...baseData,
-                'Ticket Type': '',
-                'Ticket Quantity': '',
-                'Ticket Price': '',
-            });
-        }
-    });
+            }
+        });
 
-    const finalHeaders = Array.from(headers);
-    try {
+        const finalHeaders = Array.from(headers);
         const json2csvParser = new Parser({ fields: finalHeaders });
         const csv = json2csvParser.parse(flattenedData);
+        
+        console.log('✅ CSV generated successfully');
         res.header('Content-Type', 'text/csv');
         const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
         res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
         res.send(csv);
+
     } catch (error) {
-        console.error('CSV export error:', error);
-        res.status(500).json({ message: 'Error generating CSV file.' });
+        console.error('❌ CSV export error:', error);
+        res.status(500).json({ 
+            message: 'Error generating CSV file.',
+            error: error.message 
+        });
     }
 }));
-
 
 // --- ADMIN ROUTES ---
 
@@ -309,6 +365,17 @@ router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req,
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
+}));
+
+// Test route for debugging
+router.get('/test-avatar-fix', protect, asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    res.json({
+        currentAvatar: user.avatar,
+        avatarType: typeof user.avatar,
+        isObject: user.avatar && typeof user.avatar === 'object',
+        hasUrl: user.avatar && user.avatar.url
+    });
 }));
 
 module.exports = router;

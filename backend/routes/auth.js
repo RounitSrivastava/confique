@@ -3,13 +3,9 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
-const { passport, generateTokenForGoogleUser } = require('../config/passport-setup');
+const { passport, generateTokenForGoogleUser, isGoogleOAuthConfigured } = require('../config/passport-setup');
 
-// MAKE SURE THIS LINE EXISTS:
 const router = express.Router();
-
-// Check if Google OAuth is configured
-const isGoogleOAuthConfigured = process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET;
 
 // Helper function to generate a standard JWT for local users
 const generateToken = (id) => {
@@ -22,6 +18,12 @@ const generateToken = (id) => {
 router.post('/register', asyncHandler(async (req, res) => {
     const { name, email, password } = req.body;
     
+    // Validation
+    if (!name || !email || !password) {
+        res.status(400).json({ message: 'Please add all fields' });
+        return;
+    }
+
     const userExists = await User.findOne({ email });
 
     if (userExists) {
@@ -34,7 +36,11 @@ router.post('/register', asyncHandler(async (req, res) => {
         email,
         password,
         isAdmin: email === 'confique01@gmail.com',
-        avatar: 'https://placehold.co/40x40/cccccc/000000?text=A',
+        // ✅ CORRECT: Use object format for avatar
+        avatar: {
+            url: 'https://placehold.co/40x40/cccccc/000000?text=A',
+            publicId: 'default_avatar'
+        },
     });
 
     if (user) {
@@ -57,6 +63,12 @@ router.post('/register', asyncHandler(async (req, res) => {
 router.post('/login', asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
+    // Validation
+    if (!email || !password) {
+        res.status(400).json({ message: 'Please add email and password' });
+        return;
+    }
+
     const user = await User.findOne({ email });
 
     if (user && user.password && (await user.matchPassword(password))) {
@@ -74,7 +86,9 @@ router.post('/login', asyncHandler(async (req, res) => {
 }));
 
 // Only enable Google OAuth routes if configured
-if (isGoogleOAuthConfigured) {
+if (isGoogleOAuthConfigured()) {
+    console.log('Google OAuth is configured - enabling Google routes');
+    
     // @desc    Initiate Google OAuth login
     // @route   GET /api/auth/google
     // @access  Public
@@ -91,11 +105,26 @@ if (isGoogleOAuthConfigured) {
             session: true
         }), 
         (req, res) => {
+            console.log('Google OAuth callback successful for user:', req.user?.email);
+            
             if (req.user) {
-                const token = generateTokenForGoogleUser(req.user);
-                const avatarUrl = req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
-                res.redirect(`${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`);
+                try {
+                    const token = generateTokenForGoogleUser(req.user);
+                    // ✅ Handle both string and object avatar formats
+                    const avatarUrl = req.user.avatar && typeof req.user.avatar === 'object' 
+                        ? req.user.avatar.url 
+                        : req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+                    
+                    const redirectUrl = `${process.env.FRONTEND_URL}/?token=${token}&name=${encodeURIComponent(req.user.name)}&email=${encodeURIComponent(req.user.email)}&avatar=${encodeURIComponent(avatarUrl)}&isAdmin=${req.user.isAdmin}&_id=${req.user._id}`;
+                    
+                    console.log('Redirecting to frontend:', redirectUrl);
+                    res.redirect(redirectUrl);
+                } catch (error) {
+                    console.error('Error generating token:', error);
+                    res.redirect(`${process.env.FRONTEND_URL}/login?error=token_error`);
+                }
             } else {
+                console.error('Google OAuth callback failed - no user data');
                 res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
             }
         }
@@ -104,9 +133,24 @@ if (isGoogleOAuthConfigured) {
     console.log('Google OAuth not configured - skipping Google routes');
 }
 
+// @desc    Get current user profile
+// @route   GET /api/auth/profile
+// @access  Private
+router.get('/profile', protect, asyncHandler(async (req, res) => {
+    res.json({
+        _id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        avatar: req.user.avatar,
+        isAdmin: req.user.isAdmin,
+    });
+}));
+
 router.get('/', (req, res) => {
-    res.send('Auth route is working!');
+    res.json({ 
+        message: 'Auth route is working!',
+        googleOAuthConfigured: isGoogleOAuthConfigured()
+    });
 });
 
-// MAKE SURE THIS IS THE LAST LINE:
 module.exports = router;
