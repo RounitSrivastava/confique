@@ -42,7 +42,7 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
-fetch('http://localhost:5000/api/posts')
+fetch(`${API_URL}/posts`)
   .then(res => res.json())
   .then(data => console.log(data));
 
