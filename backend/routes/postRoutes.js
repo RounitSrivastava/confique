@@ -6,7 +6,7 @@ const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Import User model
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -333,7 +333,6 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
         res.status(404).json({ message: 'Event not found' });
     }
 }));
-
 
 // @desc    Reject and delete a pending event
 // @route   DELETE /api/posts/reject-event/:id
