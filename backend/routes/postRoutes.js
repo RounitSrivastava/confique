@@ -5,7 +5,7 @@ const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
 const jwt = require('jsonwebtoken');
-const User = require('../models/User'); // Import User model
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -20,6 +20,23 @@ const uploadImage = async (image) => {
         console.error('Cloudinary upload failed:', error);
         return null;
     }
+};
+
+// Helper function to extract Cloudinary public ID
+const extractPublicId = (url) => {
+    if (!url || !url.includes('cloudinary')) return null;
+    
+    try {
+        const parts = url.split('/');
+        const uploadIndex = parts.findIndex(part => part === 'upload');
+        if (uploadIndex !== -1 && parts.length > uploadIndex + 1) {
+            const pathAfterUpload = parts.slice(uploadIndex + 1).join('/');
+            return pathAfterUpload.replace(/^v\d+\//, '').split('.')[0];
+        }
+    } catch (error) {
+        console.error('Error extracting public ID from URL:', url, error);
+    }
+    return null;
 };
 
 // @desc    Get all posts
@@ -102,7 +119,9 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @access  Private
 router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
-    const authorAvatarFinal = avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    
+    // ✅ FIX: Handle avatar object/string properly
+    const authorAvatarFinal = avatarFromUser?.url || avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
 
     const {
         type,
@@ -188,12 +207,26 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         const createdPost = await post.save();
         res.status(201).json(createdPost);
     } catch (error) {
+        console.error('❌ Post creation error details:', {
+            error: error.message,
+            stack: error.stack,
+            postData: {
+                type: newPostData.type,
+                title: newPostData.title,
+                imagesCount: newPostData.images?.length || 0
+            }
+        });
+        
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
             console.error('Mongoose Validation Error:', messages.join(', '));
             return res.status(400).json({ message: `Validation Failed: ${messages.join(', ')}` });
         }
-        throw error;
+        
+        res.status(500).json({ 
+            message: 'Internal server error during post creation',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
     }
 }));
 
@@ -225,11 +258,15 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
     if (images !== undefined) {
         const oldImagePublicIds = post.images
-            .map(url => url.includes('cloudinary') ? `confique_posts/${url.split('/').pop().split('.')[0]}` : null)
+            .map(url => extractPublicId(url))
             .filter(id => id);
 
         if (oldImagePublicIds.length > 0) {
-            try { await cloudinary.api.delete_resources(oldImagePublicIds); } catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old images:', cloudinaryErr); }
+            try { 
+                await cloudinary.api.delete_resources(oldImagePublicIds); 
+            } catch (cloudinaryErr) { 
+                console.error('Cloudinary deletion failed for old images:', cloudinaryErr); 
+            }
         }
 
         const newImageArray = Array.isArray(images) ? images : (images ? [images] : []);
@@ -242,9 +279,15 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
     let newQrCodeData = post.type === 'event' ? rest.paymentQRCode : rest.culturalPaymentQRCode;
 
     if (newQrCodeData !== undefined && newQrCodeData !== oldQrCodeUrl) {
-        if (oldQrCodeUrl && oldQrCodeUrl.includes('cloudinary')) {
-            const publicId = `confique_posts/${oldQrCodeUrl.split('/').pop().split('.')[0]}`; // FIXED: Added missing backtick
-            try { await cloudinary.uploader.destroy(publicId); } catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
+        if (oldQrCodeUrl) {
+            const publicId = extractPublicId(oldQrCodeUrl);
+            if (publicId) {
+                try { 
+                    await cloudinary.uploader.destroy(publicId); 
+                } catch (cloudinaryErr) { 
+                    console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); 
+                }
+            }
         }
         newQrCodeUrl = newQrCodeData ? await uploadImage(newQrCodeData) : (newQrCodeData === '' ? null : undefined);
     }
@@ -333,7 +376,6 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
     }
 }));
 
-
 // @desc    Reject and delete a pending event
 // @route   DELETE /api/posts/reject-event/:id
 // @access  Private (Admin only)
@@ -345,18 +387,18 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
             return res.status(400).json({ message: 'Only events and cultural events can be rejected through this route' });
         }
         const publicIdsToDelete = [];
+        
         if (event.images && event.images.length > 0) {
             event.images.forEach(url => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+                const publicId = extractPublicId(url);
+                if (publicId) publicIdsToDelete.push(publicId);
             });
         }
+        
         const qrCodeUrl = event.type === 'event' ? event.paymentQRCode : event.culturalPaymentQRCode;
         if (qrCodeUrl) {
-            const parts = qrCodeUrl.split('/');
-            const filename = parts[parts.length - 1];
-            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            const publicId = extractPublicId(qrCodeUrl);
+            if (publicId) publicIdsToDelete.push(publicId);
         }
 
         if (publicIdsToDelete.length > 0) {
@@ -366,6 +408,7 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
                 console.error('Cloudinary deletion failed for some resources:', cloudinaryErr);
             }
         }
+        
         await event.deleteOne();
         await Registration.deleteMany({ eventId: event._id });
         res.json({ message: 'Event rejected and removed' });
@@ -383,20 +426,21 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
         if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
             return res.status(403).json({ message: 'You are not authorized to delete this post' });
         }
+        
         const publicIdsToDelete = [];
         if (post.images && post.images.length > 0) {
             post.images.forEach(url => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+                const publicId = extractPublicId(url);
+                if (publicId) publicIdsToDelete.push(publicId);
             });
         }
+        
         const qrCodeUrl = post.type === 'event' ? post.paymentQRCode : post.culturalPaymentQRCode;
         if (qrCodeUrl) {
-            const parts = qrCodeUrl.split('/');
-            const filename = parts[parts.length - 1];
-            publicIdsToDelete.push(`confique_posts/${filename.split('.')[0]}`);
+            const publicId = extractPublicId(qrCodeUrl);
+            if (publicId) publicIdsToDelete.push(publicId);
         }
+        
         if (publicIdsToDelete.length > 0) {
             try {
                 await cloudinary.api.delete_resources(publicIdsToDelete);
@@ -404,6 +448,7 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
                 console.error('Cloudinary deletion failed for some resources:', cloudinaryErr);
             }
         }
+        
         await post.deleteOne();
         if (post.type === 'event' || post.type === 'culturalEvent') {
             await Registration.deleteMany({ eventId: post._id });
@@ -424,9 +469,13 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         if (!text || text.trim() === '') {
             return res.status(400).json({ message: 'Comment text cannot be empty' });
         }
+        
+        // ✅ FIX: Handle avatar object/string properly
+        const userAvatar = req.user.avatar?.url || req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+        
         const newComment = {
             author: req.user.name,
-            authorAvatar: req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            authorAvatar: userAvatar,
             text,
             timestamp: new Date(),
             userId: req.user._id,

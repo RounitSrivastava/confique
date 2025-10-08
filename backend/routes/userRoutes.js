@@ -35,7 +35,7 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
             _id: user._id,
             name: user.name,
             email: user.email,
-            avatar: user.avatar,
+            avatar: user.avatar?.url || user.avatar, // ✅ Handle both object and string
             isAdmin: user.isAdmin,
         });
     } else {
@@ -90,7 +90,7 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
             }
         }
 
-        // ✅ CORRECT: Use object format that matches User model
+        // ✅ Update user with avatar object (for database storage)
         const updatedUser = await User.findByIdAndUpdate(
             req.user._id,
             { 
@@ -117,17 +117,22 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
             { arrayFilters: [{ 'elem.userId': req.user._id }] }
         );
 
+        // ✅ FIX: Return avatar as string URL for frontend compatibility
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
             email: updatedUser.email,
-            avatar: updatedUser.avatar, // This will be the object {url, publicId}
+            avatar: finalAvatarUrl, // ✅ Return string URL instead of object
             isAdmin: updatedUser.isAdmin,
         });
 
     } catch (error) {
         console.error('❌ Avatar update error:', error);
-        res.status(500).json({ message: 'Failed to update avatar', error: error.message });
+        res.status(500).json({ 
+            message: 'Failed to update avatar', 
+            error: error.message,
+            details: 'Check server logs for more information'
+        });
     }
 }));
 
@@ -374,8 +379,51 @@ router.get('/test-avatar-fix', protect, asyncHandler(async (req, res) => {
         currentAvatar: user.avatar,
         avatarType: typeof user.avatar,
         isObject: user.avatar && typeof user.avatar === 'object',
-        hasUrl: user.avatar && user.avatar.url
+        hasUrl: user.avatar && user.avatar.url,
+        // Test both formats
+        stringUrl: user.avatar?.url || user.avatar,
+        rawAvatar: user.avatar
     });
+}));
+
+// Debug route to test avatar update with simple data
+router.put('/test-simple-avatar', protect, asyncHandler(async (req, res) => {
+    try {
+        const { avatarUrl } = req.body;
+        
+        if (!avatarUrl) {
+            return res.status(400).json({ message: 'No avatar URL provided' });
+        }
+
+        console.log('🧪 Testing simple avatar update with:', avatarUrl);
+
+        // Simple update without Cloudinary processing
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            { 
+                avatar: {
+                    url: avatarUrl,
+                    publicId: 'test_avatar'
+                }
+            },
+            { new: true }
+        );
+
+        res.json({
+            _id: updatedUser._id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            avatar: avatarUrl, // Return as string
+            isAdmin: updatedUser.isAdmin,
+        });
+
+    } catch (error) {
+        console.error('❌ Test avatar update error:', error);
+        res.status(500).json({ 
+            message: 'Test failed', 
+            error: error.message 
+        });
+    }
 }));
 
 module.exports = router;
