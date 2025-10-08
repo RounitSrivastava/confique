@@ -43,8 +43,8 @@ import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 fetch(`${API_URL}/posts`)
-  .then(res => res.json())
-  .then(data => console.log(data));
+    .then(res => res.json())
+    .then(data => console.log(data));
 
 
 // Utility function to compress image files before upload
@@ -3348,9 +3348,12 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    // ✅ Add default avatar for new registrations
+                    avatar: isRegistering ? 'https://placehold.co/40x40/cccccc/000000?text=A' : undefined
+                }),
             });
-
             const data = await res.json();
 
             if (res.ok) {
@@ -4613,7 +4616,6 @@ const App = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${currentUser.token}`
                 },
-                // ✅ CORRECT: Send avatarUrl instead of avatar
                 body: JSON.stringify({ 
                     avatarUrl: newAvatar 
                 })
@@ -4675,11 +4677,13 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/users/export-registrations/${eventId}`, {
+            // Reverted to the correct and logical endpoint for exporting registrations,
+            // as this data is tied to a specific post (event).
+            const res = await callApi(`/posts/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${currentUser.token}`,
-                }
+                },
             });
 
             if (res.ok) {
@@ -4688,7 +4692,9 @@ const App = () => {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `registrations_${eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+                // Create a clean filename
+                const cleanEventTitle = eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                a.download = `registrations_${cleanEventTitle}.csv`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
@@ -4704,6 +4710,7 @@ const App = () => {
                 ]);
             } else {
                 const errorData = await res.json();
+                console.error('Failed to export data:', errorData);
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4727,33 +4734,6 @@ const App = () => {
             ]);
         }
     };
-
-    // Add this test function to your App component
-    const testAvatarUpdate = async () => {
-        try {
-            const testAvatarUrl = 'https://placehold.co/100x100/00ff00/ffffff?text=Test';
-            console.log('🧪 Testing avatar update with:', testAvatarUrl);
-            
-            const response = await fetch(`${API_URL}/users/profile/avatar`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`
-                },
-                body: JSON.stringify({ 
-                    avatarUrl: testAvatarUrl 
-                })
-            });
-            
-            const result = await response.json();
-            console.log('🧪 Test result:', result);
-        } catch (error) {
-            console.error('🧪 Test failed:', error);
-        }
-    };
-    
-    // Call this function temporarily to test
-    // testAvatarUpdate();
 
     const postCardProps = {
         onLike: handleLikePost,
