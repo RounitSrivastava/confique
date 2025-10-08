@@ -1,5 +1,6 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
+const { Parser } = require('json2csv');
 const User = require('../models/User');
 const { Post, Registration } = require('../models/Post'); 
 const Notification = require('../models/Notification');
@@ -192,6 +193,76 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
 
     res.status(201).json({ message: 'Registration successful', registration: newRegistration });
 }));
+
+// @desc    Export registrations for a specific event to a CSV file
+// @route   GET /api/users/export-registrations/:eventId
+// @access  Private (Event host or Admin)
+router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
+    const { eventId } = req.params;
+    const event = await Post.findById(eventId);
+    if (!event) {
+        return res.status(404).json({ message: 'Event not found.' });
+    }
+    if (event.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+        return res.status(403).json({ message: 'Not authorized to export this data.' });
+    }
+    const registrations = await Registration.find({ eventId }).lean();
+    if (registrations.length === 0) {
+        return res.status(404).json({ message: 'No registrations found for this event.' });
+    }
+    const headers = new Set(['Name', 'Email', 'Phone', 'Transaction ID', 'Registered At', 'Booking Dates', 'Total Price', 'Ticket Type', 'Ticket Quantity', 'Ticket Price']);
+    const flattenedData = [];
+    registrations.forEach(reg => {
+        const baseData = {
+            'Name': reg.name || '',
+            'Email': reg.email || '',
+            'Phone': reg.phone || '',
+            'Transaction ID': reg.transactionId || '',
+            'Registered At': reg.createdAt ? reg.createdAt.toISOString() : '',
+            'Booking Dates': (reg.bookingDates || []).join(', '),
+            'Total Price': reg.totalPrice || '',
+        };
+        if (reg.customFields) {
+            for (const key in reg.customFields) {
+                if (Object.prototype.hasOwnProperty.call(reg.customFields, key)) {
+                    baseData[key] = reg.customFields[key] || '';
+                    headers.add(key);
+                }
+            }
+        }
+        if (event.type === 'culturalEvent' && reg.selectedTickets && reg.selectedTickets.length > 0) {
+            reg.selectedTickets.forEach(ticket => {
+                flattenedData.push({
+                    ...baseData,
+                    'Ticket Type': ticket.ticketType || '',
+                    'Ticket Quantity': ticket.quantity || '',
+                    'Ticket Price': ticket.ticketPrice || '',
+                });
+            });
+        } else {
+            flattenedData.push({
+                ...baseData,
+                'Ticket Type': '',
+                'Ticket Quantity': '',
+                'Ticket Price': '',
+            });
+        }
+    });
+
+    const finalHeaders = Array.from(headers);
+    try {
+        const json2csvParser = new Parser({ fields: finalHeaders });
+        const csv = json2csvParser.parse(flattenedData);
+        res.header('Content-Type', 'text/csv');
+        const safeTitle = event.title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+        res.attachment(`registrations_${safeTitle}_${eventId}.csv`);
+        res.send(csv);
+    } catch (error) {
+        console.error('CSV export error:', error);
+        res.status(500).json({ message: 'Error generating CSV file.' });
+    }
+}));
+
 
 // --- ADMIN ROUTES ---
 
