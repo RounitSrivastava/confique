@@ -1,5 +1,7 @@
 require('dotenv').config(); // MUST BE THE VERY FIRST LINE
 
+console.log('Server file is being executed!');
+
 // DEBUG: Check if environment variables are loading
 console.log('=== ENVIRONMENT VARIABLES DEBUG ===');
 console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✅ Loaded' : '❌ Missing');
@@ -8,9 +10,6 @@ console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Loaded' : '❌ Missing'
 console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ Loaded' : '❌ Missing');
 console.log('====================================');
 
-console.log('Server file is being executed!');
-require('dotenv').config(); // MUST BE THE VERY FIRST LINE
-console.log('Server file is being executed!');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -73,12 +72,36 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// API Route Handlers
-app.use('/api/auth', authRoutes);
-app.use('/api/posts', postsRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/cron', cronRoutes);
+// Test basic route first
+app.get('/test', (req, res) => {
+  res.json({ message: 'Server working' });
+});
+console.log('✅ Basic test route registered');
+
+// Load routes one by one with error handling
+console.log('Loading routes one by one...');
+
+const loadRoute = (name, path, mountPath) => {
+  try {
+    console.log(`Loading ${name}...`);
+    const route = require(path);
+    app.use(mountPath, route);
+    console.log(`✅ ${name} loaded successfully`);
+    return true;
+  } catch (error) {
+    console.error(`❌ ${name} failed:`, error.message);
+    return false;
+  }
+};
+
+// Load routes individually
+loadRoute('Auth routes', './routes/auth.js', '/api/auth');
+loadRoute('Post routes', './routes/postRoutes.js', '/api/posts');
+loadRoute('User routes', './routes/userRoutes.js', '/api/users');
+loadRoute('Notification routes', './routes/notifications.js', '/api/notifications');
+loadRoute('Cron routes', './routes/cronRoutes.js', '/api/cron');
+
+console.log('All routes loaded, starting server...');
 
 // Production Static File Serving and Catch-All Route
 if (process.env.NODE_ENV === 'production') {
