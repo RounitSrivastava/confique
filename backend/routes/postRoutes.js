@@ -243,7 +243,7 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
     if (newQrCodeData !== undefined && newQrCodeData !== oldQrCodeUrl) {
         if (oldQrCodeUrl && oldQrCodeUrl.includes('cloudinary')) {
-            const publicId = `confique_posts/${oldQrCodeUrl.split('/').pop().split('.')[0]}`;
+            const publicId = `confique_posts/${oldQrCodeUrl.split('/').pop().split('.')[0]`;
             try { await cloudinary.uploader.destroy(publicId); } catch (cloudinaryErr) { console.error('Cloudinary deletion failed for old QR code:', cloudinaryErr); }
         }
         newQrCodeUrl = newQrCodeData ? await uploadImage(newQrCodeData) : (newQrCodeData === '' ? null : undefined);
