@@ -103,17 +103,25 @@ loadRoute('Cron routes', './routes/cronRoutes.js', '/api/cron');
 
 console.log('All routes loaded, starting server...');
 
-// Production Static File Serving and Catch-All Route
+// Production Static File Serving and Catch-All Route - FIXED VERSION
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '..', 'frontend', 'dist');
   
   // Serve the static files from the React app
   app.use(express.static(buildPath));
   
-  // Serve the index.html for all other routes
-  app.get('*', (req, res) => {
+  // Serve the index.html for all other routes (EXCEPT API routes)
+  app.get('*', (req, res, next) => {
+    // Skip API routes - let Express handle these
+    if (req.path.startsWith('/api/')) {
+      return next();
+    }
+    
+    // For all other routes, serve the React app
     res.sendFile(path.join(buildPath, 'index.html'));
   });
+  
+  console.log('✅ Production static file serving configured');
 }
 
 // Basic error handling middleware
