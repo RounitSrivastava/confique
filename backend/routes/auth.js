@@ -54,7 +54,7 @@ const normalizeAvatar = (avatar) => {
 // @access  Public
 router.post('/register', asyncHandler(async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const { name, email, password, avatar } = req.body; // ✅ Added avatar from request
         
         // Validation
         if (!name || !email || !password) {
@@ -92,7 +92,7 @@ router.post('/register', asyncHandler(async (req, res) => {
             email: email.toLowerCase().trim(),
             password,
             isAdmin: email.toLowerCase() === 'confique01@gmail.com',
-            avatar: normalizeAvatar() // Use default avatar
+            avatar: normalizeAvatar(avatar) // ✅ FIXED: Pass the avatar parameter
         });
 
         if (user) {
@@ -162,11 +162,14 @@ router.post('/login', asyncHandler(async (req, res) => {
             });
         }
 
+        // ✅ FIX: Add fallback to ensure avatar is never undefined
+        const avatarUrl = user.avatar?.url || user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            avatar: user.avatar?.url || user.avatar, // ✅ Return string URL for frontend
+            avatar: avatarUrl, // ✅ Use the ensured avatar URL
             token: generateToken(user._id),
             isAdmin: user.isAdmin,
         });
@@ -256,11 +259,14 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
             });
         }
 
+        // ✅ FIX: Add fallback to ensure avatar is never undefined
+        const avatarUrl = user.avatar?.url || user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            avatar: user.avatar?.url || user.avatar, // ✅ Consistent format
+            avatar: avatarUrl, // ✅ Use the ensured avatar URL
             isAdmin: user.isAdmin,
         });
     } catch (error) {
