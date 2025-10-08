@@ -63,11 +63,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // API Route Handlers
-app.use('/api/auth', authRoutes);
-app.use('/api/posts', postsRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/notifications', notificationsRoutes);
-app.use('/api/cron', cronRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/posts', postsRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/notifications', notificationsRoutes);
+// app.use('/api/cron', cronRoutes);
 
 // Production Static File Serving and Catch-All Route
 if (process.env.NODE_ENV === 'production') {
