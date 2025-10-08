@@ -1802,7 +1802,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                             )}
                                                         </>
                                                     )}
-
                                                     {formData.type === 'culturalEvent' && (
                                                         <div className="cultural-event-section">
                                                             <div className="form-group">
@@ -2933,8 +2932,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
             setAvatarError('Please select or upload an avatar.');
             return;
         }
-        const newAvatar = customAvatar || selectedAvatar;
-        onSave(newAvatar);
+        const avatarToSave = customAvatar || selectedAvatar;
+        onSave(avatarToSave);
         onClose();
     };
 
@@ -4595,73 +4594,42 @@ const App = () => {
         }
 
         try {
-            const res = await callApi(`/users/profile/avatar`, {
+            console.log('🔄 Updating avatar:', newAvatar);
+            
+            const response = await fetch(`${API_URL}/users/profile/avatar`, {
                 method: 'PUT',
-                body: JSON.stringify({ avatar: newAvatar }),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentUser.token}`
+                },
+                // ✅ CORRECT: Send avatarUrl instead of avatar
+                body: JSON.stringify({ 
+                    avatarUrl: newAvatar 
+                })
             });
 
-            if (res.ok) {
-                const { avatar: updatedAvatar } = await res.json();
-
-                const newCurrentUser = { ...currentUser, avatar: updatedAvatar };
-
-                setCurrentUser(newCurrentUser);
-                localStorage.setItem('currentUser', JSON.stringify(newCurrentUser));
-
-                setPosts(prevPosts =>
-                    prevPosts.map(post => {
-                        const updatedPost = post.userId === newCurrentUser._id
-                            ? { ...post, authorAvatar: newCurrentUser.avatar }
-                            : post;
-
-                        const updatedComments = updatedPost.commentData.map(comment => {
-                            if (comment.authorId === newCurrentUser._id) {
-                                return { ...comment, authorAvatar: newCurrentUser.avatar };
-                            }
-                            return comment;
-                        });
-
-                        return { ...updatedPost, commentData: updatedComments };
-                    })
-                );
-
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Your profile image has been updated successfully!`,
-                        timestamp: new Date(),
-                        type: 'success'
-                    },
-                    ...prev
-                ]);
-            } else {
-                const errorData = await res.json();
-                console.error('Failed to update avatar:', errorData);
-                setNotifications(prev => [
-                    {
-                        _id: Date.now().toString(),
-                        message: `Failed to update profile image: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
-                        type: 'error'
-                    },
-                    ...prev
-                ]);
+            console.log('📥 Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
             }
-        } catch (err) {
-            console.error('Error updating avatar:', err);
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Network error: Could not update profile image.`,
-                    timestamp: new Date(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
-        }
-        setShowProfileSettingsModal(false);
-    };
 
+            const data = await response.json();
+            console.log('✅ Avatar update successful:', data);
+            
+            // Update current user with new avatar data
+            const updatedUser = { ...currentUser, avatar: data.avatar };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+            
+            return data;
+            
+        } catch (error) {
+            console.error('❌ Avatar update failed:', error);
+            throw error;
+        }
+    };
     const handleExportRegistrations = async (eventId, eventTitle) => {
         if (!currentUser || !currentUser.token) {
             console.error('User not authenticated.');
