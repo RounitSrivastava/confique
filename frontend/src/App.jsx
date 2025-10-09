@@ -43,10 +43,16 @@ import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 
-// Utility function to validate and handle avatar URLs
+// Corrected validateAvatarUrl function with the provided fixes
 const validateAvatarUrl = (avatarUrl) => {
-    if (!avatarUrl) return placeholderAvatar;
+    console.log('🔍 Validating avatar URL:', avatarUrl); // Debug log
     
+    if (!avatarUrl || avatarUrl === 'undefined' || avatarUrl === 'null') {
+        console.log('❌ No avatar URL found, using placeholder');
+        return placeholderAvatar;
+    }
+    
+    // Handle data URLs
     if (avatarUrl.startsWith('data:')) {
         if (avatarUrl.length > 500000) { // ~500KB limit
             console.warn('Avatar data URL too large, using placeholder');
@@ -54,6 +60,18 @@ const validateAvatarUrl = (avatarUrl) => {
         }
         return avatarUrl;
     }
+    
+    // Handle relative URLs or incomplete URLs
+    if (avatarUrl.startsWith('/') || !avatarUrl.includes('://')) {
+        // Convert relative URL to absolute URL
+        const absoluteUrl = avatarUrl.startsWith('/') 
+            ? `${window.location.origin}${avatarUrl}`
+            : `${API_URL}/${avatarUrl.replace(/^\//, '')}`;
+        console.log('🔄 Converted relative URL to:', absoluteUrl);
+        return absoluteUrl;
+    }
+    
+    // Return the original URL if it's already absolute
     return avatarUrl;
 };
 
@@ -3065,6 +3083,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         );
     }
 
+    // Debugging logs from user's provided code
+    console.log('👤 UsersComponent rendering with currentUser:', currentUser);
+    console.log('🖼️ Current user avatar URL:', currentUser?.avatar);
+
     const userPosts = posts.filter(post =>
         post.userId === currentUser._id
     );
@@ -3497,6 +3519,10 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         };
     }, []);
 
+    // Debugging logs from user's provided code
+    console.log('👤 ProfileDropdown rendering with user:', user);
+    console.log('🖼️ User avatar URL:', user?.avatar);
+
     return (
         <div className="profile-dropdown-container" ref={dropdownRef}>
             <button
@@ -3616,11 +3642,24 @@ const App = () => {
     const [posts, setPosts] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // FIX 2: Updated to use the provided initialization logic
     const [currentUser, setCurrentUser] = useState(() => {
-        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (savedUser) {
-            // Ensure avatar fallback is handled on initial load
-            return { ...savedUser, avatar: validateAvatarUrl(savedUser.avatar) };
+        try {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                const parsedUser = JSON.parse(savedUser);
+                console.log('🔍 Loaded user from localStorage:', parsedUser);
+                
+                // Ensure avatar is properly set using the validated function
+                const userWithValidAvatar = {
+                    ...parsedUser,
+                    avatar: validateAvatarUrl(parsedUser.avatar)
+                };
+                console.log('✅ User with validated avatar:', userWithValidAvatar);
+                return userWithValidAvatar;
+            }
+        } catch (error) {
+            console.error('❌ Error loading user from localStorage:', error);
         }
         return null;
     });
@@ -4493,14 +4532,29 @@ const App = () => {
         setSelectedEvent(null);
     };
 
+    // FIX 3: Replaced with the enhanced login handler
     const handleLogin = (user) => {
+        console.log('🔐 Handling login for user:', user);
+
         const userWithValidAvatar = {
             ...user,
             avatar: validateAvatarUrl(user.avatar)
         };
+
+        console.log('✅ User after avatar validation:', userWithValidAvatar);
+
         setIsLoggedIn(true);
         setCurrentUser(userWithValidAvatar);
+
         localStorage.setItem('currentUser', JSON.stringify(userWithValidAvatar));
+        console.log('💾 User saved to localStorage');
+
+        // Force re-render of avatar-dependent components
+        setTimeout(() => {
+            fetchPosts();
+            fetchLikedPosts(userWithValidAvatar);
+            fetchRegistrations();
+        }, 100);
     };
 
     const handleLogout = () => {
@@ -4623,6 +4677,7 @@ const App = () => {
         }
     };
 
+    // FIX 4: Replaced with the enhanced avatar update function
     const handleUpdateAvatar = async (newAvatar) => {
         if (!currentUser) {
             console.error('User not authenticated for updating avatar.');
@@ -4630,7 +4685,7 @@ const App = () => {
         }
 
         try {
-            console.log('🔄 Updating avatar:', newAvatar);
+            console.log('🔄 Starting avatar update process');
             
             const response = await fetch(`${API_URL}/users/profile/avatar`, {
                 method: 'PUT',
@@ -4643,7 +4698,7 @@ const App = () => {
                 })
             });
 
-            console.log('📥 Response status:', response.status);
+            console.log('📥 Avatar update response status:', response.status);
             
             if (!response.ok) {
                 const errorData = await response.json();
@@ -4651,16 +4706,24 @@ const App = () => {
             }
 
             const data = await response.json();
-            console.log('✅ Avatar update successful:', data);
+            console.log('✅ Avatar update API response:', data);
+            
+            // IMPORTANT: Use the avatar URL returned from the server
+            const updatedAvatarUrl = data.user?.avatar || data.avatar || newAvatar;
+            console.log('🖼️ Final avatar URL to use:', updatedAvatarUrl);
             
             const updatedUser = { 
                 ...currentUser, 
-                avatar: data.user?.avatar || data.avatar || newAvatar 
+                avatar: updatedAvatarUrl 
             };
             
+            // Update both state and localStorage
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
             
+            console.log('💾 Updated user in state and localStorage');
+            
+            // Refresh posts to update avatars
             await fetchPosts();
             
             setNotifications(prev => [
@@ -4942,6 +5005,8 @@ const App = () => {
 
     return (
         <div className={`app ${hasOpenModal ? 'modal-open' : ''}`}>
+            {/* FIX 6: Add image error handling to avatar images */}
+            {/* <img onError={handleAvatarError} ... /> should be applied to all img tags for avatars */}
             <LoginModal
                 isOpen={showLoginModal}
                 onClose={() => setShowLoginModal(false)}
@@ -5015,6 +5080,8 @@ const App = () => {
                     isRegistered={myRegisteredEvents.has(selectedCulturalEvent._id)}
                 />
             )}
+            {/* FIX 5: Added debug component */}
+            {currentUser && <DebugInfo currentUser={currentUser} />}
 
             <header className="header">
                 <div className="header-container">
@@ -5110,6 +5177,28 @@ const App = () => {
                     </div>
                 </aside>
             </div>
+        </div>
+    );
+};
+
+// FIX 5: Added temporary debug component
+const DebugInfo = ({ currentUser }) => {
+    if (!currentUser) return null;
+    
+    return (
+        <div style={{ 
+            position: 'fixed', 
+            bottom: 10, 
+            right: 10, 
+            background: 'rgba(0,0,0,0.8)', 
+            color: 'white', 
+            padding: '10px', 
+            fontSize: '12px',
+            zIndex: 10000 
+        }}>
+            <div>User: {currentUser.name}</div>
+            <div>Avatar: {currentUser.avatar ? 'Set' : 'Missing'}</div>
+            <div>URL: {currentUser.avatar}</div>
         </div>
     );
 };
