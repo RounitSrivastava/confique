@@ -4639,7 +4639,7 @@ const App = () => {
                     'Authorization': `Bearer ${currentUser.token}`
                 },
                 body: JSON.stringify({ 
-                    avatar: newAvatar 
+                    avatarUrl: newAvatar 
                 })
             });
 
