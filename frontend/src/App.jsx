@@ -42,10 +42,20 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
-fetch(`${API_URL}/posts`)
-    .then(res => res.json())
-    .then(data => console.log(data));
 
+// Utility function to validate and handle avatar URLs
+const validateAvatarUrl = (avatarUrl) => {
+    if (!avatarUrl) return placeholderAvatar;
+    
+    if (avatarUrl.startsWith('data:')) {
+        if (avatarUrl.length > 500000) { // ~500KB limit
+            console.warn('Avatar data URL too large, using placeholder');
+            return placeholderAvatar;
+        }
+        return avatarUrl;
+    }
+    return avatarUrl;
+};
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -361,7 +371,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
     const isCommentAuthor = currentUser && comment.authorId === currentUser._id;
-    const avatarSrc = isCommentAuthor ? currentUser.avatar : (comment.authorAvatar || placeholderAvatar);
+    const avatarSrc = isCommentAuthor ? validateAvatarUrl(currentUser.avatar) : validateAvatarUrl(comment.authorAvatar);
 
     return (
         <div className="comment-item">
@@ -372,6 +382,7 @@ const CommentItem = ({ comment, currentUser }) => {
                     className="comment-avatar-img"
                     loading="lazy"
                     decoding="async"
+                    onError={(e) => e.target.src = placeholderAvatar}
                 />
             </div>
             <div className="comment-content-wrapper">
@@ -489,7 +500,7 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         }
 
         if (isRegistered) {
-            setFormAlertMessage("Thank you! Your registration has been confirmed.");
+            setFormAlertMessage("You are already registered for this event.");
             setShowFormAlert(true);
             return;
         }
@@ -529,16 +540,23 @@ const RegistrationFormModal = ({ isOpen, onClose, event, isLoggedIn, onRequireLo
         }
     };
 
-    const handlePaymentConfirm = (e) => {
+    const handlePaymentConfirm = async (e) => {
         e.preventDefault();
         if (event.price > 0 && event.paymentMethod === 'qr' && (!formData.transactionId || formData.transactionId.length !== 4)) {
             setFormAlertMessage("Please enter the last 4 digits of your transaction number.");
             setShowFormAlert(true);
             return;
         }
-        setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
-        onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
-        setShowSuccessModal(true);
+        
+        try {
+            await onRegister(event._id, { ...formData, eventTitle: event.title, type: event.type });
+            setSuccessMessage(`Thank you ${formData.name} for your payment! Registration confirmed.`);
+            setShowSuccessModal(true);
+        } catch (error) {
+            console.error("Payment confirmation failed:", error);
+            setFormAlertMessage("Registration failed. Please try again.");
+            setShowFormAlert(true);
+        }
     };
 
     const handleClose = () => {
@@ -775,7 +793,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
         if (isOpen) {
             if (!isLoggedIn) {
                 onRequireLogin();
-                onClose(); // Close the current modal if not logged in
+                onClose();
                 return;
             }
             setFormData(getInitialFormData());
@@ -820,7 +838,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return total + (price * (selection?.quantity || 0));
         }, 0);
         const numberOfDays = (formData.selectedDates || []).length;
-        return totalTicketPrice * numberOfDays;
+        return totalTicketPrice * (numberOfDays > 0 ? numberOfDays : 1);
     };
 
     const totalPrice = calculateTotalPrice();
@@ -828,7 +846,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
-    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
+    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && (availableDates.length === 0 || hasDatesSelected) && isPaymentMethodSet;
 
 
     const handleProceedToPayment = (e) => {
@@ -1135,8 +1153,8 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     {isRegistered ? (
                         <div className="already-registered-message">
                             <Check size={48} className="success-icon" />
-                            <h3>Thank you for your payment!</h3>
-                            <p>Registration confirmed.</p>
+                            <h3>You are already registered for this event!</h3>
+                            <p>Enjoy the event!</p>
                             <button className="btn-primary" onClick={onClose}>Close</button>
                         </div>
                     ) : (
@@ -1417,7 +1435,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             images: imagePreviews,
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
-            authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+            authorAvatar: validateAvatarUrl(currentUser?.avatar),
             status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
@@ -1534,7 +1552,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         setPaymentQRPreview('');
     };
 
-    // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -2433,11 +2450,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             <div className="post-header">
                 <div className="post-avatar-container">
                     <img
-                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
+                        src={isUserPost ? validateAvatarUrl(currentUser.avatar) : validateAvatarUrl(post.authorAvatar)}
                         alt={`${post.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
                         decoding="async"
+                        onError={(e) => {
+                            e.target.src = placeholderAvatar;
+                        }}
                     />
                 </div>
                 <div className="post-info">
@@ -2927,7 +2947,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!selectedAvatar && !customAvatar) {
             setAvatarError('Please select or upload an avatar.');
             return;
@@ -2936,16 +2956,13 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         
         console.log('💾 Saving avatar:', avatarToSave);
         
-        onSave(avatarToSave)
-            .then(() => {
-                // Pass the avatar URL to the parent component
-                // onSave(avatarToSave); // This line is no longer necessary as onSave handles the state update
-                onClose();
-            })
-            .catch(error => {
-                console.error('Failed to update avatar:', error);
-                setAvatarError('Failed to update avatar. Please try again.');
-            });
+        try {
+            await onSave(avatarToSave);
+            onClose();
+        } catch (error) {
+            console.error('Failed to update avatar:', error);
+            setAvatarError('Failed to update avatar. Please try again.');
+        }
     };
 
     if (!isOpen) return null;
@@ -2967,7 +2984,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
                     <div className="current-avatar-container">
                         <h4 className="modal-subtitle">Current Profile Image</h4>
                         <div className="current-avatar-preview">
-                            <img src={currentUser.avatar || placeholderAvatar} alt="Current Avatar" loading="lazy" decoding="async" />
+                            <img src={validateAvatarUrl(currentUser.avatar)} alt="Current Avatar" loading="lazy" decoding="async" />
                         </div>
                     </div>
                     <div className="avatar-options-container">
@@ -3074,7 +3091,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
             <div className="profile-header">
                 <div className="profile-avatar-container">
-                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                    <img src={validateAvatarUrl(currentUser.avatar)} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
                     <button className="edit-avatar-btn" onClick={onEditProfile}>
                         <Edit3 size={16} />
 
@@ -3178,7 +3195,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
-    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+    const allEvents = [...posts.filter(p => p.type === 'event' || p.type === 'culturalEvent'), ...myCalendarEvents];
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -3191,7 +3208,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents;
+    const upcomingCalendarEvents = myCalendarEvents.filter(event => new Date(event.eventStartDate) >= new Date());
 
     return (
         <>
@@ -3350,7 +3367,6 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
-                    // ✅ Add default avatar for new registrations
                     avatar: isRegistering ? 'https://placehold.co/40x40/cccccc/000000?text=A' : undefined
                 }),
             });
@@ -3487,7 +3503,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="avatar-wrapper">
-                    <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                    <img src={validateAvatarUrl(user.avatar)} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                 </div>
             </button>
 
@@ -3495,7 +3511,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 <div className="profile-dropdown-menu">
                     <div className="profile-info">
                         <div className="profile-avatar">
-                            <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                            <img src={validateAvatarUrl(user.avatar)} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                         </div>
                         <div className="profile-details">
                             <div className="profile-name-display">{user.name}</div>
@@ -3601,7 +3617,11 @@ const App = () => {
 
     const [currentUser, setCurrentUser] = useState(() => {
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        return savedUser || null;
+        if (savedUser) {
+            // Ensure avatar fallback is handled on initial load
+            return { ...savedUser, avatar: validateAvatarUrl(savedUser.avatar) };
+        }
+        return null;
     });
     const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
@@ -3816,12 +3836,15 @@ const App = () => {
         const _id = urlParams.get('_id');
 
         if (token && name && email && _id) {
-            const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
+            const user = { _id, name, email, avatar: avatar, token, isAdmin };
             handleLogin(user);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser && savedUser.token) {
+                if (!savedUser.avatar) {
+                    savedUser.avatar = placeholderAvatar;
+                }
                 setIsLoggedIn(true);
                 setCurrentUser(savedUser);
             }
@@ -3959,7 +3982,6 @@ const App = () => {
         handleShowCalendarAlert();
     };
 
-    // Corrected `handleRegisterEvent` function
     const handleRegisterEvent = async (eventId, registrationData) => {
         if (!isLoggedIn || !currentUser) {
             console.error('User not authenticated for registration.');
@@ -4015,7 +4037,6 @@ const App = () => {
                     },
                     ...prev
                 ]);
-                // CRITICAL FIX: Throw an error to propagate failure to the modal
                 throw new Error(errorData.message || 'Registration failed due to server error.');
             }
         } catch (err) {
@@ -4029,7 +4050,6 @@ const App = () => {
                 },
                 ...prev
             ]);
-            // CRITICAL FIX: Re-throw the error to ensure the modal's catch block is executed.
             throw err;
         }
     };
@@ -4048,7 +4068,7 @@ const App = () => {
                 ...newPost,
                 userId: currentUser?._id,
                 author: currentUser?.name || 'Anonymous',
-                authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
+                authorAvatar: validateAvatarUrl(currentUser?.avatar),
                 status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
                 price: parseFloat(newPost.price) || 0,
@@ -4090,13 +4110,11 @@ const App = () => {
                             ...prev
                         ]);
                     }
-                    // Show success alert after a successful post
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = submissionData.status === 'pending'
                         ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
                         : `Your new ${postTypeLabel} "${submissionData.title}" has been posted successfully!`;
                     handleShowPostSuccessAlert(successMessage);
-
                 } else {
                     setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
                     setNotifications(prev => [
@@ -4108,7 +4126,6 @@ const App = () => {
                         },
                         ...prev
                     ]);
-                    // Show success alert after a successful update
                     const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
                     const successMessage = `Your ${postTypeLabel} "${newPost.title}" has been updated successfully!`;
                     handleShowPostSuccessAlert(successMessage);
@@ -4476,9 +4493,13 @@ const App = () => {
     };
 
     const handleLogin = (user) => {
+        const userWithValidAvatar = {
+            ...user,
+            avatar: validateAvatarUrl(user.avatar)
+        };
         setIsLoggedIn(true);
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(userWithValidAvatar);
+        localStorage.setItem('currentUser', JSON.stringify(userWithValidAvatar));
     };
 
     const handleLogout = () => {
@@ -4617,7 +4638,7 @@ const App = () => {
                     'Authorization': `Bearer ${currentUser.token}`
                 },
                 body: JSON.stringify({ 
-                    avatarUrl: newAvatar 
+                    avatar: newAvatar 
                 })
             });
 
@@ -4631,15 +4652,16 @@ const App = () => {
             const data = await response.json();
             console.log('✅ Avatar update successful:', data);
             
-            // Update current user with new avatar data
-            const updatedUser = { ...currentUser, avatar: data.avatar || newAvatar };
+            const updatedUser = { 
+                ...currentUser, 
+                avatar: data.user.avatar || data.avatar || newAvatar 
+            };
+            
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
             
-            // Force refresh posts to update avatars in existing posts
             await fetchPosts();
             
-            // Show success notification
             setNotifications(prev => [
                 {
                     _id: Date.now().toString(),
@@ -4666,6 +4688,7 @@ const App = () => {
             throw error;
         }
     };
+
     const handleExportRegistrations = async (eventId, eventTitle) => {
         if (!currentUser || !currentUser.token) {
             console.error('User not authenticated.');
@@ -4677,8 +4700,6 @@ const App = () => {
         }
 
         try {
-            // Reverted to the correct and logical endpoint for exporting registrations,
-            // as this data is tied to a specific post (event).
             const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
@@ -4692,7 +4713,6 @@ const App = () => {
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                // Create a clean filename
                 const cleanEventTitle = eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
                 a.download = `registrations_${cleanEventTitle}.csv`;
                 document.body.appendChild(a);
@@ -4780,7 +4800,7 @@ const App = () => {
             action: () => setActiveSection('events'),
             component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} {...postCardProps} />,
             rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'event')}
+                posts={posts}
                 myCalendarEvents={myCalendarEvents}
                 onOpenEventDetail={handleOpenEventDetail}
             />,
@@ -4973,7 +4993,6 @@ const App = () => {
                 message="Your event has been saved. You can view it by opening the calendar."
                 showConfirm={false}
             />
-            {/* Thank you popup for AddPostModal */}
             <CustomMessageModal
                 isOpen={showPostSuccessAlert}
                 onClose={() => setShowPostSuccessAlert(false)}
