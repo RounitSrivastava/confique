@@ -4655,7 +4655,7 @@ const App = () => {
             
             const updatedUser = { 
                 ...currentUser, 
-                avatar: data.user.avatar || data.avatar || newAvatar 
+                avatar: data.user?.avatar || data.avatar || newAvatar 
             };
             
             setCurrentUser(updatedUser);
