@@ -2948,11 +2948,12 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     };
 
     const handleSave = async () => {
-        if (!selectedAvatar && !customAvatar) {
+        const avatarToSave = customAvatar || selectedAvatar;
+        
+        if (!avatarToSave) {
             setAvatarError('Please select or upload an avatar.');
             return;
         }
-        const avatarToSave = customAvatar || selectedAvatar;
         
         console.log('💾 Saving avatar:', avatarToSave);
         
