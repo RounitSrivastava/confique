@@ -4165,7 +4165,7 @@ const App = () => {
                 userId: currentUser?._id,
                 author: currentUser?.name || 'Anonymous',
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-                status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
+                status: (submissionData.type === 'event' || submissionData.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
                 price: parseFloat(newPost.price) || 0,
                 registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
