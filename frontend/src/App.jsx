@@ -361,7 +361,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
     const isCommentAuthor = currentUser && comment.authorId === currentUser._id;
-    const avatarSrc = isCommentAuthor ? currentUser.avatar : (comment.authorAvatar || placeholderAvatar);
+    const avatarSrc = isCommentAuthor ? (currentUser.avatar || placeholderAvatar) : (comment.authorAvatar || placeholderAvatar);
 
     return (
         <div className="comment-item">
@@ -2433,7 +2433,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             <div className="post-header">
                 <div className="post-avatar-container">
                     <img
-                        src={isUserPost ? currentUser.avatar : post.authorAvatar || placeholderAvatar}
+                        src={isUserPost ? (currentUser.avatar || placeholderAvatar) : (post.authorAvatar || placeholderAvatar)}
                         alt={`${post.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
@@ -2938,8 +2938,6 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
         
         onSave(avatarToSave)
             .then(() => {
-                // Pass the avatar URL to the parent component
-                // onSave(avatarToSave); // This line is no longer necessary as onSave handles the state update
                 onClose();
             })
             .catch(error => {
@@ -3068,16 +3066,18 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         onEditPost(post);
     };
 
+    // Use fallback avatar
+    const userAvatar = currentUser.avatar || placeholderAvatar;
+
     return (
         <div>
             <h2 className="page-title">Your Profile</h2>
 
             <div className="profile-header">
                 <div className="profile-avatar-container">
-                    <img src={currentUser.avatar || placeholderAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
+                    <img src={userAvatar} alt={`${currentUser.name}'s avatar`} className="profile-avatar-img" loading="lazy" decoding="async" />
                     <button className="edit-avatar-btn" onClick={onEditProfile}>
                         <Edit3 size={16} />
-
                     </button>
                 </div>
                 <div className="profile-info">
@@ -3480,6 +3480,9 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         };
     }, []);
 
+    // Ensure avatar has fallback
+    const userAvatar = user?.avatar || placeholderAvatar;
+
     return (
         <div className="profile-dropdown-container" ref={dropdownRef}>
             <button
@@ -3487,7 +3490,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <div className="avatar-wrapper">
-                    <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                    <img src={userAvatar} alt={`${user?.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                 </div>
             </button>
 
@@ -3495,7 +3498,7 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
                 <div className="profile-dropdown-menu">
                     <div className="profile-info">
                         <div className="profile-avatar">
-                            <img src={user.avatar || placeholderAvatar} alt={`${user.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
+                            <img src={userAvatar} alt={`${user?.name}'s avatar`} className="avatar-img" loading="lazy" decoding="async" />
                         </div>
                         <div className="profile-details">
                             <div className="profile-name-display">{user.name}</div>
@@ -3711,6 +3714,12 @@ const App = () => {
         localStorage.setItem('likedPosts', JSON.stringify(Array.from(likedPosts)));
     }, [likedPosts]);
 
+    // Debug avatar state
+    useEffect(() => {
+        console.log('👤 Current user state:', currentUser);
+        console.log('💾 Local storage user:', localStorage.getItem('currentUser'));
+    }, [currentUser]);
+
     const fetchPosts = async () => {
         try {
             const res = await callApi('/posts');
@@ -3816,14 +3825,26 @@ const App = () => {
         const _id = urlParams.get('_id');
 
         if (token && name && email && _id) {
-            const user = { _id, name, email, avatar: avatar || null, token, isAdmin };
+            const user = { 
+                _id, 
+                name, 
+                email, 
+                avatar: avatar || 'https://placehold.co/40x40/cccccc/000000?text=A', 
+                token, 
+                isAdmin 
+            };
             handleLogin(user);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser && savedUser.token) {
+                // Ensure saved user has avatar
+                const userWithAvatar = {
+                    ...savedUser,
+                    avatar: savedUser.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+                };
                 setIsLoggedIn(true);
-                setCurrentUser(savedUser);
+                setCurrentUser(userWithAvatar);
             }
         }
     }, []);
@@ -4476,9 +4497,22 @@ const App = () => {
     };
 
     const handleLogin = (user) => {
+        console.log('🔑 Login user data:', user);
+        
+        // Ensure avatar has a fallback
+        const userWithAvatar = {
+            ...user,
+            avatar: user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+        };
+        
         setIsLoggedIn(true);
-        setCurrentUser(user);
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(userWithAvatar);
+        localStorage.setItem('currentUser', JSON.stringify(userWithAvatar));
+        
+        // Force refresh user data
+        fetchLikedPosts(userWithAvatar);
+        fetchRegistrations();
+        fetchMyRegistrations(userWithAvatar);
     };
 
     const handleLogout = () => {
@@ -4631,8 +4665,14 @@ const App = () => {
             const data = await response.json();
             console.log('✅ Avatar update successful:', data);
             
-            // Update current user with new avatar data
-            const updatedUser = { ...currentUser, avatar: data.avatar || newAvatar };
+            // Update current user with new avatar data - use the URL from response
+            const updatedUser = { 
+                ...currentUser, 
+                avatar: data.avatar || data.avatarUrl || newAvatar 
+            };
+            
+            console.log('💾 Updated user:', updatedUser);
+            
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
             
@@ -4666,6 +4706,7 @@ const App = () => {
             throw error;
         }
     };
+
     const handleExportRegistrations = async (eventId, eventTitle) => {
         if (!currentUser || !currentUser.token) {
             console.error('User not authenticated.');
