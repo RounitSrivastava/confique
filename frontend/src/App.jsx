@@ -1226,7 +1226,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         if (isOpen) {
             setFormData(getInitialFormData(postToEdit, currentUser));
             setImagePreviews(postToEdit?.images || []);
-            setPaymentQRPreview(postToEdit?.paymentQRCode || postToToEdit?.culturalPaymentQRCode || '');
+            setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
             setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
@@ -1418,7 +1418,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
+            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -3837,7 +3837,66 @@ const App = () => {
         }
     };
 
+    // Update the `extractAvatarUrl` to be more robust
+    const extractAvatarUrl = (avatar) => {
+        if (!avatar) return placeholderAvatar;
+
+        // If it's a string, check if it's URL-encoded
+        if (typeof avatar === 'string') {
+            try {
+                // Try to decode it
+                const decoded = decodeURIComponent(avatar);
+                // Return the decoded URL if it's a valid URL, otherwise return the original
+                return decoded.startsWith('http') ? decoded : avatar;
+            } catch (e) {
+                // If decoding fails, return original
+                return avatar;
+            }
+        }
+
+        // If it's an object with url property
+        if (avatar && typeof avatar === 'object' && avatar.url) {
+            try {
+                const decoded = decodeURIComponent(avatar.url);
+                return decoded.startsWith('http') ? decoded : avatar.url;
+            } catch (e) {
+                return avatar.url;
+            }
+        }
+
+        return placeholderAvatar;
+    };
+
+    // Add a cleanup function to fix existing corrupted data
+    const fixCorruptedUserData = () => {
+        try {
+            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (savedUser && savedUser.token) {
+                console.log('🛠️ Fixing corrupted user data:', savedUser);
+                
+                const fixedUser = {
+                    ...savedUser,
+                    name: decodeURIComponent(savedUser.name || ''),
+                    email: decodeURIComponent(savedUser.email || ''),
+                    avatar: extractAvatarUrl(savedUser.avatar)
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(fixedUser));
+                console.log('✅ Fixed user data:', fixedUser);
+                
+                if (currentUser) {
+                    setCurrentUser(fixedUser);
+                }
+            }
+        } catch (error) {
+            console.error('Error fixing user data:', error);
+        }
+    };
+
     useEffect(() => {
+        // Call the cleanup function on app startup
+        fixCorruptedUserData();
+
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         const name = urlParams.get('name');
@@ -3847,33 +3906,40 @@ const App = () => {
         const _id = urlParams.get('_id');
 
         if (token && name && email && _id) {
+            console.log('🔑 Google login callback detected');
+            console.log('📸 Raw URL params - name:', name, 'email:', email, 'avatar:', avatar);
+            
+            // ✅ FIX: Decode URL-encoded parameters
+            const decodedName = decodeURIComponent(name);
+            const decodedEmail = decodeURIComponent(email);
+            const decodedAvatar = avatar ? decodeURIComponent(avatar) : placeholderAvatar;
+            
+            console.log('🔑 Decoded params - name:', decodedName, 'email:', decodedEmail, 'avatar:', decodedAvatar);
+
             const user = { 
                 _id, 
-                name, 
-                email, 
-                avatar: avatar || 'https://placehold.co/40x40/cccccc/000000?text=A', 
+                name: decodedName, 
+                email: decodedEmail, 
+                avatar: decodedAvatar, 
                 token, 
                 isAdmin 
             };
+            
             handleLogin(user);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser && savedUser.token) {
-                // Ensure saved user has avatar
-                const extractAvatarUrl = (avatar) => {
-                    if (!avatar) return placeholderAvatar;
-                    if (typeof avatar === 'string') return avatar;
-                    if (avatar.url) return avatar.url;
-                    return placeholderAvatar;
-                };
-
-                const userWithAvatar = {
+                console.log('💾 Loading user from localStorage:', savedUser);
+                // Ensure saved user data is properly decoded when loading
+                const userWithDecodedData = {
                     ...savedUser,
+                    name: decodeURIComponent(savedUser.name || ''),
+                    email: decodeURIComponent(savedUser.email || ''),
                     avatar: extractAvatarUrl(savedUser.avatar)
                 };
                 setIsLoggedIn(true);
-                setCurrentUser(userWithAvatar);
+                setCurrentUser(userWithDecodedData);
             }
         }
     }, []);
@@ -4528,29 +4594,23 @@ const App = () => {
     const handleLogin = (user) => {
         console.log('🔑 Login user data received:', user);
         
-        // Extract avatar URL from object if needed
-        const extractAvatarUrl = (avatar) => {
-            if (!avatar) return placeholderAvatar;
-            if (typeof avatar === 'string') return avatar;
-            if (avatar.url) return avatar.url;
-            return placeholderAvatar;
-        };
-
-        const userWithAvatar = {
+        // ✅ Ensure all string fields are properly decoded
+        const decodedUser = {
             ...user,
+            name: decodeURIComponent(user.name || ''),
+            email: decodeURIComponent(user.email || ''),
             avatar: extractAvatarUrl(user.avatar)
         };
         
-        console.log('💾 Final user to save:', userWithAvatar);
+        console.log('💾 Final decoded user to save:', decodedUser);
         
         setIsLoggedIn(true);
-        setCurrentUser(userWithAvatar);
-        localStorage.setItem('currentUser', JSON.stringify(userWithAvatar));
+        setCurrentUser(decodedUser);
+        localStorage.setItem('currentUser', JSON.stringify(decodedUser));
         
-        // Force refresh user data
-        fetchLikedPosts(userWithAvatar);
+        fetchLikedPosts(decodedUser);
         fetchRegistrations();
-        fetchMyRegistrations(userWithAvatar);
+        fetchMyRegistrations(decodedUser);
     };
 
     const handleLogout = () => {
@@ -4703,18 +4763,10 @@ const App = () => {
             const data = await response.json();
             console.log('✅ Avatar update successful:', data);
             
-            // Extract avatar URL from response
-            const extractAvatarUrl = (avatar) => {
-                if (!avatar) return placeholderAvatar;
-                if (typeof avatar === 'string') return avatar;
-                if (avatar.url) return avatar.url;
-                return placeholderAvatar;
-            };
-            
             // Update current user with new avatar data
             const updatedUser = { 
                 ...currentUser, 
-                avatar: extractAvatarUrl(data.avatar) || newAvatar 
+                avatar: extractAvatarUrl(data.avatar) 
             };
             
             console.log('💾 Updated user:', updatedUser);
