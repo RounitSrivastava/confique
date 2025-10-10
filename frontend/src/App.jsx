@@ -1326,7 +1326,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 ...prev,
                 registrationLink: defaultMethod === 'link' ? prev.registrationLink : '',
                 enableRegistrationForm: defaultMethod === 'form',
-                registrationFields: defaultMethod === 'form' ? 'Team Name, Team Captain\'s Name, Captain\'s WhatsApp mobile number, Captain\'s Email Id' : '',
+                registrationFields: defaultMethod === 'form' ? prev.registrationFields : '',
             }));
         }
     };
@@ -1418,7 +1418,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
+            // FIX: Use formData instead of the undefined 'newPost'
+            status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
 
@@ -1481,10 +1482,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         try {
             await onSubmit(submissionData);
             onClose(); // Close the modal first
-            const postTypeLabel = submissionData.type === 'confession' ? 'Consights' : (submissionData.type === 'event' ? 'Event' : 'Cultural Event');
-            const successMessage = submissionData.status === 'pending'
-                ? `Your new ${postTypeLabel} "${submissionData.title}" has been submitted for admin approval.`
-                : `Your new ${postTypeLabel} "${submissionData.title}" has been posted successfully!`;
+            
+            // FIX: Use formData instead of submissionData to ensure consistent data source
+            const postTypeLabel = formData.type === 'confession' ? 'Consights' : (formData.type === 'event' ? 'Event' : 'Cultural Event');
+            
+            // FIX: Use formData.type and formData.title for the success message logic
+            const successMessage = (formData.type === 'event' || formData.type === 'culturalEvent')
+                ? `Your new ${postTypeLabel} "${formData.title}" has been submitted for admin approval.`
+                : `Your new ${postTypeLabel} "${formData.title}" has been posted successfully!`;
+            
             onShowSuccessAlert(successMessage);
         } catch (error) {
             console.error('Error submitting post:', error);
@@ -1534,7 +1540,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         setPaymentQRPreview('');
     };
 
-    // Corrected `handleImageError` to fix ReferenceError
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
@@ -1772,7 +1777,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                             <div className="image-upload-container">
                                                                                 {paymentQRPreview ? (
                                                                                     <div className="payment-qr-preview">
-                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                        <img
+                                                                                            src={paymentQRPreview}
+                                                                                            alt="Payment QR"
+                                                                                            loading="lazy"
+                                                                                            decoding="async"
+                                                                                            onError={handleImageError}
+                                                                                        />
                                                                                         <button type="button" className="remove-image-btn" onClick={removeQRImage}>
                                                                                             <X size={14} />
                                                                                         </button>
@@ -1886,7 +1897,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                             <div className="image-upload-container">
                                                                                 {paymentQRPreview ? (
                                                                                     <div className="payment-qr-preview">
-                                                                                        <img src={paymentQRPreview} alt="Payment QR" loading="lazy" decoding="async" />
+                                                                                        <img
+                                                                                            src={paymentQRPreview}
+                                                                                            alt="Payment QR"
+                                                                                            loading="lazy"
+                                                                                            decoding="async"
+                                                                                            onError={handleImageError}
+                                                                                        />
                                                                                         <button type="button" className="remove-image-btn" onClick={removeQRImage}>
                                                                                             <X size={14} />
                                                                                         </button>
@@ -4165,7 +4182,7 @@ const App = () => {
                 userId: currentUser?._id,
                 author: currentUser?.name || 'Anonymous',
                 authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-                status: (submissionData.type === 'event' || submissionData.type === 'culturalEvent') ? 'pending' : 'approved',
+                status: (newPost.type === 'event' || newPost.type === 'culturalEvent') ? 'pending' : 'approved',
                 timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
                 price: parseFloat(newPost.price) || 0,
                 registrationOpen: newPost.registrationOpen === 'true' || newPost.registrationOpen === true,
