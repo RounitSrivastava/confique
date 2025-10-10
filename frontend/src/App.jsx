@@ -1226,7 +1226,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         if (isOpen) {
             setFormData(getInitialFormData(postToEdit, currentUser));
             setImagePreviews(postToEdit?.images || []);
-            setPaymentQRPreview(postToEdit?.paymentQRCode || postToEdit?.culturalPaymentQRCode || '');
+            setPaymentQRPreview(postToEdit?.paymentQRCode || postToToEdit?.culturalPaymentQRCode || '');
             setHasRegistration(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
@@ -2171,7 +2171,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                     <div className="event-detail-about-section">
                         <h2>About the Event</h2>
-                        <p style={{ whiteSpace: 'pre-wrap' }}>
+                        <p style={{ whiteWhiteSpace: 'pre-wrap' }}>
                             {displayContent}
                             {hasMoreContent && (
                                 <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
@@ -2297,6 +2297,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const contentRef = useRef(null);
     const [needsShowMore, setNeedsShowMore] = useState(false);
     const [showShareAlert, setShowShareAlert] = useState(false);
+
+    // Extract avatar URL helper
+    const extractAvatarUrl = (avatar) => {
+        if (!avatar) return placeholderAvatar;
+        if (typeof avatar === 'string') return avatar;
+        if (avatar.url) return avatar.url;
+        return placeholderAvatar;
+    };
 
     const handleImageError = (e) => {
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
@@ -2433,7 +2441,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             <div className="post-header">
                 <div className="post-avatar-container">
                     <img
-                        src={isUserPost ? (currentUser.avatar || placeholderAvatar) : (post.authorAvatar || placeholderAvatar)}
+                        src={isUserPost ? extractAvatarUrl(currentUser.avatar) : extractAvatarUrl(post.authorAvatar)}
                         alt={`${post.author}'s avatar`}
                         className="post-avatar"
                         loading="lazy"
@@ -3045,6 +3053,14 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         );
     }
 
+    // Extract avatar URL properly
+    const extractAvatarUrl = (avatar) => {
+        if (!avatar) return placeholderAvatar;
+        if (typeof avatar === 'string') return avatar;
+        if (avatar.url) return avatar.url;
+        return placeholderAvatar;
+    };
+
     const userPosts = posts.filter(post =>
         post.userId === currentUser._id
     );
@@ -3066,8 +3082,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         onEditPost(post);
     };
 
-    // Use fallback avatar
-    const userAvatar = currentUser.avatar || placeholderAvatar;
+    const userAvatar = extractAvatarUrl(currentUser.avatar);
 
     return (
         <div>
@@ -3480,8 +3495,15 @@ const ProfileDropdown = ({ user, onLogout, onProfileClick }) => {
         };
     }, []);
 
-    // Ensure avatar has fallback
-    const userAvatar = user?.avatar || placeholderAvatar;
+    // Extract avatar URL properly
+    const extractAvatarUrl = (avatar) => {
+        if (!avatar) return placeholderAvatar;
+        if (typeof avatar === 'string') return avatar;
+        if (avatar.url) return avatar.url;
+        return placeholderAvatar;
+    };
+
+    const userAvatar = extractAvatarUrl(user?.avatar);
 
     return (
         <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -3839,9 +3861,16 @@ const App = () => {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser && savedUser.token) {
                 // Ensure saved user has avatar
+                const extractAvatarUrl = (avatar) => {
+                    if (!avatar) return placeholderAvatar;
+                    if (typeof avatar === 'string') return avatar;
+                    if (avatar.url) return avatar.url;
+                    return placeholderAvatar;
+                };
+
                 const userWithAvatar = {
                     ...savedUser,
-                    avatar: savedUser.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+                    avatar: extractAvatarUrl(savedUser.avatar)
                 };
                 setIsLoggedIn(true);
                 setCurrentUser(userWithAvatar);
@@ -4497,13 +4526,22 @@ const App = () => {
     };
 
     const handleLogin = (user) => {
-        console.log('🔑 Login user data:', user);
+        console.log('🔑 Login user data received:', user);
         
-        // Ensure avatar has a fallback
+        // Extract avatar URL from object if needed
+        const extractAvatarUrl = (avatar) => {
+            if (!avatar) return placeholderAvatar;
+            if (typeof avatar === 'string') return avatar;
+            if (avatar.url) return avatar.url;
+            return placeholderAvatar;
+        };
+
         const userWithAvatar = {
             ...user,
-            avatar: user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+            avatar: extractAvatarUrl(user.avatar)
         };
+        
+        console.log('💾 Final user to save:', userWithAvatar);
         
         setIsLoggedIn(true);
         setCurrentUser(userWithAvatar);
@@ -4665,10 +4703,18 @@ const App = () => {
             const data = await response.json();
             console.log('✅ Avatar update successful:', data);
             
-            // Update current user with new avatar data - use the URL from response
+            // Extract avatar URL from response
+            const extractAvatarUrl = (avatar) => {
+                if (!avatar) return placeholderAvatar;
+                if (typeof avatar === 'string') return avatar;
+                if (avatar.url) return avatar.url;
+                return placeholderAvatar;
+            };
+            
+            // Update current user with new avatar data
             const updatedUser = { 
                 ...currentUser, 
-                avatar: data.avatar || data.avatarUrl || newAvatar 
+                avatar: extractAvatarUrl(data.avatar) || newAvatar 
             };
             
             console.log('💾 Updated user:', updatedUser);
