@@ -8,6 +8,7 @@ console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? '✅ Loaded' : '
 console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? '✅ Loaded' : '❌ Missing');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ Loaded' : '❌ Missing');
 console.log('MONGO_URI:', process.env.MONGO_URI ? '✅ Loaded' : '❌ Missing');
+console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME ? '✅ Loaded' : '❌ Missing');
 console.log('====================================');
 
 const express = require('express');
@@ -35,8 +36,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
+console.log('Cloudinary configured with cloud_name:', process.env.CLOUDINARY_CLOUD_NAME);
+
+// Connect to MongoDB with fallback
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -44,27 +47,36 @@ mongoose.connect(process.env.MONGO_URI)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// CORS Configuration
+// CORS Configuration - Updated for showcase
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://www.confique.com'],
+  origin: [
+    process.env.FRONTEND_URL, 
+    'http://localhost:5173', 
+    'http://localhost:3000',
+    'https://www.confique.com',
+    'https://confique.com'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 }));
 
-// Session middleware configuration
+// Handle preflight requests
+app.options('*', cors());
+
+// Session middleware configuration with fallback
 app.use(session({
-  secret: process.env.SESSION_SECRET,
+  secret: process.env.SESSION_SECRET || 'startup-showcase-secret-key',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
-    mongoUrl: process.env.MONGO_URI,
+    mongoUrl: process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase',
     collectionName: 'sessions',
   }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 1000 * 60 * 60 * 24
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
   }
 }));
 
@@ -74,9 +86,22 @@ app.use(passport.session());
 
 // Test basic route first
 app.get('/test', (req, res) => {
-  res.json({ message: 'Server working' });
+  res.json({ 
+    message: 'Startup Showcase Server working',
+    timestamp: new Date().toISOString()
+  });
 });
 console.log('✅ Basic test route registered');
+
+// Health check endpoint for showcase
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'OK',
+    service: 'Startup Showcase API',
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+  });
+});
 
 // Load routes one by one with error handling
 console.log('Loading routes one by one...');
@@ -101,6 +126,19 @@ loadRoute('User routes', './routes/userRoutes.js', '/api/users');
 loadRoute('Notification routes', './routes/notifications.js', '/api/notifications');
 loadRoute('Cron routes', './routes/cronRoutes.js', '/api/cron');
 
+// Showcase-specific endpoints
+app.get('/api/showcase/submission-status', (req, res) => {
+  const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
+  const now = new Date().getTime();
+  const isPostingEnabled = now < SUBMISSION_DEADLINE;
+  
+  res.json({
+    isPostingEnabled,
+    deadline: '2025-10-31T23:59:59',
+    daysRemaining: Math.ceil((SUBMISSION_DEADLINE - now) / (1000 * 60 * 60 * 24))
+  });
+});
+
 console.log('All routes loaded, starting server...');
 
 // Production Static File Serving and Catch-All Route - FIXED VERSION
@@ -124,11 +162,40 @@ if (process.env.NODE_ENV === 'production') {
   console.log('✅ Production static file serving configured');
 }
 
-// Basic error handling middleware
+// Enhanced error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
+  console.error('Error:', err.stack);
+  
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      message: 'Validation Error',
+      errors: Object.values(err.errors).map(e => e.message)
+    });
+  }
+  
+  if (err.name === 'CastError') {
+    return res.status(400).json({
+      message: 'Invalid ID format'
+    });
+  }
+  
+  res.status(500).json({
+    message: 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { error: err.message })
+  });
+});
+
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    message: 'API endpoint not found',
+    path: req.originalUrl
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Startup Showcase Server running on port ${PORT}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 CORS enabled for frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+});

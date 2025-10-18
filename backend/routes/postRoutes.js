@@ -39,6 +39,10 @@ const extractPublicId = (url) => {
     return null;
 };
 
+// ==============================================
+// EXISTING ROUTES (KEEP ALL ORIGINAL FUNCTIONALITY)
+// ==============================================
+
 // @desc    Get all posts
 // @route   GET /api/posts
 // @access  Public (for approved posts), Private (for all posts as admin)
@@ -135,6 +139,19 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         ...restOfPostData
     } = req.body;
 
+    // ==============================================
+    // STARTUP SHOWCASE: Check submission deadline for showcase posts
+    // ==============================================
+    if (type === 'showcase') {
+        const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
+        const now = new Date().getTime();
+        if (now > SUBMISSION_DEADLINE) {
+            return res.status(400).json({ 
+                message: 'Submissions are closed for Startup Showcase. The deadline was October 31, 2025.' 
+            });
+        }
+    }
+
     let imageUrls = [];
     if (images && Array.isArray(images) && images.length > 0) {
         imageUrls = await Promise.all(images.map(uploadImage));
@@ -163,6 +180,19 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         timestamp: new Date(),
     };
 
+    // ==============================================
+    // STARTUP SHOWCASE: Set default values for showcase posts
+    // ==============================================
+    if (type === 'showcase') {
+        newPostData.upvotes = 0;
+        newPostData.upvoters = [];
+        newPostData.comments = [];
+        newPostData.commentCount = 0;
+        newPostData.month = restOfPostData.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        newPostData.launchedDate = restOfPostData.launchedDate || new Date().toLocaleDateString('en-IN');
+        newPostData.status = 'approved'; // Showcase posts are auto-approved
+    }
+
     if (type === 'event') {
         if (qrCodeUrl) newPostData.paymentQRCode = qrCodeUrl;
         newPostData.paymentMethod = ['link', 'qr'].includes(paymentMethod) ? paymentMethod : undefined;
@@ -180,7 +210,29 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         newPostData.paymentMethod = undefined;
         newPostData.paymentLink = undefined;
         newPostData.paymentQRCode = undefined;
+    } else if (type === 'showcase') {
+        // Clean up showcase posts - remove event-specific fields
+        newPostData.location = undefined;
+        newPostData.eventStartDate = undefined;
+        newPostData.eventEndDate = undefined;
+        newPostData.price = undefined;
+        newPostData.language = undefined;
+        newPostData.duration = undefined;
+        newPostData.registrationLink = undefined;
+        newPostData.registrationOpen = undefined;
+        newPostData.enableRegistrationForm = undefined;
+        newPostData.registrationFields = undefined;
+        newPostData.paymentMethod = undefined;
+        newPostData.paymentLink = undefined;
+        newPostData.paymentQRCode = undefined;
+        newPostData.source = undefined;
+        newPostData.ticketOptions = undefined;
+        newPostData.culturalPaymentMethod = undefined;
+        newPostData.culturalPaymentLink = undefined;
+        newPostData.culturalPaymentQRCode = undefined;
+        newPostData.availableDates = undefined;
     } else {
+        // Regular posts cleanup
         newPostData.location = undefined;
         newPostData.eventStartDate = undefined;
         newPostData.eventEndDate = undefined;
@@ -323,7 +375,29 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         post.paymentMethod = undefined;
         post.paymentLink = undefined;
         post.paymentQRCode = undefined;
+    } else if (post.type === 'showcase') {
+        // Clean up showcase posts
+        post.location = undefined;
+        post.eventStartDate = undefined;
+        post.eventEndDate = undefined;
+        post.price = undefined;
+        post.language = undefined;
+        post.duration = undefined;
+        post.registrationLink = undefined;
+        post.registrationOpen = undefined;
+        post.enableRegistrationForm = undefined;
+        post.registrationFields = undefined;
+        post.paymentMethod = undefined;
+        post.paymentLink = undefined;
+        post.paymentQRCode = undefined;
+        post.source = undefined;
+        post.ticketOptions = undefined;
+        post.culturalPaymentMethod = undefined;
+        post.culturalPaymentLink = undefined;
+        post.culturalPaymentQRCode = undefined;
+        post.availableDates = undefined;
     } else {
+        // Regular posts cleanup
         post.location = undefined;
         post.eventStartDate = undefined;
         post.eventEndDate = undefined;
@@ -550,6 +624,184 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
+}));
+
+// ==============================================
+// NEW STARTUP SHOWCASE ROUTES (ADDITIONAL FUNCTIONALITY)
+// ==============================================
+
+// @desc    Get posts by month (for showcase)
+// @route   GET /api/posts/month/:month
+// @access  Public
+router.get('/month/:month', asyncHandler(async (req, res) => {
+    const { month } = req.params;
+    const { search, page = 1, limit = 10 } = req.query;
+
+    let query = { 
+        type: 'showcase', 
+        month: month,
+        status: 'approved' 
+    };
+
+    // Add search functionality for showcase
+    if (search) {
+        query.$or = [
+            { title: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { fullDescription: { $regex: search, $options: 'i' } }
+        ];
+    }
+
+    const posts = await Post.find(query)
+        .populate('creator', 'name avatar')
+        .populate('upvoters', 'name avatar')
+        .sort({ upvotes: -1, createdAt: -1 })
+        .limit(limit * 1)
+        .skip((page - 1) * limit);
+
+    const total = await Post.countDocuments(query);
+
+    res.json({
+        posts,
+        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        total
+    });
+}));
+
+// @desc    Upvote a showcase post
+// @route   PUT /api/posts/:id/upvote
+// @access  Private
+router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
+    const post = await Post.findById(req.params.id);
+    
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.type !== 'showcase') {
+        return res.status(400).json({ message: 'Only showcase posts can be upvoted' });
+    }
+
+    const hasUpvoted = post.upvoters.includes(req.user._id);
+
+    if (hasUpvoted) {
+        // Remove upvote
+        post.upvotes -= 1;
+        post.upvoters = post.upvoters.filter(
+            userId => userId.toString() !== req.user._id.toString()
+        );
+    } else {
+        // Add upvote
+        post.upvotes += 1;
+        post.upvoters.push(req.user._id);
+
+        // Create notification for post creator
+        if (post.userId.toString() !== req.user._id.toString()) {
+            const notification = new Notification({
+                user: post.userId,
+                type: 'upvote',
+                message: `${req.user.name} upvoted your startup idea "${post.title}"`,
+                relatedPost: post._id,
+                relatedUser: req.user._id
+            });
+            await notification.save();
+        }
+    }
+
+    await post.save();
+    await post.populate('upvoters', 'name avatar');
+
+    res.json({
+        upvotes: post.upvotes,
+        upvoters: post.upvoters,
+        hasUpvoted: !hasUpvoted
+    });
+}));
+
+// @desc    Add comment to showcase post
+// @route   POST /api/posts/:id/showcase-comments
+// @access  Private
+router.post('/:id/showcase-comments', protect, asyncHandler(async (req, res) => {
+    const { text } = req.body;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.type !== 'showcase') {
+        return res.status(400).json({ message: 'Only showcase posts can use this comment endpoint' });
+    }
+
+    if (!text || text.trim() === '') {
+        return res.status(400).json({ message: 'Comment text cannot be empty' });
+    }
+
+    const now = new Date();
+    const timestamp = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()} at ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')} ${now.getHours() >= 12 ? 'pm' : 'am'}`;
+
+    const comment = {
+        user: req.user._id,
+        text,
+        timestamp,
+        author: req.user.name,
+        authorAvatar: req.user.avatar?.url || req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A'
+    };
+
+    post.comments.push(comment);
+    post.commentCount = post.comments.length;
+    await post.save();
+
+    // Create notification for post creator
+    if (post.userId.toString() !== req.user._id.toString()) {
+        const notification = new Notification({
+            user: post.userId,
+            type: 'comment',
+            message: `${req.user.name} commented on your startup idea "${post.title}"`,
+            relatedPost: post._id,
+            relatedUser: req.user._id
+        });
+        await notification.save();
+    }
+
+    // Populate the new comment with user data
+    await post.populate('comments.user', 'name avatar');
+
+    const newComment = post.comments[post.comments.length - 1];
+
+    res.status(201).json(newComment);
+}));
+
+// @desc    Get showcase post comments with pagination
+// @route   GET /api/posts/:id/showcase-comments
+// @access  Public
+router.get('/:id/showcase-comments', asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+    const post = await Post.findById(req.params.id)
+        .populate('comments.user', 'name avatar')
+        .select('comments');
+
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.type !== 'showcase') {
+        return res.status(400).json({ message: 'Only showcase posts can use this comment endpoint' });
+    }
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
+    const comments = post.comments.slice(startIndex, endIndex);
+    const totalComments = post.comments.length;
+
+    res.json({
+        comments,
+        totalPages: Math.ceil(totalComments / limit),
+        currentPage: page,
+        totalComments
+    });
 }));
 
 module.exports = router;

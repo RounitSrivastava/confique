@@ -29,7 +29,11 @@ const uploadImage = async (image, folderName) => {
 // @route   GET /api/users/profile
 // @access  Private
 router.get('/profile', protect, asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user._id).select('-password');
+    const user = await User.findById(req.user._id)
+        .select('-password')
+        .populate('upvotedPosts', 'title month upvotes')
+        .populate('bookmarkedPosts', 'title month upvotes logoUrl');
+
     if (user) {
         res.json({
             _id: user._id,
@@ -37,11 +41,35 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
             email: user.email,
             avatar: user.avatar?.url || user.avatar, // ✅ Handle both object and string
             isAdmin: user.isAdmin,
+            // Showcase-specific fields
+            upvotedPosts: user.upvotedPosts || [],
+            bookmarkedPosts: user.bookmarkedPosts || [],
         });
     } else {
         res.status(404);
         throw new Error('User not found');
     }
+}));
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+router.put('/profile', protect, asyncHandler(async (req, res) => {
+    const { name, bio, website, linkedin, twitter } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { 
+            name,
+            bio,
+            website,
+            linkedin,
+            twitter
+        },
+        { new: true }
+    ).select('-password');
+
+    res.json(user);
 }));
 
 // @desc    Update user avatar
@@ -117,6 +145,13 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
             { arrayFilters: [{ 'elem.userId': req.user._id }] }
         );
 
+        // Update avatar in showcase comments
+        await Post.updateMany(
+            { 'comments.user': req.user._id },
+            { $set: { 'comments.$[elem].authorAvatar': finalAvatarUrl } },
+            { arrayFilters: [{ 'elem.user': req.user._id }] }
+        );
+
         // ✅ FIX: Return avatar as string URL for frontend compatibility
         res.json({
             _id: updatedUser._id,
@@ -143,6 +178,139 @@ router.get('/liked-posts', protect, asyncHandler(async (req, res) => {
     const likedPosts = await Post.find({ likedBy: req.user._id });
     const likedPostIds = likedPosts.map(post => post._id);
     res.json({ likedPostIds });
+}));
+
+// ==============================================
+// NEW STARTUP SHOWCASE USER ROUTES
+// ==============================================
+
+// @desc    Get user's showcase posts
+// @route   GET /api/users/showcase-posts
+// @access  Private
+router.get('/showcase-posts', protect, asyncHandler(async (req, res) => {
+    const posts = await Post.find({ 
+        userId: req.user._id, 
+        type: 'showcase' 
+    })
+    .sort({ createdAt: -1 })
+    .populate('upvoters', 'name avatar')
+    .select('title description month upvotes comments commentCount createdAt status');
+
+    res.json(posts);
+}));
+
+// @desc    Get user's upvoted showcase posts
+// @route   GET /api/users/upvoted-showcase
+// @access  Private
+router.get('/upvoted-showcase', protect, asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).populate({
+        path: 'upvotedPosts',
+        match: { type: 'showcase' },
+        select: 'title description month upvotes logoUrl bannerUrl createdAt'
+    });
+
+    res.json(user.upvotedPosts || []);
+}));
+
+// @desc    Get user's bookmarked showcase posts
+// @route   GET /api/users/bookmarked-showcase
+// @access  Private
+router.get('/bookmarked-showcase', protect, asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).populate({
+        path: 'bookmarkedPosts',
+        match: { type: 'showcase' },
+        select: 'title description month upvotes logoUrl bannerUrl createdAt'
+    });
+
+    res.json(user.bookmarkedPosts || []);
+}));
+
+// @desc    Bookmark a showcase post
+// @route   POST /api/users/bookmark/:postId
+// @access  Private
+router.post('/bookmark/:postId', protect, asyncHandler(async (req, res) => {
+    const post = await Post.findById(req.params.postId);
+    
+    if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+    }
+
+    if (post.type !== 'showcase') {
+        return res.status(400).json({ message: 'Only showcase posts can be bookmarked' });
+    }
+
+    const user = await User.findById(req.user._id);
+    const isBookmarked = user.bookmarkedPosts.includes(post._id);
+
+    if (isBookmarked) {
+        // Remove bookmark
+        user.bookmarkedPosts = user.bookmarkedPosts.filter(
+            postId => postId.toString() !== post._id.toString()
+        );
+    } else {
+        // Add bookmark
+        user.bookmarkedPosts.push(post._id);
+    }
+
+    await user.save();
+    res.json({ 
+        bookmarked: !isBookmarked,
+        bookmarkedPosts: user.bookmarkedPosts 
+    });
+}));
+
+// @desc    Check if user has bookmarked a post
+// @route   GET /api/users/check-bookmark/:postId
+// @access  Private
+router.get('/check-bookmark/:postId', protect, asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+    const isBookmarked = user.bookmarkedPosts.includes(req.params.postId);
+    
+    res.json({ bookmarked: isBookmarked });
+}));
+
+// @desc    Get user's showcase statistics
+// @route   GET /api/users/showcase-stats
+// @access  Private
+router.get('/showcase-stats', protect, asyncHandler(async (req, res) => {
+    const userId = req.user._id;
+
+    const [
+        totalPosts,
+        totalUpvotes,
+        totalComments,
+        upvotedPosts,
+        bookmarkedPosts
+    ] = await Promise.all([
+        // Total showcase posts created by user
+        Post.countDocuments({ userId, type: 'showcase' }),
+        
+        // Total upvotes received on user's showcase posts
+        Post.aggregate([
+            { $match: { userId, type: 'showcase' } },
+            { $group: { _id: null, total: { $sum: '$upvotes' } } }
+        ]),
+        
+        // Total comments received on user's showcase posts
+        Post.aggregate([
+            { $match: { userId, type: 'showcase' } },
+            { $group: { _id: null, total: { $sum: '$commentCount' } } }
+        ]),
+        
+        // Number of posts user has upvoted
+        User.findById(userId).select('upvotedPosts'),
+        
+        // Number of posts user has bookmarked
+        User.findById(userId).select('bookmarkedPosts')
+    ]);
+
+    res.json({
+        postsCreated: totalPosts,
+        totalUpvotesReceived: totalUpvotes[0]?.total || 0,
+        totalCommentsReceived: totalComments[0]?.total || 0,
+        postsUpvoted: upvotedPosts.upvotedPosts?.length || 0,
+        postsBookmarked: bookmarkedPosts.bookmarkedPosts?.length || 0
+    });
 }));
 
 // --- EVENT REGISTRATIONS ---

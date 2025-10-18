@@ -6,7 +6,7 @@ const ticketOptionSchema = new mongoose.Schema({
     ticketPrice: { type: Number, required: true, min: 0 },
 }, { _id: false });
 
-// Sub-schema for comments
+// Sub-schema for comments (for confession/event posts)
 const commentSchema = new mongoose.Schema({
     author: { type: String, required: true },
     authorAvatar: { type: String, default: 'https://placehold.co/40x40/cccccc/000000?text=A' },
@@ -14,6 +14,29 @@ const commentSchema = new mongoose.Schema({
     timestamp: { type: Date, default: Date.now },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
+
+// Sub-schema for showcase comments (different structure)
+const showcaseCommentSchema = new mongoose.Schema({
+    user: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true 
+    },
+    text: { 
+        type: String, 
+        required: true 
+    },
+    timestamp: { 
+        type: String, 
+        required: true 
+    },
+    author: { 
+        type: String 
+    },
+    authorAvatar: { 
+        type: String 
+    }
+}, { _id: true });
 
 // A separate schema for Registrations (not embedded in Post)
 const registrationSchema = new mongoose.Schema({
@@ -45,7 +68,7 @@ const postSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['confession', 'event', 'culturalEvent', 'news'],
+        enum: ['confession', 'event', 'culturalEvent', 'news', 'showcase'], // ADDED 'showcase'
     },
     title: { type: String, required: true },
     content: { type: String, required: true },
@@ -87,6 +110,55 @@ const postSchema = new mongoose.Schema({
     culturalPaymentLink: { type: String },
     culturalPaymentQRCode: { type: String },
     availableDates: [{ type: String }],
+
+    // ==============================================
+    // NEW STARTUP SHOWCASE FIELDS
+    // ==============================================
+    
+    // Basic showcase fields
+    description: { 
+        type: String 
+    }, // Short description for cards
+    fullDescription: { 
+        type: String 
+    }, // Detailed description for showcase page
+    websiteLink: { 
+        type: String 
+    }, // Startup website URL
+    
+    // Visual assets
+    logoUrl: { 
+        type: String 
+    }, // Startup logo image URL
+    bannerUrl: { 
+        type: String 
+    }, // Banner image URL for showcase page
+    
+    // Showcase-specific metadata
+    month: { 
+        type: String 
+    }, // e.g., "October '25" for filtering
+    launchedDate: { 
+        type: String 
+    }, // Date when launched/created
+    
+    // Engagement metrics
+    upvotes: { 
+        type: Number, 
+        default: 0 
+    }, // Separate from likes for showcase
+    upvoters: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }], // Users who upvoted this showcase
+    
+    // Showcase comments (different from regular comments)
+    showcaseComments: [showcaseCommentSchema],
+    commentCount: { 
+        type: Number, 
+        default: 0 
+    }, // Separate count for showcase comments
+
 }, { timestamps: true });
 
 // Pre-save hook to automatically update the comments count
@@ -94,8 +166,19 @@ postSchema.pre('save', function(next) {
     if (this.isModified('commentData')) {
         this.comments = this.commentData.length;
     }
+    
+    // NEW: Update showcase comment count
+    if (this.isModified('showcaseComments')) {
+        this.commentCount = this.showcaseComments.length;
+    }
+    
     next();
 });
+
+// Indexes for better showcase performance
+postSchema.index({ type: 1, month: 1, status: 1 }); // For showcase filtering
+postSchema.index({ type: 1, upvotes: -1 }); // For showcase sorting by popularity
+postSchema.index({ type: 1, createdAt: -1 }); // For showcase sorting by newest
 
 const PostModel = mongoose.model('Post', postSchema);
 const RegistrationModel = mongoose.model('Registration', registrationSchema);
