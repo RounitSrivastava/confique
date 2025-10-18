@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
+import ShowcaseComponent from './ShowcaseComponent';
+import ProjectDetailsPage from './ProjectDetailsPage';
+import ShowcaseRightSidebar from './ShowcaseRightSidebar';
+import { Image, Star, ExternalLink } from 'lucide-react';
 import {
     Home,
     Calendar as CalendarIcon,
@@ -4985,6 +4989,30 @@ const App = () => {
             component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
+       // This code is placed inside the menuItems array definition in your App.jsx
+
+{ 
+  id: 'showcase',
+  label: 'Showcase',
+  icon: <Star className="nav-icon" />, 
+  action: () => setActiveSection('showcase'),
+
+  component: () => (
+    <ShowcaseComponent 
+      ideas={posts} 
+      onSelectIdea={(idea) => handleSelectIdea(idea)} 
+      onPostIdea={(newIdea) => handlePostIdea(newIdea)} 
+    />
+  ),
+
+  rightSidebar: () => (
+    <ShowcaseRightSidebar 
+      posts={posts} 
+      onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
+    />
+  ),
+},
+
         {
             id: 'add',
             label: 'Add',
