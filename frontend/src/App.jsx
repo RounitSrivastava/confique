@@ -4991,27 +4991,27 @@ const App = () => {
         },
        // This code is placed inside the menuItems array definition in your App.jsx
 
-{ 
-  id: 'showcase',
-  label: 'Showcase',
-  icon: <Star className="nav-icon" />, 
-  action: () => setActiveSection('showcase'),
+// { 
+//   id: 'showcase',
+//   label: 'Showcase',
+//   icon: <Star className="nav-icon" />, 
+//   action: () => setActiveSection('showcase'),
 
-  component: () => (
-    <ShowcaseComponent 
-      ideas={posts} 
-      onSelectIdea={(idea) => handleSelectIdea(idea)} 
-      onPostIdea={(newIdea) => handlePostIdea(newIdea)} 
-    />
-  ),
+//   component: () => (
+//     <ShowcaseComponent 
+//       ideas={posts} 
+//       onSelectIdea={(idea) => handleSelectIdea(idea)} 
+//       onPostIdea={(newIdea) => handlePostIdea(newIdea)} 
+//     />
+//   ),
 
-  rightSidebar: () => (
-    <ShowcaseRightSidebar 
-      posts={posts} 
-      onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
-    />
-  ),
-},
+//   rightSidebar: () => (
+//     <ShowcaseRightSidebar 
+//       posts={posts} 
+//       onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
+//     />
+//   ),
+// },
 
         {
             id: 'add',

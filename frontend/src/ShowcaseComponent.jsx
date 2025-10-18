@@ -6,12 +6,13 @@ import ProjectDetailsPage from './ProjectDetailsPage';
 // IMPORT YOUR BANNER IMAGE HERE
 import StartupBanner from './assets/Screenshot 2025-10-17 233807.png'; 
 
-// === AddIdeaModal Component (Mandatory Logo/Banner Included) ===
+// === AddIdeaModal Component (Unchanged from previous revision) ===
 const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     websiteLink: '',
+    launchedDate: new Date().toISOString().substring(0, 10), 
     logoUrl: '',
     bannerUrl: '',
     fullDescription: '', 
@@ -30,7 +31,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
       const reader = new FileReader();
       reader.onload = () => {
         setFormData((prev) => ({ ...prev, [fieldName]: reader.result }));
-        setValidationError(''); // Clear error on successful file selection
+        setValidationError('');
       };
       reader.readAsDataURL(file);
     }
@@ -39,12 +40,10 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Mandatory check for logo
     if (!formData.logoUrl) {
       setValidationError('Please upload an Idea Logo. It is mandatory.');
       return;
     }
-    // Mandatory check for banner
     if (!formData.bannerUrl) {
       setValidationError('Please upload a Banner Image. It is mandatory.');
       return;
@@ -55,11 +54,12 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
       month: activeMonth,
     });
     onClose();
-    // Reset form for next submission
+    
     setFormData({
       title: '',
       description: '',
       websiteLink: '',
+      launchedDate: new Date().toISOString().substring(0, 10),
       logoUrl: '',
       bannerUrl: '',
       fullDescription: '',
@@ -115,16 +115,29 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
               required
             ></textarea>
           </div>
-          <div className="form-group">
-            <label className="form-label">Website Link</label>
-            <input
-              type="url"
-              name="websiteLink"
-              value={formData.websiteLink}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="https://www.your-idea.com"
-            />
+          <div className="form-group-flex">
+              <div className="form-group flex-half"> 
+                <label className="form-label">Launched On Date</label>
+                <input
+                    type="date"
+                    name="launchedDate"
+                    value={formData.launchedDate}
+                    onChange={handleChange}
+                    className="form-input"
+                />
+              </div>
+              
+              <div className="form-group flex-half">
+                <label className="form-label">Website Link</label>
+                <input
+                    type="url"
+                    name="websiteLink"
+                    value={formData.websiteLink}
+                    onChange={handleChange}
+                    className="form-input"
+                    placeholder="https://www.your-idea.com"
+                />
+              </div>
           </div>
           
           {validationError && (
@@ -184,8 +197,11 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth }) => {
 };
 // End of AddIdeaModal
 
-// === StartupCard Component (Unchanged) ===
+// === StartupCard Component (Modified for "Coming Soon") ===
 const StartupCard = ({ idea, onSelectIdea }) => {
+    // 💡 NEW LOGIC: Check if the launchedDate is in the future
+    const isComingSoon = idea.launchedDate && (new Date(idea.launchedDate) > new Date().setHours(0, 0, 0, 0));
+
   return (
     <div className="startup-card" onClick={() => onSelectIdea(idea)}>
       <div className="card-content">
@@ -193,6 +209,10 @@ const StartupCard = ({ idea, onSelectIdea }) => {
         <div className="card-details">
           <h3 className="card-title">{idea.name}</h3>
           <p className="card-description">{idea.description}</p>
+            {/* 💡 NEW ELEMENT: Display "Coming Soon" badge */}
+            {isComingSoon && (
+                <span className="coming-soon-badge">🚀 Coming Soon</span>
+            )}
         </div>
       </div>
       <div className="card-upvote">
@@ -203,8 +223,9 @@ const StartupCard = ({ idea, onSelectIdea }) => {
   );
 };
 
-// === DUMMY_IDEAS Data (Unchanged) ===
+// === DUMMY_IDEAS Data (Unchanged - Note: Dates are in the past to show launched) ===
 const DUMMY_IDEAS = [
+    // ... (Dummy Ideas are the same, they mostly have past dates)
   {
     id: '1',
     logo: 'https://placehold.co/40x40/0A73D3/FFFFFF?text=JA',
@@ -213,7 +234,7 @@ const DUMMY_IDEAS = [
     upvotes: 13,
     month: 'October \'25',
     websiteLink: 'https://www.janarogya.com',
-    launchedDate: '15/09/2025',
+    launchedDate: '2025-09-15', // Using YYYY-MM-DD format for consistency
     comments: 5,
     creator: { name: 'Priya Sharma', role: 'Founder', avatar: 'https://placehold.co/40x40/3498db/FFFFFF?text=PS' },
     upvoters: [{ avatar: 'https://placehold.co/20x20/2ecc71/FFFFFF?text=U1' }, { avatar: 'https://placehold.co/20x20/e74c3c/FFFFFF?text=U2' }, { avatar: 'https://placehold.co/20x20/f39c12/FFFFFF?text=U3' }],
@@ -227,13 +248,29 @@ const DUMMY_IDEAS = [
     upvotes: 21,
     month: 'October \'25',
     websiteLink: 'https://www.freshvan.in',
-    launchedDate: '01/10/2025',
+    launchedDate: '2025-10-01',
     comments: 12,
     creator: { name: 'Rajiv Mehra', role: 'Co-Founder', avatar: 'https://placehold.co/40x40/27ae60/FFFFFF?text=RM' },
     upvoters: [{ avatar: 'https://placehold.co/20x20/9b59b6/FFFFFF?text=V1' }, { avatar: 'https://placehold.co/20x20/34495e/FFFFFF?text=V2' }, { avatar: 'https://placehold.co/20x20/1abc9c/FFFFFF?text=V3' }, { avatar: 'https://placehold.co/20x20/f1c40f/FFFFFF?text=V4' }, { avatar: 'https://placehold.co/20x20/d35400/FFFFFF?text=V5' }],
     fullDescription: "FreshVan delivers farm-fresh, organically grown vegetables directly to your doorstep via a weekly subscription model. We cut out the middleman, ensuring fairer prices for farmers and fresher produce for consumers. Our app allows customers to customize their weekly basket and pause deliveries easily.",
   },
-  {
+    // **EXAMPLE OF A COMING SOON IDEA (Date in the future)**
+    {
+        id: '99',
+        logo: 'https://placehold.co/40x40/000000/FFFFFF?text=FS',
+        name: 'FutureStream: AI Video Generation',
+        description: 'Generate high-quality videos from text prompts.',
+        upvotes: 42,
+        month: 'October \'25',
+        websiteLink: 'https://www.futurestream.ai',
+        launchedDate: '2025-11-20', // This date is in the future
+        comments: 20,
+        creator: { name: 'Alex Lee', role: 'Innovator', avatar: 'https://placehold.co/40x40/8e44ad/FFFFFF?text=AL' },
+        upvoters: [],
+        fullDescription: "FutureStream harnesses cutting-edge generative AI to let users create professional video content instantly from a simple text description. Say goodbye to complex editing software and lengthy production times.",
+    },
+    // ... (rest of the dummy ideas)
+    {
     id: '3',
     logo: 'https://placehold.co/40x40/DC3545/FFFFFF?text=MDW',
     name: 'My DawaiWala (MDW)',
@@ -241,7 +278,7 @@ const DUMMY_IDEAS = [
     upvotes: 20,
     month: 'September \'25',
     websiteLink: 'https://www.mydawaiwala.com',
-    launchedDate: '10/09/2025',
+    launchedDate: '2025-09-10',
     comments: 8,
     creator: { name: 'Amit Singh', role: 'CEO', avatar: 'https://placehold.co/40x40/e67e22/FFFFFF?text=AS' },
     upvoters: [{ avatar: 'https://placehold.co/20x20/7f8c8d/FFFFFF?text=W1' }, { avatar: 'https://placehold.co/20x20/c0392b/FFFFFF?text=W2' }],
@@ -255,7 +292,7 @@ const DUMMY_IDEAS = [
     upvotes: 21,
     month: 'October \'25',
     websiteLink: 'https://www.airtrashbin.org',
-    launchedDate: '20/10/2025',
+    launchedDate: '2025-10-20',
     comments: 15,
     creator: { name: 'Deepika Rao', role: 'Engineer', avatar: 'https://placehold.co/40x40/95a5a6/FFFFFF?text=DR' },
     upvoters: [{ avatar: 'https://placehold.co/20x20/bdc3c7/FFFFFF?text=X1' }, { avatar: 'https://placehold.co/20x20/2c3e50/FFFFFF?text=X2' }, { avatar: 'https://placehold.co/20x20/f39c12/FFFFFF?text=X3' }, { avatar: 'https://placehold.co/20x20/16a085/FFFFFF?text=X4' }],
@@ -263,7 +300,7 @@ const DUMMY_IDEAS = [
   },
 ];
 
-// === ShowcaseComponent (Main Component) ===
+// === ShowcaseComponent (Main Component - logic updated for launchedDate) ===
 const ShowcaseComponent = () => {
   const [activeMonth, setActiveMonth] = useState('October \'25');
   const [searchTerm, setSearchTerm] = useState('');
@@ -304,7 +341,7 @@ const ShowcaseComponent = () => {
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [isDetailsView, setIsDetailsView] = useState(false);
   // --------------------------
- 
+ 
   const months = ['October \'25'];
 
   const filteredIdeas = ideas.filter(idea => {
@@ -330,7 +367,7 @@ const ShowcaseComponent = () => {
         logo: ideaData.logoUrl,
         banner: ideaData.bannerUrl, 
         month: activeMonth,
-        launchedDate: new Date().toLocaleDateString('en-IN'),
+        launchedDate: ideaData.launchedDate, // Now correctly passed from modal
         comments: 0,
         creator: { name: 'You', role: 'Creator', avatar: 'https://placehold.co/40x40/3498db/FFFFFF?text=U' },
         upvoters: [],
