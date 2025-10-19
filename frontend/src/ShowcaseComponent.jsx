@@ -421,14 +421,14 @@ const ShowcaseComponent = ({
         .map(post => ({
           id: post._id,
           name: post.title,
-          description: post.description || post.content, // Use description field if available
+          description: post.description || post.content,
           logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
           banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
-          upvotes: post.upvotes || 0, // Use upvotes instead of likes
+          upvotes: post.upvotes || 0,
           month: post.month || 'October \'25',
           websiteLink: post.websiteLink,
           launchedDate: post.launchedDate,
-          comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [], // Use showcaseComments
+          comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [],
           creator: {
             name: post.author || 'Anonymous',
             role: 'Creator',
@@ -487,7 +487,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // Submit new showcase idea - FIXED VERSION (No comments field)
+  // ✅ FIXED: Submit new showcase idea - WORKING VERSION
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -495,7 +495,7 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Create payload that matches backend schema EXACTLY
+      // Create clean payload that matches backend schema
       const postPayload = {
         // Basic required fields
         title: ideaData.title,
@@ -504,9 +504,6 @@ const ShowcaseComponent = ({
         author: currentUser.name,
         authorAvatar: currentUser.avatar,
         userId: currentUser._id,
-        timestamp: new Date().toISOString(),
-        
-        // CRITICAL: Don't send 'comments' or 'likes' fields - let backend use defaults
         
         // Showcase-specific required fields
         logoUrl: ideaData.logoUrl,
@@ -515,17 +512,17 @@ const ShowcaseComponent = ({
         status: 'pending',
         
         // Optional showcase fields
-        description: ideaData.description, // Short description
+        description: ideaData.description,
         fullDescription: ideaData.fullDescription,
         websiteLink: ideaData.websiteLink || '',
         launchedDate: ideaData.launchedDate,
         
-        // Initialize showcase-specific fields
+        // Initialize showcase-specific fields as NUMBERS
         upvotes: 0,
         commentCount: 0,
         views: 0,
         
-        // Initialize arrays as empty
+        // Initialize arrays as EMPTY ARRAYS
         upvoters: [],
         showcaseComments: [],
         images: [],
@@ -533,7 +530,7 @@ const ShowcaseComponent = ({
         commentData: []
       };
 
-      console.log('🚀 Submitting showcase idea:', JSON.stringify(postPayload, null, 2));
+      console.log('🚀 Submitting showcase idea payload:', postPayload);
 
       const user = JSON.parse(localStorage.getItem('currentUser'));
       const headers = {
