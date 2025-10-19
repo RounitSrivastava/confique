@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import './Showcase.css';
-import { ChevronDown, Search, X, Image as ImageIcon, ThumbsUp } from 'lucide-react';
+import { ChevronDown, Search, X, Image as ImageIcon, ThumbsUp, AlertCircle } from 'lucide-react';
 import ProjectDetailsPage from './ProjectDetailsPage';
 
 // IMPORT YOUR BANNER IMAGE HERE
 import StartupBanner from './assets/Screenshot 2025-10-17 233807.png';
+
+// Loading Component
+const LoadingSpinner = () => (
+  <div className="loading-container">
+    <div className="loading-spinner"></div>
+    <p>Loading ideas...</p>
+  </div>
+);
 
 // === AddIdeaModal Component (with authentication check) ===
 const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onRequireLogin }) => {
@@ -19,6 +27,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
   });
 
   const [validationError, setValidationError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check authentication when modal opens
   useEffect(() => {
@@ -45,7 +54,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Check if user is logged in
@@ -70,25 +79,32 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
         return;
     }
 
-    onSubmit({
-      ...formData,
-      month: activeMonth,
-      userId: currentUser._id,
-      author: currentUser.name,
-      authorAvatar: currentUser.avatar,
-    });
-    onClose();
-    
-    setFormData({
-      title: '',
-      description: '',
-      websiteLink: '',
-      launchedDate: '',
-      logoUrl: '',
-      bannerUrl: '',
-      fullDescription: '',
-    });
-    setValidationError('');
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        ...formData,
+        month: activeMonth,
+        userId: currentUser._id,
+        author: currentUser.name,
+        authorAvatar: currentUser.avatar,
+      });
+      
+      // Reset form on success
+      setFormData({
+        title: '',
+        description: '',
+        websiteLink: '',
+        launchedDate: '',
+        logoUrl: '',
+        bannerUrl: '',
+        fullDescription: '',
+      });
+      setValidationError('');
+    } catch (error) {
+      setValidationError('Failed to submit idea. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -118,6 +134,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                 className="form-input"
                 placeholder="e.g., Behale"
                 required
+                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -129,6 +146,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                 className="form-textarea"
                 placeholder="e.g., Time to replace your unhealthy food choices..."
                 required
+                disabled={isSubmitting}
               ></textarea>
             </div>
             <div className="form-group">
@@ -140,6 +158,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                 className="form-textarea"
                 placeholder="Provide a detailed explanation of your idea, concept, and target market."
                 required
+                disabled={isSubmitting}
               ></textarea>
             </div>
             <div className="form-group"> 
@@ -152,6 +171,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                   className="form-input"
                   placeholder="YYYY-MM-DD or Coming Soon"
                   required
+                  disabled={isSubmitting}
               />
             </div>
             
@@ -164,12 +184,14 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                   onChange={handleChange}
                   className="form-input"
                   placeholder="https://www.your-idea.com (Optional)"
+                  disabled={isSubmitting}
               />
             </div>
             
             {validationError && (
               <div className="validation-error-message">
-                ⚠️ {validationError}
+                <AlertCircle size={16} />
+                {validationError}
               </div>
             )}
 
@@ -179,7 +201,12 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                 {formData.logoUrl ? (
                   <div className="image-preview-item">
                     <img src={formData.logoUrl} alt="Logo" className="post-image" />
-                    <button type="button" className="remove-image-btn" onClick={() => { setFormData(prev => ({ ...prev, logoUrl: '' })); setValidationError(''); }}>
+                    <button 
+                      type="button" 
+                      className="remove-image-btn" 
+                      onClick={() => { setFormData(prev => ({ ...prev, logoUrl: '' })); setValidationError(''); }}
+                      disabled={isSubmitting}
+                    >
                       <X size={14} />
                     </button>
                   </div>
@@ -187,7 +214,14 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                   <label htmlFor="logo-upload" className={`upload-btn ${validationError.includes('Logo') ? 'error-border' : ''}`}>
                     <ImageIcon size={16} />
                     <span>Upload Logo</span>
-                    <input id="logo-upload" type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'logoUrl')} style={{ display: 'none' }} />
+                    <input 
+                      id="logo-upload" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileChange(e, 'logoUrl')} 
+                      style={{ display: 'none' }} 
+                      disabled={isSubmitting}
+                    />
                   </label>
                 )}
               </div>
@@ -198,7 +232,12 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                 {formData.bannerUrl ? (
                   <div className="image-preview-item">
                     <img src={formData.bannerUrl} alt="Banner" className="post-image" />
-                    <button type="button" className="remove-image-btn" onClick={() => { setFormData(prev => ({ ...prev, bannerUrl: '' })); setValidationError(''); }}>
+                    <button 
+                      type="button" 
+                      className="remove-image-btn" 
+                      onClick={() => { setFormData(prev => ({ ...prev, bannerUrl: '' })); setValidationError(''); }}
+                      disabled={isSubmitting}
+                    >
                       <X size={14} />
                     </button>
                   </div>
@@ -206,14 +245,25 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
                   <label htmlFor="banner-upload" className={`upload-btn ${validationError.includes('Banner') ? 'error-border' : ''}`}>
                     <ImageIcon size={16} />
                     <span>Upload Banner</span>
-                    <input id="banner-upload" type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'bannerUrl')} style={{ display: 'none' }} />
+                    <input 
+                      id="banner-upload" 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => handleFileChange(e, 'bannerUrl')} 
+                      style={{ display: 'none' }} 
+                      disabled={isSubmitting}
+                    />
                   </label>
                 )}
               </div>
             </div>
             <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
-              <button type="submit" className="btn-primary">Submit Idea</button>
+              <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Submit Idea'}
+              </button>
             </div>
           </form>
         )}
@@ -246,10 +296,10 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin
             </div>
         </div>
       </div>
-      <div className="card-upvote" onClick={handleUpvote}>
+      <div className={`card-upvote ${isLiked ? 'liked' : ''}`} onClick={handleUpvote}>
         <ThumbsUp 
           size={20} 
-          className={`upvote-icon ${isLiked ? 'liked' : ''}`} 
+          className="upvote-icon"
           fill={isLiked ? '#ef4444' : 'none'}
         />
         <span className="upvote-count">{idea.upvotes}</span>
@@ -266,24 +316,21 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
   const [ideas, setIdeas] = useState([]);
   const [likedIdeas, setLikedIdeas] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // --- Date/Time Closure Logic ---
   const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
-  
-  const checkSubmissionStatus = () => {
+  const [isPostingEnabled, setIsPostingEnabled] = useState(() => {
     const now = new Date().getTime();
     return now < SUBMISSION_DEADLINE;
-  };
-
-  const [isPostingEnabled, setIsPostingEnabled] = useState(checkSubmissionStatus());
+  });
 
   useEffect(() => {
-    if (!isPostingEnabled) {
-      return; 
-    }
+    if (!isPostingEnabled) return;
 
     const intervalId = setInterval(() => {
-      if (!checkSubmissionStatus()) {
+      const now = new Date().getTime();
+      if (now >= SUBMISSION_DEADLINE) {
         setIsPostingEnabled(false);
         clearInterval(intervalId);
       }
@@ -296,37 +343,71 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [isDetailsView, setIsDetailsView] = useState(false);
 
-  // Fetch ideas from API
+  // Fetch showcase ideas from existing posts API
   const fetchIdeas = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`${API_URL}/showcase/ideas`);
-      if (response.ok) {
-        const data = await response.json();
-        setIdeas(data);
-      } else {
-        console.error('Failed to fetch ideas');
+      setError(null);
+      
+      // Use the existing posts endpoint - it will return all posts including showcase
+      const response = await fetch(`${API_URL}/api/posts`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      const allPosts = await response.json();
+      
+      // Filter for showcase posts and transform data
+      const showcasePosts = allPosts
+        .filter(post => post.type === 'showcase' && post.status === 'approved')
+        .map(post => ({
+          id: post._id,
+          name: post.title,
+          description: post.content,
+          logo: post.logoUrl,
+          banner: post.bannerUrl,
+          upvotes: post.upvotes || 0,
+          month: post.month || 'October \'25',
+          websiteLink: post.websiteLink,
+          launchedDate: post.launchedDate,
+          comments: post.comments || [],
+          creator: {
+            name: post.author || 'Anonymous',
+            role: 'Creator',
+            avatar: post.authorAvatar
+          },
+          upvoters: post.upvoters || [],
+          fullDescription: post.fullDescription || post.content,
+          userId: post.userId,
+          author: post.author,
+          authorAvatar: post.authorAvatar,
+          timestamp: post.timestamp || post.createdAt
+        }));
+      
+      setIdeas(showcasePosts);
     } catch (error) {
-      console.error('Error fetching ideas:', error);
+      console.error('Failed to fetch ideas:', error);
+      setError('Failed to load ideas. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch user's liked ideas
+  // Fetch user's liked posts (existing endpoint)
   const fetchLikedIdeas = async () => {
     if (!currentUser) return;
     
     try {
-      const response = await fetch(`${API_URL}/showcase/liked-ideas`, {
+      const response = await fetch(`${API_URL}/api/users/liked-posts`, {
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
+      
       if (response.ok) {
         const data = await response.json();
-        setLikedIdeas(new Set(data.likedIdeaIds || []));
+        setLikedIdeas(new Set(data.likedPostIds || []));
       }
     } catch (error) {
       console.error('Error fetching liked ideas:', error);
@@ -346,16 +427,13 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     if (!idea || idea.month !== activeMonth) return false;
     
     const lowerSearchTerm = searchTerm.toLowerCase();
-
-    const nameMatches = idea.name 
-        && idea.name.toLowerCase().includes(lowerSearchTerm);
-        
-    const descriptionMatches = idea.description 
-        && idea.description.toLowerCase().includes(lowerSearchTerm);
+    const nameMatches = idea.name?.toLowerCase().includes(lowerSearchTerm);
+    const descriptionMatches = idea.description?.toLowerCase().includes(lowerSearchTerm);
 
     return nameMatches || descriptionMatches;
   });
 
+  // Submit new showcase idea using existing posts endpoint
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -363,26 +441,61 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/showcase/ideas`, {
+      const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${currentUser.token}`,
         },
-        body: JSON.stringify(ideaData),
+        body: JSON.stringify({
+          ...ideaData,
+          type: 'showcase',
+          content: ideaData.description, // Map description to content for posts
+          images: [] // Showcase posts don't use the images array
+        }),
       });
 
-      if (response.ok) {
-        const newIdea = await response.json();
-        setIdeas(prevIdeas => [newIdea, ...prevIdeas]);
-      } else {
-        console.error('Failed to submit idea');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
+
+      const newIdea = await response.json();
+      
+      // Transform the response to match frontend format
+      const transformedIdea = {
+        id: newIdea._id,
+        name: newIdea.title,
+        description: newIdea.content,
+        logo: newIdea.logoUrl,
+        banner: newIdea.bannerUrl,
+        upvotes: newIdea.upvotes || 0,
+        month: newIdea.month || 'October \'25',
+        websiteLink: newIdea.websiteLink,
+        launchedDate: newIdea.launchedDate,
+        comments: newIdea.comments || [],
+        creator: {
+          name: newIdea.author || 'Anonymous',
+          role: 'Creator',
+          avatar: newIdea.authorAvatar
+        },
+        upvoters: newIdea.upvoters || [],
+        fullDescription: newIdea.fullDescription || newIdea.content,
+        userId: newIdea.userId,
+        author: newIdea.author,
+        authorAvatar: newIdea.authorAvatar,
+        timestamp: newIdea.timestamp || newIdea.createdAt
+      };
+      
+      setIdeas(prevIdeas => [transformedIdea, ...prevIdeas]);
+      setIsAddIdeaModalOpen(false);
     } catch (error) {
-      console.error('Error submitting idea:', error);
+      console.error('Failed to submit idea:', error);
+      throw error;
     }
   };
 
+  // Upvote showcase idea using existing upvote endpoint
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
@@ -391,42 +504,71 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
 
     const isCurrentlyLiked = likedIdeas.has(ideaId);
     
+    // Optimistic update
+    setIdeas(prevIdeas =>
+      prevIdeas.map(idea =>
+        idea.id === ideaId
+          ? { 
+              ...idea, 
+              upvotes: isCurrentlyLiked ? idea.upvotes - 1 : idea.upvotes + 1 
+            }
+          : idea
+      )
+    );
+
+    setLikedIdeas(prev => {
+      const newLiked = new Set(prev);
+      if (isCurrentlyLiked) {
+        newLiked.delete(ideaId);
+      } else {
+        newLiked.add(ideaId);
+      }
+      return newLiked;
+    });
+
     try {
-      const response = await fetch(`${API_URL}/showcase/ideas/${ideaId}/upvote`, {
+      // Use the existing upvote endpoint for showcase posts
+      const response = await fetch(`${API_URL}/api/posts/${ideaId}/upvote`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${currentUser.token}`,
         },
       });
 
-      if (response.ok) {
-        // Update local state optimistically
-        setIdeas(prevIdeas =>
-          prevIdeas.map(idea =>
-            idea.id === ideaId
-              ? { 
-                  ...idea, 
-                  upvotes: isCurrentlyLiked ? idea.upvotes - 1 : idea.upvotes + 1 
-                }
-              : idea
-          )
-        );
-
-        setLikedIdeas(prev => {
-          const newLiked = new Set(prev);
-          if (isCurrentlyLiked) {
-            newLiked.delete(ideaId);
-          } else {
-            newLiked.add(ideaId);
-          }
-          return newLiked;
-        });
+      if (!response.ok) {
+        throw new Error('Upvote failed');
       }
+
+      // Update with server response if needed
+      const updatedPost = await response.json();
+      console.log('Upvote successful:', updatedPost);
+      
     } catch (error) {
       console.error('Error upvoting idea:', error);
+      // Revert optimistic update on error
+      setIdeas(prevIdeas =>
+        prevIdeas.map(idea =>
+          idea.id === ideaId
+            ? { 
+                ...idea, 
+                upvotes: isCurrentlyLiked ? idea.upvotes + 1 : idea.upvotes - 1 
+              }
+            : idea
+        )
+      );
+      setLikedIdeas(prev => {
+        const newLiked = new Set(prev);
+        if (isCurrentlyLiked) {
+          newLiked.add(ideaId);
+        } else {
+          newLiked.delete(ideaId);
+        }
+        return newLiked;
+      });
     }
   };
 
+  // Add comment to showcase idea using existing comments endpoint
   const handleAddComment = async (ideaId, commentText) => {
     if (!currentUser) {
       onRequireLogin();
@@ -434,7 +576,8 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/showcase/ideas/${ideaId}/comments`, {
+      // Use the showcase comments endpoint from your existing routes
+      const response = await fetch(`${API_URL}/api/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -444,15 +587,24 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
       });
 
       if (response.ok) {
-        const updatedIdea = await response.json();
+        const newComment = await response.json();
+        
+        // Update the idea with the new comment
         setIdeas(prevIdeas =>
           prevIdeas.map(idea =>
-            idea.id === ideaId ? updatedIdea : idea
+            idea.id === ideaId
+              ? {
+                  ...idea,
+                  comments: [newComment, ...(idea.comments || [])],
+                  commentCount: (idea.commentCount || 0) + 1
+                }
+              : idea
           )
         );
       }
     } catch (error) {
       console.error('Error adding comment:', error);
+      throw error;
     }
   };
 
@@ -475,6 +627,7 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
         currentUser={currentUser}
         onRequireLogin={onRequireLogin}
         onAddComment={handleAddComment}
+        API_URL={API_URL}
       />
     );
   }
@@ -537,7 +690,11 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
 
       <div className="idea-list-container">
         {isLoading ? (
-          <div className="loading-message">Loading ideas...</div>
+          <LoadingSpinner />
+        ) : error ? (
+          <div className="no-results">
+            <p>Failed to load ideas. Please check your connection.</p>
+          </div>
         ) : filteredIdeas.length > 0 ? (
           filteredIdeas.map(idea => (
             <StartupCard 
@@ -551,7 +708,12 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
             />
           ))
         ) : (
-          <div className="no-results">No ideas found for {activeMonth}.</div>
+          <div className="no-results">
+            <p>No idea found</p>
+            {searchTerm && (
+              <p>Try adjusting your search terms.</p>
+            )}
+          </div>
         )}
       </div>
 

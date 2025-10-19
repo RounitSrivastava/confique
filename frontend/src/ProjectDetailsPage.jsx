@@ -132,15 +132,66 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
   );
 };
 
-// Main Project Details Page Component (Updated)
-const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, onAddComment }) => {
-    // --- STATE FOR UPVOTING ---
-    const [upvotes, setUpvotes] = useState(project.upvotes);
-    const [isUpvoted, setIsUpvoted] = useState(false); 
-    
+// Main Project Details Page Component (Updated with Backend Integration)
+const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, onAddComment, API_URL }) => {
+    const [upvotes, setUpvotes] = useState(project.upvotes || 0);
+    const [isUpvoted, setIsUpvoted] = useState(project.upvoters?.some(upvoter => upvoter._id === currentUser?._id) || false);
     const [localComments, setLocalComments] = useState(project.comments || []);
     const [commentCount, setCommentCount] = useState(project.comments ? project.comments.length : 0);
-    
+    const [isUpvoting, setIsUpvoting] = useState(false);
+
+    // Upvote function with backend integration
+    const handleUpvote = async () => {
+        if (!currentUser) {
+            onRequireLogin();
+            return;
+        }
+
+        if (isUpvoting) return;
+
+        setIsUpvoting(true);
+        
+        // Optimistic update
+        const previousUpvotes = upvotes;
+        const previousIsUpvoted = isUpvoted;
+        
+        if (isUpvoted) {
+            setUpvotes(prev => prev - 1);
+        } else {
+            setUpvotes(prev => prev + 1);
+        }
+        setIsUpvoted(prev => !prev);
+
+        try {
+            // Call backend API to upvote
+            const response = await fetch(`${API_URL}/api/posts/${project.id}/upvote`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${currentUser.token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to upvote');
+            }
+
+            const updatedPost = await response.json();
+            
+            // Update with server data
+            setUpvotes(updatedPost.upvotes || upvotes);
+            setIsUpvoted(updatedPost.upvoters?.some(upvoter => upvoter._id === currentUser._id) || false);
+            
+        } catch (error) {
+            console.error('Error upvoting:', error);
+            // Revert optimistic update on error
+            setUpvotes(previousUpvotes);
+            setIsUpvoted(previousIsUpvoted);
+        } finally {
+            setIsUpvoting(false);
+        }
+    };
+
     if (!project) {
         return (
             <div className="project-details-container">
@@ -151,20 +202,6 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             </div>
         );
     }
-
-    const handleUpvote = () => {
-        if (!currentUser) {
-            onRequireLogin();
-            return;
-        }
-
-        if (isUpvoted) {
-            setUpvotes(prev => prev - 1);
-        } else {
-            setUpvotes(prev => prev + 1);
-        }
-        setIsUpvoted(prev => !prev);
-    };
 
     const handleVisitWebsite = () => {
         if (project.websiteLink && project.websiteLink.trim()) {
@@ -215,15 +252,16 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
               </div>
               {/* UPVOTE BUTTON */}
               <button 
-                className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''}`}
+                className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
                 onClick={handleUpvote}
+                disabled={isUpvoting}
               >
                 <ThumbsUp 
                   size={16} 
                   fill={isUpvoted ? '#ef4444' : 'none'}
                   style={{ marginRight: '8px' }}
                 />
-                {isUpvoted ? `Upvoted (${upvotes})` : `Upvote (${upvotes})`}
+                {isUpvoting ? 'Upvoting...' : (isUpvoted ? `Upvoted (${upvotes})` : `Upvote (${upvotes})`)}
               </button>
             </div>
 

@@ -4992,6 +4992,7 @@ const App = () => {
        // This code is placed inside the menuItems array definition in your App.jsx
 
 // In the menuItems array, update the showcase section:
+// In your App.js, update the showcase section:
 {
   id: 'showcase',
   label: 'Showcase',
