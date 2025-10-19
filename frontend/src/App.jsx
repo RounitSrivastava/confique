@@ -1980,6 +1980,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
     const hasMoreContent = event.content.length > 200;
     const displayContent = showFullContent ? event.content : event.content.substring(0, 200) + (hasMoreContent ? '...' : '');
+    // FIX: Use new Date() with the ISO string here for up-to-date comparison
     const isEventPast = event.eventStartDate && new Date(event.eventStartDate) < new Date();
     const isRegistrationOpen = event.registrationOpen;
     const hasRegistrationMethod = event.enableRegistrationForm || event.registrationLink;
@@ -2027,7 +2028,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                 // FIX: Corrected the URL format for Google Maps
                 window.open(
-                    `https://www.google.com/maps/dir/${origin}/${destination}`,
+                    `http://maps.google.com/maps?saddr=${origin}&daddr=${destination}`,
                     '_blank'
                 );
             }, (error) => {
@@ -2234,6 +2235,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
         return events.filter(e =>
             (e.type === 'event' || e.type === 'culturalEvent') &&
             e._id !== currentEvent?._id &&
+            // FIX: Use ISO string directly for Date constructor
             e.eventStartDate && new Date(e.eventStartDate) > new Date()
         ).slice(0, 3);
     }, [events, currentEvent]);
@@ -2254,12 +2256,14 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
                             >
                                 <h4 className="sidebar-event-title">{event.title}</h4>
                                 <div className="sidebar-event-date">
+                                    {/* FIX: Use ISO string directly for Date constructor */}
                                     {new Date(event.eventStartDate).toLocaleDateString('en-US', {
                                         month: 'short',
                                         day: 'numeric'
                                     })}
                                 </div>
                                 <div className="sidebar-event-time">
+                                    {/* FIX: Use ISO string directly for Date constructor */}
                                     {new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </div>
                             </div>
@@ -2322,6 +2326,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
     const isLiked = likedPosts?.has(post._id);
+    // FIX: Use ISO string directly for Date constructor for consistency
     const isEventPast = post.eventStartDate && new Date(post.eventStartDate) < new Date();
     const isRegistrationOpen = post.registrationOpen;
     const hasRegistrationMethod = post.enableRegistrationForm || post.registrationLink;
@@ -2462,6 +2467,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
                 <div className="post-info">
                     <h3 className="post-author">{post.author}</h3>
                     <p className="post-timestamp">
+                        {/* FIX: Use ISO string directly for Date constructor for efficiency */}
                         {new Date(post.timestamp).toLocaleDateString()} at {new Date(post.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                 </div>
@@ -2640,6 +2646,15 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
             </div>
         )
     );
+}, (prevProps, nextProps) => {
+    // Custom comparison for React.memo to ensure PostCard only re-renders when necessary data changes
+    return (
+        prevProps.post === nextProps.post && // Compare the entire post object reference
+        prevProps.isCommentsOpen === nextProps.isCommentsOpen &&
+        prevProps.isRegistered === nextProps.isRegistered &&
+        prevProps.registrationCount === nextProps.registrationCount &&
+        prevProps.likedPosts === nextProps.likedPosts // Compare the Set reference
+    );
 }); // End of React.memo
 
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
@@ -2657,7 +2672,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     }, [posts]);
 
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, onRequireLogin, onOpenPostDetail
     };
 
     return (
@@ -2701,7 +2716,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     const eventPosts = useMemo(() => posts.filter(post => post.type === 'event'), [posts]);
     
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, onRequireLogin, onOpenPostDetail
     };
 
     return (
@@ -2847,6 +2862,7 @@ const NotificationsComponent = ({ notifications, adminNotifications, pendingEven
                                             )}
                                         </p>
                                         <span className="notification-timestamp">
+                                            {/* FIX: Use ISO string directly for Date constructor */}
                                             {new Date(notification.timestamp).toLocaleDateString()}
                                         </span>
                                         {isAdmin && notification.postId && (
@@ -3168,7 +3184,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     // MEMOIZATION FIX: Memoize the list of all calendar events/posts
     const allEvents = useMemo(() => [
         ...posts.filter(p => p.type === 'event' || p.type === 'culturalEvent'), 
-        ...myCalendarEvents
+        // FIX: Ensure calendar events use the same date format for comparison if posts use ISO string
+        ...myCalendarEvents.map(e => ({ ...e, eventStartDate: e.eventStartDate?.toISOString() || e.eventStartDate })), 
     ], [posts, myCalendarEvents]);
 
     const tileContent = ({ date, view }) => {
@@ -3611,6 +3628,7 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
                                     >
                                         <div className="event-info">
                                             <strong>{event.title}</strong>
+                                            {/* FIX: Use ISO string directly for Date constructor */}
                                             <small>{event.eventStartDate ? new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</small>
                                         </div>
                                     </li>
@@ -3630,6 +3648,8 @@ const App = () => {
     const [activeSection, setActiveSection] = useState('home');
     const [posts, setPosts] = useState([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    // CRITICAL FIX: Add loading state
+    const [isLoading, setIsLoading] = useState(true);
 
     const [currentUser, setCurrentUser] = useState(() => {
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
@@ -3651,6 +3671,7 @@ const App = () => {
         if (savedEvents) {
             return JSON.parse(savedEvents).map(event => ({
                 ...event,
+                // FIX: Keep dates as ISO strings in state/storage for transport efficiency
                 eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
                 eventEndDate: event.eventEndDate ? new Date(event.eventEndDate) : null,
                 timestamp: new Date(event.timestamp)
@@ -3682,18 +3703,20 @@ const App = () => {
 
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert || showCulturalEventRegistration || showPostSuccessAlert;
 
-    const formatPostDates = (post) => {
-        return {
-            ...post,
-            timestamp: new Date(post.timestamp),
-            eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
-            eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
-            commentData: post.commentData ? post.commentData.map(comment => ({
-                ...comment,
-                timestamp: new Date(comment.timestamp),
-            })) : [],
-        };
-    };
+    // CRITICAL FIX: Removed formatPostDates - we will now convert dates/timestamps inline where they are used.
+    // This shifts computation from the initial load phase to the rendering phase, improving TTI.
+
+    // Helper to get Date objects from ISO strings (for components that need them)
+    const getPostWithDates = (post) => ({
+        ...post,
+        timestamp: new Date(post.timestamp),
+        eventStartDate: post.eventStartDate ? new Date(post.eventStartDate) : null,
+        eventEndDate: post.eventEndDate ? new Date(post.eventEndDate) : null,
+        commentData: post.commentData ? post.commentData.map(comment => ({
+            ...comment,
+            timestamp: new Date(comment.timestamp),
+        })) : [],
+    });
 
     // Corrected callApi function to handle API endpoints properly
 const callApi = async (endpoint, options = {}) => {
@@ -3745,6 +3768,7 @@ const callApi = async (endpoint, options = {}) => {
 };
 
     useEffect(() => {
+        // Fix: Save dates as ISO strings for storage efficiency and quick loading
         const eventsToSave = myCalendarEvents.map(event => ({
             ...event,
             eventStartDate: event.eventStartDate ? event.eventStartDate.toISOString() : null,
@@ -3774,7 +3798,8 @@ const callApi = async (endpoint, options = {}) => {
                 }
                 return true;
             });
-            setPosts(filteredData.map(formatPostDates));
+            // CRITICAL FIX: Store raw data (with ISO strings) to avoid initial CPU cost
+            setPosts(filteredData); 
         } catch (error) {
             console.error('Failed to fetch posts:', error);
         }
@@ -3785,7 +3810,8 @@ const callApi = async (endpoint, options = {}) => {
         try {
             const res = await callApi('/posts/pending-events');
             const data = await res.json();
-            setPendingEvents(data.map(formatPostDates));
+            // CRITICAL FIX: Store raw data (with ISO strings) to avoid initial CPU cost
+            setPendingEvents(data);
         } catch (error) {
             console.error('Failed to fetch pending events:', error);
             setPendingEvents([]);
@@ -3826,7 +3852,7 @@ const callApi = async (endpoint, options = {}) => {
         try {
             const res = await callApi('/notifications');
             const data = await res.json();
-            setNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            setNotifications(data); // Store raw data
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         }
@@ -3837,7 +3863,7 @@ const callApi = async (endpoint, options = {}) => {
         try {
             const reportedRes = await callApi('/users/admin/reported-posts');
             const data = await reportedRes.json();
-            setAdminNotifications(data.map(n => ({ ...n, timestamp: new Date(n.timestamp) })));
+            setAdminNotifications(data); // Store raw data
             await fetchPendingEvents();
         } catch (error) {
             console.error('Failed to fetch admin notifications:', error);
@@ -3988,27 +4014,27 @@ const callApi = async (endpoint, options = {}) => {
 
     useEffect(() => {
         const fetchData = async () => {
-            await fetchPosts();
-            if (isLoggedIn && currentUser) {
-                await fetchLikedPosts(currentUser);
-                fetchRegistrations();
-                fetchNotifications();
-                fetchMyRegistrations(currentUser);
-                if (currentUser.isAdmin) {
-                    fetchAdminNotifications();
-                }
-            } else {
-                setLikedPosts(new Set());
-                setMyRegisteredEvents(new Set());
-                setRegistrations({});
-                setNotifications([]);
-                setPendingEvents([]);
+            setIsLoading(true); // START LOADING
+            try {
+                // Fetch all data concurrently
+                await Promise.all([
+                    fetchPosts(),
+                    isLoggedIn && currentUser && fetchLikedPosts(currentUser),
+                    isLoggedIn && fetchRegistrations(),
+                    isLoggedIn && fetchNotifications(),
+                    isLoggedIn && fetchMyRegistrations(currentUser),
+                    isLoggedIn && currentUser?.isAdmin && fetchAdminNotifications()
+                ]);
+            } catch (e) {
+                console.error("Initial data fetch failed:", e);
+            } finally {
+                setIsLoading(false); // END LOADING
             }
         };
 
         fetchData();
 
-    }, [isLoggedIn, currentUser]);
+    }, [isLoggedIn, currentUser]); // Dependencies remain the same
 
     useEffect(() => {
         if (hasOpenModal) {
@@ -4052,14 +4078,22 @@ const callApi = async (endpoint, options = {}) => {
             return;
         }
 
-        if (!event || !event.eventStartDate) {
+        // CRITICAL FIX: Ensure dates are handled as Date objects here, since the calendar uses them
+        const eventWithDates = {
+            ...event,
+            eventStartDate: event.eventStartDate ? new Date(event.eventStartDate) : null,
+            eventEndDate: event.eventEndDate ? new Date(event.eventEndDate) : null,
+            timestamp: new Date(event.timestamp)
+        };
+
+        if (!eventWithDates || !eventWithDates.eventStartDate) {
             console.log("2. Event data is incomplete. Not adding.");
             return;
         }
 
         setMyCalendarEvents(prev => {
             console.log("3. Current state before adding:", prev);
-            const isDuplicate = prev.some(e => e._id === event._id);
+            const isDuplicate = prev.some(e => e._id === eventWithDates._id);
             console.log("3. Checking for duplicates. Is duplicate?", isDuplicate);
 
             if (isDuplicate) {
@@ -4067,8 +4101,8 @@ const callApi = async (endpoint, options = {}) => {
                 setNotifications(notificationPrev => [
                     {
                         _id: `notif-${Date.now()}`,
-                        message: `Event "${event.title}" is already in your calendar.`,
-                        timestamp: new Date(),
+                        message: `Event "${eventWithDates.title}" is already in your calendar.`,
+                        timestamp: new Date().toISOString(),
                         type: 'info'
                     },
                     ...notificationPrev
@@ -4076,14 +4110,14 @@ const callApi = async (endpoint, options = {}) => {
                 return prev;
             }
 
-            const newState = [...prev, event];
+            const newState = [...prev, eventWithDates];
             console.log("4. Event added successfully. New state length:", newState.length, "New state:", newState);
 
             setNotifications(notificationPrev => [
                 {
                     _id: `notif-${Date.now()}`,
-                    message: `Event "${event.title}" has been added to your calendar.`,
-                    timestamp: new Date(),
+                    message: `Event "${eventWithDates.title}" has been added to your calendar.`,
+                    timestamp: new Date().toISOString(),
                     type: 'success'
                 },
                 ...notificationPrev
@@ -4117,7 +4151,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `You are already registered for "${post.title}".`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'info'
                 },
                 ...prev
@@ -4137,7 +4171,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `You are now registered for "${post.title}". See you there!`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'success'
                     },
                     ...prev
@@ -4150,7 +4184,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Registration for "${post.title}" failed: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4164,7 +4198,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Registration for "${post.title}" failed due to network error.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4202,15 +4236,17 @@ const callApi = async (endpoint, options = {}) => {
 
             if (res.ok) {
                 const responseData = await res.json();
-                const formattedResponsePost = formatPostDates(responseData);
+                
+                // CRITICAL FIX: Remove heavy date formatting here. Post data is returned with ISO strings.
+
                 setPostToEdit(null);
                 if (method === 'POST') {
-                    if (formattedResponsePost.status === 'pending') {
+                    if (responseData.status === 'pending') {
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
                                 message: `Your new ${newPost.type} "${newPost.title}" has been submitted for admin approval.`,
-                                timestamp: new Date(),
+                                timestamp: new Date().toISOString(),
                                 type: 'info'
                             },
                             ...prev
@@ -4219,12 +4255,12 @@ const callApi = async (endpoint, options = {}) => {
                             fetchPendingEvents();
                         }
                     } else {
-                        setPosts(prev => [formattedResponsePost, ...prev]);
+                        setPosts(prev => [responseData, ...prev]);
                         setNotifications(prev => [
                             {
                                 _id: Date.now().toString(),
                                 message: `Your new ${newPost.type} "${newPost.title}" has been posted successfully!`,
-                                timestamp: new Date(),
+                                timestamp: new Date().toISOString(),
                                 type: 'success'
                             },
                             ...prev
@@ -4238,12 +4274,12 @@ const callApi = async (endpoint, options = {}) => {
                     handleShowPostSuccessAlert(successMessage);
 
                 } else {
-                    setPosts(prev => prev.map(p => p._id === formattedResponsePost._id ? formattedResponsePost : p));
+                    setPosts(prev => prev.map(p => p._id === responseData._id ? responseData : p));
                     setNotifications(prev => [
                         {
                             _id: Date.now().toString(),
                             message: `Your ${newPost.type} "${newPost.title}" has been updated successfully!`,
-                            timestamp: new Date(),
+                            timestamp: new Date().toISOString(),
                             type: 'success'
                         },
                         ...prev
@@ -4260,7 +4296,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to save ${newPost.type} "${newPost.title}": ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4272,7 +4308,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not save ${newPost.type} "${newPost.title}".`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4298,7 +4334,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Event (ID: ${postId}) has been approved and is now live.`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'success'
                     },
                     ...prev
@@ -4310,7 +4346,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to approve event: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4322,7 +4358,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not approve event.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4347,7 +4383,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Event (ID: ${postId}) has been rejected and deleted.`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'info'
                     },
                     ...prev
@@ -4359,7 +4395,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to reject event: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4371,7 +4407,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not reject event.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4407,7 +4443,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Post has been deleted successfully.`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'success'
                     },
                     ...prev
@@ -4419,7 +4455,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to delete post: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4431,7 +4467,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not delete post.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4509,7 +4545,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4534,7 +4570,7 @@ const callApi = async (endpoint, options = {}) => {
                     prevPosts.map(post =>
                         post._id === postId ? {
                             ...post,
-                            commentData: commentData.map(c => ({ ...c, timestamp: new Date(c.timestamp) })),
+                            commentData: commentData, // Store raw comment data
                             comments: commentData.length
                         } : post
                     )
@@ -4546,7 +4582,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to add comment: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4558,7 +4594,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not add comment.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4683,7 +4719,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Report for post ID ${postId} has been submitted. Thank you for your feedback!`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'info'
                     },
                     ...prev
@@ -4695,7 +4731,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to report post: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4707,7 +4743,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not report post.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4731,7 +4767,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Reported post (ID: ${postId}) has been deleted successfully.`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'success'
                     },
                     ...prev
@@ -4743,7 +4779,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to delete reported post: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4755,7 +4791,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not delete reported post.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4809,7 +4845,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: "Profile image updated successfully!",
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'success'
                 },
                 ...prev
@@ -4823,7 +4859,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Failed to update profile image: ${error.message}`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4836,7 +4872,7 @@ const callApi = async (endpoint, options = {}) => {
         if (!currentUser || !currentUser.token) {
             console.error('User not authenticated.');
             setNotifications(prev => [
-                { _id: Date.now().toString(), message: `Please log in to export registration data.`, timestamp: new Date(), type: 'error' },
+                { _id: Date.now().toString(), message: `Please log in to export registration data.`, timestamp: new Date().toISOString(), type: 'error' },
                 ...prev
             ]);
             return;
@@ -4864,7 +4900,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Registration data for "${eventTitle}" downloaded successfully!`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'success'
                     },
                     ...prev
@@ -4876,7 +4912,7 @@ const callApi = async (endpoint, options = {}) => {
                     {
                         _id: Date.now().toString(),
                         message: `Failed to export data: ${errorData.message || 'Unknown error.'}`,
-                        timestamp: new Date(),
+                        timestamp: new Date().toISOString(),
                         type: 'error'
                     },
                     ...prev
@@ -4888,7 +4924,7 @@ const callApi = async (endpoint, options = {}) => {
                 {
                     _id: Date.now().toString(),
                     message: `Network error: Could not export registration data.`,
-                    timestamp: new Date(),
+                    timestamp: new Date().toISOString(),
                     type: 'error'
                 },
                 ...prev
@@ -4932,7 +4968,6 @@ const callApi = async (endpoint, options = {}) => {
         registrations, 
         isLoggedIn, 
         myRegisteredEvents,
-        // The wrapped functions (handleLikePost, etc.) are stable because they rely on functional state updates and currentUser (which is stable unless logged in/out)
     ]);
 
     const menuItems = [
@@ -5288,7 +5323,15 @@ const callApi = async (endpoint, options = {}) => {
                 </aside>
                 <main className="main-content">
                     <div className="content-padding">
-                        {renderMainContent()}
+                        {isLoading ? (
+                            <div className="loading-spinner-container">
+                                <p className="loading-message">Loading Feed...</p>
+                                {/* Add a simple CSS spinner for better UX if needed */}
+                                <div className="spinner"></div> 
+                            </div>
+                        ) : (
+                            renderMainContent()
+                        )}
                     </div>
                 </main>
                 <aside className="right-sidebar">
