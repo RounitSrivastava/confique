@@ -186,7 +186,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
     if (type === 'showcase') {
         newPostData.upvotes = 0;
         newPostData.upvoters = [];
-        newPostData.comments = [];
+        newPostData.comments = 0;
         newPostData.commentCount = 0;
         newPostData.month = restOfPostData.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
         newPostData.launchedDate = restOfPostData.launchedDate || new Date().toLocaleDateString('en-IN');
