@@ -6,6 +6,9 @@ import ProjectDetailsPage from './ProjectDetailsPage';
 // IMPORT YOUR BANNER IMAGE HERE
 import StartupBanner from './assets/Screenshot 2025-10-17 233807.png';
 
+// Default API URL for production
+const DEFAULT_API_URL = "https://confique.onrender.com";
+
 // Loading Component
 const LoadingSpinner = () => (
   <div className="loading-container">
@@ -309,7 +312,11 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin
 };
 
 // === ShowcaseComponent (Main Component - Updated) ===
-const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
+const ShowcaseComponent = ({ 
+  currentUser, 
+  onRequireLogin, 
+  API_URL = DEFAULT_API_URL  // Default to production URL
+}) => {
   const [activeMonth, setActiveMonth] = useState('October \'25');
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddIdeaModalOpen, setIsAddIdeaModalOpen] = useState(false);
@@ -317,6 +324,11 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
   const [likedIdeas, setLikedIdeas] = useState(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Debug API_URL on component mount
+  useEffect(() => {
+    console.log('🔧 ShowcaseComponent mounted with API_URL:', API_URL);
+  }, [API_URL]);
 
   // --- Date/Time Closure Logic ---
   const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
@@ -348,6 +360,8 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('🔧 Fetching ideas from:', `${API_URL}/api/posts`);
       
       // Use the existing posts endpoint - it will return all posts including showcase
       const response = await fetch(`${API_URL}/api/posts`);
@@ -385,6 +399,7 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
           timestamp: post.timestamp || post.createdAt
         }));
       
+      console.log('✅ Loaded showcase posts:', showcasePosts.length);
       setIdeas(showcasePosts);
     } catch (error) {
       console.error('Failed to fetch ideas:', error);
@@ -419,7 +434,7 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     if (currentUser) {
       fetchLikedIdeas();
     }
-  }, [currentUser]);
+  }, [currentUser, API_URL]);
 
   const months = ['October \'25'];
 
@@ -441,6 +456,8 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     }
 
     try {
+      console.log('🔧 Submitting idea to:', `${API_URL}/api/posts`);
+      
       const response = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
@@ -527,6 +544,8 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     });
 
     try {
+      console.log('🔧 Upvoting idea at:', `${API_URL}/api/posts/${ideaId}/upvote`);
+      
       // Use the existing upvote endpoint for showcase posts
       const response = await fetch(`${API_URL}/api/posts/${ideaId}/upvote`, {
         method: 'PUT',
@@ -576,6 +595,8 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
     }
 
     try {
+      console.log('🔧 Adding comment at:', `${API_URL}/api/posts/${ideaId}/showcase-comments`);
+      
       // Use the showcase comments endpoint from your existing routes
       const response = await fetch(`${API_URL}/api/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
@@ -694,6 +715,13 @@ const ShowcaseComponent = ({ currentUser, onRequireLogin, API_URL }) => {
         ) : error ? (
           <div className="no-results">
             <p>Failed to load ideas. Please check your connection.</p>
+            <button 
+              onClick={fetchIdeas} 
+              className="retry-btn"
+              style={{ marginTop: '10px', padding: '8px 16px' }}
+            >
+              Try Again
+            </button>
           </div>
         ) : filteredIdeas.length > 0 ? (
           filteredIdeas.map(idea => (
