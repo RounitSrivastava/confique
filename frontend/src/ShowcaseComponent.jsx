@@ -10,10 +10,10 @@ import StartupBanner from './assets/Screenshot 2025-10-17 233807.png';
 const DEFAULT_API_URL = "https://confique.onrender.com";
 
 // Loading Component
-const LoadingSpinner = () => (
+const LoadingSpinner = ({ message = "Loading ideas..." }) => (
   <div className="loading-container">
     <div className="loading-spinner"></div>
-    <p>Loading ideas...</p>
+    <p>{message}</p>
   </div>
 );
 
@@ -285,7 +285,10 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
       return;
     }
 
-    if (isUpvoting) return;
+    // ✅ FIX: Remove the isLiked check - let backend handle toggle
+    if (isUpvoting) {
+      return;
+    }
 
     setIsUpvoting(true);
     try {
@@ -381,7 +384,7 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
   );
 };
 
-// === ShowcaseComponent (Main Component - Optimized) ===
+// === ShowcaseComponent (Main Component - FIXED) ===
 const ShowcaseComponent = ({ 
   currentUser, 
   onRequireLogin, 
@@ -399,30 +402,10 @@ const ShowcaseComponent = ({
   const [isDetailsView, setIsDetailsView] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [submissionError, setSubmissionError] = useState('');
+  const [backendStatus, setBackendStatus] = useState({ status: 'checking' });
 
   const isAdmin = currentUser && currentUser.email === 'confique01@gmail.com';
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
-
-  // Date/Time Closure Logic
-  const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
-  const [isPostingEnabled, setIsPostingEnabled] = useState(() => {
-    const now = new Date().getTime();
-    return now < SUBMISSION_DEADLINE;
-  });
-
-  useEffect(() => {
-    if (!isPostingEnabled) return;
-
-    const intervalId = setInterval(() => {
-      const now = new Date().getTime();
-      if (now >= SUBMISSION_DEADLINE) {
-        setIsPostingEnabled(false);
-        clearInterval(intervalId);
-      }
-    }, 60000);
-
-    return () => clearInterval(intervalId);
-  }, [isPostingEnabled]);
 
   // Optimized API fetch function
   const apiFetch = useCallback(async (endpoint, options = {}) => {
@@ -431,80 +414,113 @@ const ShowcaseComponent = ({
       'Content-Type': 'application/json',
       ...options.headers,
     };
+    
     if (user && user.token) {
       headers['Authorization'] = `Bearer ${user.token}`;
     }
 
+    // Use callApi if available from parent
     if (callApi) {
       return await callApi(endpoint, { ...options, headers });
     }
 
+    // Fallback to direct fetch
     const finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_URL}${finalEndpoint}`;
     
-    console.log('🔗 API call to:', url);
+    console.log(`🔗 API call: ${options.method || 'GET'} ${url}`);
 
-    const response = await fetch(url, { ...options, headers });
-    
-    if (!response.ok) {
-      let errorMsg = `HTTP error! status: ${response.status}`;
-      try {
-        const errorData = await response.json();
-        errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-        // ignore non-json response errors
+    try {
+      const response = await fetch(url, { 
+        ...options, 
+        headers,
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ API Error ${response.status}:`, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
-      throw new Error(errorMsg);
+      
+      return response;
+    } catch (error) {
+      console.error(`🚨 Network error for ${url}:`, error);
+      throw error;
     }
-    return response;
   }, [API_URL, callApi]);
 
-  // Fetch showcase ideas
-  const fetchIdeas = useCallback(async () => {
+  // ✅ FIXED: Fetch ideas with proper data transformation
+  const fetchIdeas = useCallback(async (forceRefresh = false) => {
     try {
       setIsLoading(true);
       setError(null);
       
+      console.log('🔄 Fetching ideas from API...');
       const response = await apiFetch('/posts');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
+      }
+      
       const allPosts = await response.json();
+      console.log('📦 Raw API response:', allPosts.length, 'posts');
       
+      // ✅ FIXED: Proper data transformation for showcase posts
       const showcasePosts = allPosts
-        .filter(post => post.type === 'showcase' && post.status === 'approved')
-        .map(post => ({
-          id: post._id,
-          name: post.title,
-          description: post.description || post.content,
-          logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
-          banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
-          upvotes: post.upvotes || 0,
-          month: post.month || 'October \'25',
-          websiteLink: post.websiteLink,
-          launchedDate: post.launchedDate,
-          comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [],
-          commentCount: post.commentCount || (Array.isArray(post.showcaseComments) ? post.showcaseComments.length : 0),
-          creator: {
-            name: post.author || 'Anonymous',
-            role: 'Creator',
-            avatar: post.authorAvatar || "https://placehold.co/40x40/cccccc/000000?text=U"
-          },
-          upvoters: Array.isArray(post.upvoters) ? post.upvoters : [],
-          fullDescription: post.fullDescription || post.content,
-          userId: post.userId,
-          author: post.author,
-          authorAvatar: post.authorAvatar,
-          timestamp: post.timestamp || post.createdAt
-        }));
+        .filter(post => {
+          const isShowcase = post.type === 'showcase' && post.status === 'approved';
+          if (isShowcase) {
+            console.log('🎯 Found showcase post:', post.title, 'ID:', post._id);
+          }
+          return isShowcase;
+        })
+        .map(post => {
+          console.log('📊 Transforming post:', post.title, {
+            upvotes: post.upvotes,
+            upvoters: post.upvoters?.length,
+            showcaseComments: post.showcaseComments?.length,
+            commentCount: post.commentCount
+          });
+          
+          // ✅ FIXED: Use the correct field names from backend
+          const transformedPost = {
+            id: post._id,
+            name: post.title,
+            description: post.description || post.content,
+            logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
+            banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
+            upvotes: post.upvotes || 0,
+            month: post.month || 'October \'25',
+            websiteLink: post.websiteLink,
+            launchedDate: post.launchedDate,
+            // ✅ FIXED: Use showcaseComments from backend
+            comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [],
+            commentCount: post.commentCount || 0,
+            upvoters: Array.isArray(post.upvoters) ? post.upvoters : [],
+            fullDescription: post.fullDescription || post.content,
+            userId: post.userId,
+            author: post.author,
+            authorAvatar: post.authorAvatar,
+            timestamp: post.timestamp || post.createdAt
+          };
+          
+          console.log('✅ Transformed post:', transformedPost.name, 'Upvotes:', transformedPost.upvotes);
+          return transformedPost;
+        });
       
+      console.log(`🎉 Final showcase posts: ${showcasePosts.length}`);
       setIdeas(showcasePosts);
+      
     } catch (err) {
-      console.error('Failed to fetch ideas:', err);
+      console.error('❌ Failed to fetch ideas:', err);
       setError('Failed to load ideas. Please check your connection.');
     } finally {
       setIsLoading(false);
     }
   }, [apiFetch]);
 
-  // Fetch user's liked posts
+  // ✅ FIXED: Fetch user's liked posts
   const fetchLikedIdeas = useCallback(async () => {
     if (!currentUser) {
       setLocalLikedIdeas(new Set());
@@ -512,20 +528,29 @@ const ShowcaseComponent = ({
     }
     
     try {
+      console.log('🔄 Fetching liked ideas...');
       const response = await apiFetch('/users/liked-posts');
       
       if (response.ok) {
         const data = await response.json();
-        setLocalLikedIdeas(new Set(data.likedPostIds || []));
+        const likedSet = new Set(data.likedPostIds || []);
+        console.log(`✅ User liked posts: ${likedSet.size} ideas`);
+        setLocalLikedIdeas(likedSet);
       }
     } catch (error) {
-      console.error('Error fetching liked ideas:', error);
+      console.error('❌ Error fetching liked ideas:', error);
     }
   }, [currentUser, apiFetch]);
 
+  // Initialize data
   useEffect(() => {
-    fetchIdeas();
-    fetchLikedIdeas();
+    const initializeApp = async () => {
+      console.log('🚀 Initializing Showcase Component...');
+      await fetchIdeas();
+      await fetchLikedIdeas();
+    };
+
+    initializeApp();
   }, [fetchIdeas, fetchLikedIdeas]);
 
   const months = ['October \'25'];
@@ -540,66 +565,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // ✅ FIXED: Submit new showcase idea
-  const handleAddIdeaSubmit = async (ideaData) => {
-    if (!currentUser) {
-      onRequireLogin();
-      return;
-    }
-
-    try {
-      const postPayload = {
-        title: ideaData.title,
-        content: ideaData.description,
-        type: 'showcase',
-        author: currentUser.name,
-        authorAvatar: currentUser.avatar,
-        userId: currentUser._id,
-        logoUrl: ideaData.logoUrl,
-        bannerUrl: ideaData.bannerUrl,
-        month: ideaData.month,
-        status: 'pending',
-        description: ideaData.description,
-        fullDescription: ideaData.fullDescription,
-        websiteLink: ideaData.websiteLink || '',
-        launchedDate: ideaData.launchedDate,
-        upvotes: 0,
-        commentCount: 0,
-        views: 0,
-        upvoters: [],
-        showcaseComments: [],
-        images: [],
-        likedBy: [],
-        commentData: []
-      };
-
-      console.log('🚀 Submitting showcase idea:', postPayload);
-
-      const response = await apiFetch('/posts', {
-        method: 'POST',
-        body: JSON.stringify(postPayload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create post');
-      }
-
-      await response.json();
-      
-      await fetchIdeas();
-      fetchLikedIdeas();
-      
-      setIsAddIdeaModalOpen(false);
-      setSubmissionError('');
-    } catch (error) {
-      console.error('Failed to submit idea:', error);
-      setSubmissionError('Failed to submit idea: ' + (error.message || 'Please check your data and try again.'));
-      throw error;
-    }
-  };
-
-  // ✅ FIXED: Upvote showcase idea with proper API integration
+  // ✅ FIXED: Upvote showcase idea
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
@@ -607,70 +573,58 @@ const ShowcaseComponent = ({
     }
 
     const idea = ideas.find(idea => idea.id === ideaId);
-    if (!idea) return;
-
-    const isCurrentlyLiked = effectiveLikedIdeas.has(ideaId);
-    
-    // Prevent multiple upvotes from same user
-    if (isCurrentlyLiked) {
-      console.log('User already upvoted this idea');
+    if (!idea) {
+      console.error('❌ Idea not found for upvote:', ideaId);
       return;
     }
 
-    // Optimistic update
-    setIdeas(prevIdeas =>
-      prevIdeas.map(idea =>
-        idea.id === ideaId
-          ? { 
-              ...idea, 
-              upvotes: idea.upvotes + 1,
-              upvoters: [...(idea.upvoters || []), { 
-                _id: currentUser._id, 
-                name: currentUser.name, 
-                avatar: currentUser.avatar 
-              }]
-            }
-          : idea
-      )
-    );
+    console.log(`🔼 Upvoting idea ${ideaId} for user ${currentUser._id}`);
 
-    setLocalLikedIdeas(prev => {
-      const newLiked = new Set(prev);
-      newLiked.add(ideaId);
-      return newLiked;
-    });
-
+    // ✅ FIXED: Let backend handle the toggle logic
+    // Just send the upvote request regardless of current state
+    
     try {
       const response = await apiFetch(`/posts/${ideaId}/upvote`, {
         method: 'PUT',
       });
 
       if (!response.ok) {
-        throw new Error('Upvote failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Upvote failed: ${response.status}`);
       }
 
-      // Refresh data to ensure consistency
-      await fetchIdeas();
+      const result = await response.json();
+      console.log('✅ Upvote successful:', result);
+      
+      // ✅ FIXED: Update local state based on backend response
+      if (result.success) {
+        setIdeas(prevIdeas =>
+          prevIdeas.map(idea =>
+            idea.id === ideaId
+              ? { 
+                  ...idea, 
+                  upvotes: result.upvotes,
+                  upvoters: result.upvoters || idea.upvoters
+                }
+              : idea
+          )
+        );
+
+        // Update liked ideas set
+        if (result.hasUpvoted) {
+          setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
+        } else {
+          setLocalLikedIdeas(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(ideaId);
+            return newSet;
+          });
+        }
+      }
       
     } catch (error) {
-      console.error('Error upvoting idea:', error);
-      // Revert optimistic update on error
-      setIdeas(prevIdeas =>
-        prevIdeas.map(idea =>
-          idea.id === ideaId
-            ? { 
-                ...idea, 
-                upvotes: Math.max(0, idea.upvotes - 1),
-                upvoters: (idea.upvoters || []).filter(upvoter => upvoter._id !== currentUser._id)
-              }
-            : idea
-        )
-      );
-      setLocalLikedIdeas(prev => {
-        const newLiked = new Set(prev);
-        newLiked.delete(ideaId);
-        return newLiked;
-      });
+      console.error('❌ Upvote failed:', error);
+      alert(`Upvote failed: ${error.message}. Please try again.`);
     }
   };
 
@@ -691,7 +645,6 @@ const ShowcaseComponent = ({
       }
 
       setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
-      
       console.log('🗑️ Idea deleted successfully');
       
     } catch (error) {
@@ -707,50 +660,45 @@ const ShowcaseComponent = ({
       return;
     }
 
+    console.log(`💬 Adding comment to idea ${ideaId}`);
+
     try {
       const response = await apiFetch(`/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
         body: JSON.stringify({ text: commentText }),
       });
 
-      if (response.ok) {
-        const newComment = await response.json();
-        
-        // Update the ideas list with new comment
-        setIdeas(prevIdeas =>
-          prevIdeas.map(idea =>
-            idea.id === ideaId
-              ? {
-                  ...idea,
-                  comments: [newComment, ...(idea.comments || [])],
-                  commentCount: (idea.commentCount || 0) + 1
-                }
-              : idea
-          )
-        );
-
-        // Update selected idea if it's the current one
-        setSelectedIdea(prev => {
-          if (prev && prev.id === ideaId) {
-            return { 
-              ...prev, 
-              comments: [newComment, ...(prev.comments || [])],
-              commentCount: (prev.commentCount || 0) + 1
-            };
-          }
-          return prev;
-        });
-
-      } else {
-        throw new Error('Failed to add comment');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Comment failed: ${response.status}`);
       }
+
+      const newComment = await response.json();
+      console.log('✅ Comment successful:', newComment);
+      
+      // ✅ FIXED: Update local state with new comment
+      setIdeas(prevIdeas =>
+        prevIdeas.map(idea =>
+          idea.id === ideaId
+            ? {
+                ...idea,
+                comments: [newComment, ...idea.comments],
+                commentCount: (idea.commentCount || 0) + 1
+              }
+            : idea
+        )
+      );
+
+      return newComment;
+      
     } catch (error) {
-      console.error('Error adding comment:', error);
-      throw error;
+      console.error('❌ Comment failed:', error);
+      throw new Error(`Failed to add comment: ${error.message}`);
     }
   };
 
   const handleSelectIdea = (idea) => {
+    console.log('🔍 Selecting idea:', idea.name, 'ID:', idea.id);
     setSelectedIdea(idea);
     setIsDetailsView(true);
   };
@@ -758,6 +706,12 @@ const ShowcaseComponent = ({
   const handleGoBack = () => {
     setIsDetailsView(false);
     setSelectedIdea(null);
+  };
+
+  // Refresh data function
+  const handleRefresh = () => {
+    fetchIdeas();
+    fetchLikedIdeas();
   };
 
   // Conditional Render: Show Project Details Page
@@ -787,22 +741,28 @@ const ShowcaseComponent = ({
               🔧 Admin Mode
             </div>
           )}
-          <button 
-            className={`post-idea-btn ${!isPostingEnabled ? 'disabled-btn' : ''}`}
-            onClick={() => {
-              if (!currentUser) {
-                onRequireLogin();
-                return;
-              }
-              if (isPostingEnabled) {
+          <div className="header-buttons">
+            <button 
+              onClick={handleRefresh}
+              className="refresh-btn"
+              title="Refresh data"
+            >
+              🔄
+            </button>
+            <button 
+              className="post-idea-btn"
+              onClick={() => {
+                if (!currentUser) {
+                  onRequireLogin();
+                  return;
+                }
                 setIsAddIdeaModalOpen(true);
                 setSubmissionError('');
-              }
-            }}
-            disabled={!isPostingEnabled}
-          >
-            {isPostingEnabled ? 'Post an Idea' : 'Submissions Closed'}
-          </button>
+              }}
+            >
+              Post an Idea
+            </button>
+          </div>
         </div>
       </header>
 
@@ -841,6 +801,14 @@ const ShowcaseComponent = ({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          {searchTerm && (
+            <button 
+              className="clear-search-btn"
+              onClick={() => setSearchTerm('')}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -848,6 +816,12 @@ const ShowcaseComponent = ({
         <div className="submission-error-message">
           <AlertCircle size={16} />
           {submissionError}
+          <button 
+            onClick={() => setSubmissionError('')}
+            className="close-error-btn"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
@@ -856,41 +830,52 @@ const ShowcaseComponent = ({
           <LoadingSpinner />
         ) : error ? (
           <div className="no-results">
-            <p>Failed to load ideas. Please check your connection.</p>
+            <p>{error}</p>
             <button 
-              onClick={fetchIdeas} 
+              onClick={handleRefresh} 
               className="retry-btn"
-              style={{ marginTop: '10px', padding: '8px 16px' }}
             >
               Try Again
             </button>
           </div>
         ) : filteredIdeas.length > 0 ? (
-          filteredIdeas.map(idea => (
-            <StartupCard 
-              key={idea.id} 
-              idea={idea} 
-              onSelectIdea={handleSelectIdea}
-              onUpvote={handleUpvoteIdea}
-              onDeleteIdea={handleDeleteIdea}
-              currentUser={currentUser}
-              onRequireLogin={onRequireLogin}
-              likedIdeas={effectiveLikedIdeas}
-              isAdmin={isAdmin}
-            />
-          ))
+          <>
+            <div className="results-count">
+              Showing {filteredIdeas.length} idea{filteredIdeas.length !== 1 ? 's' : ''}
+              {searchTerm && ` for "${searchTerm}"`}
+            </div>
+            {filteredIdeas.map(idea => (
+              <StartupCard 
+                key={idea.id} 
+                idea={idea} 
+                onSelectIdea={handleSelectIdea}
+                onUpvote={handleUpvoteIdea}
+                onDeleteIdea={handleDeleteIdea}
+                currentUser={currentUser}
+                onRequireLogin={onRequireLogin}
+                likedIdeas={effectiveLikedIdeas}
+                isAdmin={isAdmin}
+              />
+            ))}
+          </>
         ) : (
           <div className="no-results">
-            <p>No idea found</p>
+            <p>No ideas found</p>
             {searchTerm && (
               <p>Try adjusting your search terms.</p>
             )}
+            <button 
+              onClick={() => setSearchTerm('')}
+              className="retry-btn"
+            >
+              Clear Search
+            </button>
           </div>
         )}
       </div>
 
       <AddIdeaModal
-        isOpen={isAddIdeaModalOpen && isPostingEnabled} 
+        isOpen={isAddIdeaModalOpen} 
         onClose={() => {
           setIsAddIdeaModalOpen(false);
           setSubmissionError('');

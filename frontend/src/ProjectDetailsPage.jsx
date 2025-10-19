@@ -14,22 +14,55 @@ const extractAvatarUrl = (avatar) => {
     return placeholderAvatar;
 };
 
-// Comment Section Component (Optimized)
+// ✅ FIXED: Comment Section Component with proper data handling
 const CommentSection = ({ initialComments = [], onNewComment, currentUser, onRequireLogin }) => {
     const [comments, setComments] = useState([]);
     const [newCommentText, setNewCommentText] = useState('');
     const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_LIMIT);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Initialize and sync comments
+    // ✅ FIXED: Initialize and sync comments with proper transformation
     useEffect(() => {
+        console.log('💬 Initial comments received:', initialComments);
+        
         const safeComments = Array.isArray(initialComments) ? initialComments : [];
+        
+        // ✅ FIXED: Transform comments to match frontend expectations
+        const transformedComments = safeComments.map(comment => {
+            // Handle both backend comment structures
+            if (comment.user && typeof comment.user === 'object') {
+                // Comment from backend with populated user
+                return {
+                    id: comment._id || comment.id,
+                    user: comment.user.name || comment.author,
+                    author: comment.user.name || comment.author,
+                    avatar: extractAvatarUrl(comment.user.avatar || comment.authorAvatar),
+                    text: comment.text,
+                    timestamp: comment.timestamp || comment.createdAt,
+                    userId: comment.user._id || comment.userId
+                };
+            } else {
+                // Comment from frontend or different structure
+                return {
+                    id: comment._id || comment.id,
+                    user: comment.user || comment.author,
+                    author: comment.author || comment.user,
+                    avatar: extractAvatarUrl(comment.avatar || comment.authorAvatar),
+                    text: comment.text,
+                    timestamp: comment.timestamp,
+                    userId: comment.userId
+                };
+            }
+        });
+
         // Sort by timestamp (newest first)
-        const sortedComments = [...safeComments].sort((a, b) => {
-            const timeA = new Date(a.timestamp || a.createdAt).getTime();
-            const timeB = new Date(b.timestamp || b.createdAt).getTime();
+        const sortedComments = [...transformedComments].sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
             return timeB - timeA;
         });
+        
+        console.log('💬 Transformed comments:', sortedComments.length);
         setComments(sortedComments);
     }, [initialComments]);
 
@@ -49,6 +82,7 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
             const tempComment = {
                 id: `temp-${Date.now()}`,
                 user: currentUser.name,
+                author: currentUser.name,
                 avatar: extractAvatarUrl(currentUser.avatar),
                 text: text,
                 timestamp: new Date().toISOString(),
@@ -65,6 +99,7 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
             // Remove optimistic comment on error
             setComments(prev => prev.filter(comment => !comment.isOptimistic));
             console.error('Failed to post comment:', error);
+            throw error; // Re-throw to let parent handle
         } finally {
             setIsSubmitting(false);
         }
@@ -136,16 +171,16 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
 
             <div className="comments-list-replicate">
                 {displayedComments.map(comment => (
-                    <div key={comment.id || comment._id} className="comment-item-replicate">
+                    <div key={comment.id} className="comment-item-replicate">
                         <img 
-                            src={extractAvatarUrl(comment.avatar || comment.authorAvatar)} 
-                            alt={comment.user || comment.author} 
+                            src={extractAvatarUrl(comment.avatar)} 
+                            alt={comment.user} 
                             className="comment-avatar-replicate" 
                             onError={(e) => e.target.src = placeholderAvatar}
                         />
                         <div className="comment-content-wrapper-replicate">
                             <div className="comment-user-header-replicate">
-                                <span className="comment-user-replicate">{comment.user || comment.author}</span>
+                                <span className="comment-user-replicate">{comment.user}</span>
                                 <span className="comment-timestamp-replicate">
                                     {comment.isOptimistic ? 'Posting...' : formatTimestamp(comment.timestamp)}
                                 </span>
@@ -174,7 +209,7 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
     );
 };
 
-// Main Project Details Page Component (Optimized)
+// ✅ FIXED: Main Project Details Page Component
 const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, onAddComment, API_URL, onUpvote, likedIdeas }) => {
     const [upvotes, setUpvotes] = useState(project.upvotes || project.likes || 0);
     const [isUpvoted, setIsUpvoted] = useState(likedIdeas.has(project.id));
@@ -184,16 +219,34 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
     const [isUpvoting, setIsUpvoting] = useState(false);
     const [localComments, setLocalComments] = useState(project.comments || []);
 
-    // Sync when project prop changes
+    console.log('📊 ProjectDetailsPage - Project data:', {
+        id: project.id,
+        upvotes: project.upvotes,
+        commentCount: project.commentCount,
+        commentsLength: project.comments?.length,
+        liked: likedIdeas.has(project.id)
+    });
+
+    // ✅ FIXED: Sync when project prop changes
     useEffect(() => {
+        console.log('🔄 Syncing project data:', project.name);
+        
         setUpvotes(project.upvotes || project.likes || 0);
         setIsUpvoted(likedIdeas.has(project.id));
+        
         const calculatedCount = project.commentCount || (Array.isArray(project.comments) ? project.comments.length : 0);
         setCommentCount(calculatedCount);
         setLocalComments(project.comments || []);
+        
+        console.log('✅ Synced project data:', {
+            upvotes: project.upvotes,
+            isUpvoted: likedIdeas.has(project.id),
+            commentCount: calculatedCount,
+            comments: project.comments?.length
+        });
     }, [project, likedIdeas]);
 
-    // Optimized upvote handler
+    // ✅ FIXED: Optimized upvote handler with better error handling
     const handleUpvote = async () => {
         if (!currentUser) {
             onRequireLogin();
@@ -201,6 +254,8 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
         }
 
         if (isUpvoting) return;
+
+        console.log(`🔼 Upvoting project ${project.id}, current upvotes: ${upvotes}, isUpvoted: ${isUpvoted}`);
 
         setIsUpvoting(true);
         
@@ -213,29 +268,33 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
 
         try {
             await onUpvote(project.id);
+            console.log('✅ Upvote successful on frontend');
         } catch (error) {
             // Revert on error
+            console.error('❌ Upvote failed, reverting:', error);
             setUpvotes(previousUpvotes);
             setIsUpvoted(previousIsUpvoted);
-            console.error('Upvote failed:', error);
         } finally {
             setIsUpvoting(false);
         }
     };
 
-    // Optimized comment handler
+    // ✅ FIXED: Optimized comment handler with better state management
     const handleNewCommentPosted = async (commentText) => {
         try {
-            // Optimistically update count
+            console.log('💬 Posting new comment, current count:', commentCount);
+            
+            // Optimistically update count and add temporary comment
             setCommentCount(prev => prev + 1);
             
-            await onAddComment(project.id, commentText);
+            const newComment = await onAddComment(project.id, commentText);
+            console.log('✅ Comment posted successfully:', newComment);
             
         } catch(error) {
             // Rollback on error
+            console.error('❌ Comment failed, rolling back:', error);
             setCommentCount(prev => Math.max(0, prev - 1));
-            console.error('Failed to post comment:', error);
-            throw error; // Re-throw to handle in CommentSection
+            throw error;
         }
     };
 
