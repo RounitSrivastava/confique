@@ -428,13 +428,13 @@ const ShowcaseComponent = ({
           month: post.month || 'October \'25',
           websiteLink: post.registrationLink || post.websiteLink,
           launchedDate: post.launchedDate,
-          comments: post.commentData || [],
+          comments: Array.isArray(post.commentData) ? post.commentData : [],
           creator: {
             name: post.author || 'Anonymous',
             role: 'Creator',
             avatar: post.authorAvatar || "https://placehold.co/40x40/cccccc/000000?text=U"
           },
-          upvoters: post.upvoters || [],
+          upvoters: Array.isArray(post.upvoters) ? post.upvoters : [],
           fullDescription: post.fullDescription || post.content,
           userId: post.userId,
           author: post.author,
@@ -487,7 +487,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // Submit new showcase idea using existing posts endpoint
+  // Submit new showcase idea using existing posts endpoint - FIXED VERSION
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -495,9 +495,9 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Create a clean payload that matches your backend Post schema
+      // Create a CLEAN payload - remove any potential array fields
       const postPayload = {
-        // Required fields for any post
+        // Required fields
         title: ideaData.title,
         content: ideaData.description,
         type: 'showcase',
@@ -506,29 +506,29 @@ const ShowcaseComponent = ({
         userId: currentUser._id,
         timestamp: new Date().toISOString(),
         
-        // Initialize numeric fields (NOT arrays)
+        // NUMBERS ONLY - no arrays
         likes: 0,
-        comments: 0, // This must be a number, not an array
+        comments: 0,
         
-        // Showcase-specific fields
+        // Showcase fields
         logoUrl: ideaData.logoUrl,
         bannerUrl: ideaData.bannerUrl,
         websiteLink: ideaData.websiteLink || '',
         launchedDate: ideaData.launchedDate,
         fullDescription: ideaData.fullDescription,
         month: ideaData.month,
-        
-        // Arrays should be empty
-        images: [],
-        
-        // Status for moderation
         status: 'pending',
-        
-        // Remove any fields that might cause validation errors
-        // Don't include commentData, upvoters, or any other arrays that aren't in schema
       };
 
-      console.log('📤 Submitting post payload:', postPayload);
+      // Remove any undefined or null fields that might cause issues
+      Object.keys(postPayload).forEach(key => {
+        if (postPayload[key] === undefined || postPayload[key] === null) {
+          delete postPayload[key];
+        }
+      });
+
+      console.log('📤 FINAL Payload being sent:', JSON.stringify(postPayload, null, 2));
+      console.log('🔍 Comments field type:', typeof postPayload.comments, 'Value:', postPayload.comments);
 
       const response = await apiFetch('/posts', {
         method: 'POST',
@@ -542,7 +542,7 @@ const ShowcaseComponent = ({
 
       const newPost = await response.json();
       
-      // Refetch entire list to ensure consistency and pull new approved post
+      // Refetch ideas
       await fetchIdeas();
       fetchLikedIdeas();
       
