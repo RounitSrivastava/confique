@@ -1229,6 +1229,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const qrFileInputRef = useRef(null);
     const [hasRegistration, setHasRegistration] = useState(!!postToEdit?.registrationLink || !!postToEdit?.enableRegistrationForm);
     const [registrationMethod, setRegistrationMethod] = useState(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
+    const [isSubmitting, setIsSubmitting] = useState(false); // FIX: State to prevent duplicate submissions
 
     useEffect(() => {
         if (isOpen) {
@@ -1239,6 +1240,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setRegistrationMethod(postToEdit?.registrationLink ? 'link' : (postToEdit?.enableRegistrationForm ? 'form' : ''));
             setShowUploadAlert(false);
             setUploadAlertMessage('');
+            setIsSubmitting(false); // FIX: Reset submitting state when modal opens
         }
     }, [isOpen, postToEdit, currentUser]);
 
@@ -1355,6 +1357,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (isSubmitting) return; // FIX: Prevent re-submission
+
         if (!formData.title || !formData.content) {
             setUploadAlertMessage("Please fill in the Title and Content fields.");
             setShowUploadAlert(true);
@@ -1419,6 +1423,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                 }
             }
         }
+
+        setIsSubmitting(true); // FIX: Disable button right before API call
 
         let submissionData = {
             ...formData,
@@ -1501,13 +1507,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             console.error('Error submitting post:', error);
             setUploadAlertMessage(`Error submitting post: ${error.message || 'Unknown error.'}`);
             setShowUploadAlert(true);
+        } finally {
+             setIsSubmitting(false); // FIX: Re-enable the button on success or failure
         }
     };
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
-        // CRITICAL FIX: Reset file input value to allow re-selection of the same file
-        e.target.value = null;
+        e.target.value = null; // FIX: Reset file input value to allow re-selection of the same file
 
         if (!files.length) return;
 
@@ -1534,8 +1541,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         compressImage(file, (compressedDataUrl) => {
             setPaymentQRPreview(compressedDataUrl);
         });
-        // CRITICAL FIX: Reset file input value to allow re-selection of the same file
-        e.target.value = null;
+        e.target.value = null; // FIX: Reset file input value
     };
 
     const removeImage = (index) => {
@@ -1942,11 +1948,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                             {renderImageUploadSection()}
 
                             <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={onClose}>
+                                <button type="button" className="btn-secondary" onClick={onClose} disabled={isSubmitting}>
                                     Cancel
                                 </button>
-                                <button type="submit" className="btn-primary">
-                                    {postToEdit ? 'Update' : 'Post'}
+                                <button type="submit" className="btn-primary" disabled={isSubmitting}>
+                                    {isSubmitting ? (postToEdit ? 'Updating...' : 'Posting...') : (postToEdit ? 'Update' : 'Post')}
                                 </button>
                             </div>
                         </form>
@@ -2266,7 +2272,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered, onRequireLogin }) => {
+const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered, onRequireLogin, onOpenPostDetail }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -2345,7 +2351,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         };
     }, [isCommentsOpen, setOpenCommentPostId]);
 
-    const handleAddToCalendarClick = () => {
+    const handleAddToCalendarClick = (e) => {
+        e.stopPropagation(); // Prevent opening the post detail when clicking this button
         console.log("Button clicked. Attempting to add event:", post);
         if (!isLoggedIn) {
             console.log("User not logged in, requiring login.");
@@ -2363,7 +2370,8 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
         }
     };
 
-    const handleShare = async (postId, postTitle, postContent) => {
+    const handleShare = async (postId, postTitle, postContent, e) => {
+        e.stopPropagation();
         const shareUrl = `${window.location.origin}/posts/${postId}`;
 
         if (navigator.share) {
@@ -2412,6 +2420,21 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     };
 
     const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
+
+    const handleCardClick = (e) => {
+        if (isCommentsOpen) return; // Don't open if comments are already open
+        
+        // Check if the click originated from an interactive element (button/link/icon)
+        const isInteractiveElement = e.target.closest('button') || e.target.closest('a') || e.target.closest('.post-options-container') || e.target.closest('svg') || e.target.closest('span');
+        if (isInteractiveElement) return;
+
+        if (post.type === 'event' || post.type === 'culturalEvent') {
+            onOpenEventDetail(post);
+        } else {
+            onOpenPostDetail(post);
+        }
+    };
+
 
     const renderPostCardContent = () => (
         <>
@@ -2462,7 +2485,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     {needsShowMore && (
                         <button
                             className="show-more-button"
-                            onClick={() => setShowFullContent(!showFullContent)}
+                            onClick={(e) => { e.stopPropagation(); setShowFullContent(!showFullContent); }}
                         >
                             {showFullContent ? 'Show Less' : 'Show More'}
                         </button>
@@ -2491,7 +2514,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                     {post.type === 'event' && (
                         <>
                             <div className="event-action-buttons-top">
-                                <button className="action-btn" onClick={() => onOpenEventDetail(post)}>
+                                <button className="action-btn" onClick={(e) => { e.stopPropagation(); onOpenEventDetail(post); }}>
                                     <Info size={20} />
                                     <span>Details</span>
                                 </button>
@@ -2567,7 +2590,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                                 <span className="export-text">Export Data</span>
                             </button>
                         )}
-                        <button className="action-btn share-only-icon" onClick={(e) => { e.stopPropagation(); handleShare(post._id, post.title, post.content); }}>
+                        <button className="action-btn share-only-icon" onClick={(e) => handleShare(post._id, post.title, post.content, e)}>
                             <Share2 size={20} />
                             <span className="share-text">Share</span>
                         </button>
@@ -2601,14 +2624,14 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 </div>
             </div>
         ) : (
-            <div className="post-card">
+            <div className="post-card" onClick={handleCardClick}> {/* FIX: Added click handler for single post view */}
                 {renderPostCardContent()}
             </div>
         )
     );
 };
 
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
     const newsHighlights = [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
@@ -2642,6 +2665,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                                 onShowRegistrationModal={onShowRegistrationModal}
                                 isRegistered={myRegisteredEvents.has(post._id)}
                                 onRequireLogin={onRequireLogin}
+                                onOpenPostDetail={onOpenPostDetail} // Passed
                             />
                         ))}
                     </div>
@@ -2674,6 +2698,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                         onExportData={onExportData}
                         onShowRegistrationModal={onShowRegistrationModal}
                         onRequireLogin={onRequireLogin}
+                        onOpenPostDetail={onOpenPostDetail} // Passed
                     />
                 ))}
             </div>
@@ -2681,7 +2706,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     );
 };
 
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
     const eventPosts = posts.filter(post => post.type === 'event');
 
     return (
@@ -2710,6 +2735,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                         isLoggedIn={!!currentUser}
                         onExportData={onExportData}
                         onRequireLogin={onRequireLogin}
+                        onOpenPostDetail={onOpenPostDetail} // Passed
                     />
                 ))}
             </div>
@@ -2717,7 +2743,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen, onOpenPostDetail }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
@@ -2747,6 +2773,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                             onRequireLogin={onRequireLogin}
+                            onOpenPostDetail={onOpenPostDetail} // Passed
                         />
                     ))
                 ) : (
@@ -2762,7 +2789,7 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
+const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
     const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
 
     return (
@@ -2792,6 +2819,7 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                             onRequireLogin={onRequireLogin}
+                            onOpenPostDetail={onOpenPostDetail} // Passed
                         />
                     ))
                 ) : (
@@ -3030,7 +3058,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     );
 };
 
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
     if (!currentUser) {
         return (
             <div>
@@ -3136,6 +3164,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                             isLoggedIn={!!currentUser}
                             onExportData={onExportData}
                             onRequireLogin={onRequireLogin}
+                            onOpenPostDetail={onOpenPostDetail} // Passed
                         />
                     ))}
                 </div>
@@ -4390,6 +4419,7 @@ const callApi = async (endpoint, options = {}) => {
                 method: 'DELETE',
             });
             if (res.ok) {
+                // FIX: Remove post from all relevant state arrays and reset the view
                 setPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
                 setMyCalendarEvents(prevEvents => prevEvents.filter(event => event._id !== postId));
                 setLikedPosts(prev => {
@@ -4397,6 +4427,11 @@ const callApi = async (endpoint, options = {}) => {
                     newLiked.delete(postId);
                     return newLiked;
                 });
+                
+                // FIX: Ensure single-post view is cleared after deletion
+                setSelectedPost(null);
+                setSelectedEvent(null);
+
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4916,7 +4951,8 @@ const callApi = async (endpoint, options = {}) => {
             setShowCulturalEventRegistration(true);
         },
         myRegisteredEvents,
-        onRequireLogin: () => setShowLoginModal(true)
+        onRequireLogin: () => setShowLoginModal(true),
+        onOpenPostDetail: handleOpenPostDetail // Added post detail handler
     };
 
     const menuItems = [
@@ -4989,21 +5025,6 @@ const callApi = async (endpoint, options = {}) => {
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
-            id: 'add',
-            label: 'Add',
-            icon: <Plus className="nav-icon" />,
-            action: () => {
-                if (!isLoggedIn) {
-                    setShowLoginModal(true);
-                } else {
-                    setPostToEdit(null);
-                    setIsModalOpen(true);
-                    setSelectedPost(null);
-                    setSelectedEvent(null);
-                }
-            }
-        },
-        {
             id: 'showcase',
             label: 'Showcase',
             icon: <Star className="nav-icon" />,
@@ -5023,6 +5044,21 @@ const callApi = async (endpoint, options = {}) => {
                     onOpenEventDetail={(post) => handleOpenPostDetail(post)} // Showcase items are treated like posts
                 />
             ),
+        },
+        {
+            id: 'add',
+            label: 'Add',
+            icon: <Plus className="nav-icon" />,
+            action: () => {
+                if (!isLoggedIn) {
+                    setShowLoginModal(true);
+                } else {
+                    setPostToEdit(null);
+                    setIsModalOpen(true);
+                    setSelectedPost(null);
+                    setSelectedEvent(null);
+                }
+            }
         },
     ];
 
@@ -5055,29 +5091,35 @@ const callApi = async (endpoint, options = {}) => {
         }
 
         if (selectedPost) {
+            // FIX: Single post view with a back button and more posts underneath
             return (
-                <div className="single-post-and-feed">
-                    <PostCard
-                        key={selectedPost._id}
-                        post={selectedPost}
-                        {...postCardProps}
-                        isProfileView={selectedPost.userId === currentUser?._id}
-                        registrationCount={registrations[selectedPost._id]}
-                    />
-                    <hr className="section-divider" />
-                    <h3 className="section-subtitle">More Posts</h3>
-                    <div className="posts-container">
-                        {posts
-                            .filter(p => p._id !== selectedPost._id)
-                            .map(post => (
-                                <PostCard
-                                    key={post._id}
-                                    post={post}
-                                    {...postCardProps}
-                                    isProfileView={false}
-                                    registrationCount={registrations[post._id]}
-                                />
-                            ))}
+                <div className="main-content-detail-view single-post-view">
+                    <button onClick={() => setSelectedPost(null)} className="event-detail-back-button back-to-feed-btn">
+                        <ArrowLeft size={24} /> Back to Feed
+                    </button>
+                    <div className="single-post-and-feed">
+                        <PostCard
+                            key={selectedPost._id}
+                            post={selectedPost}
+                            {...postCardProps}
+                            isProfileView={selectedPost.userId === currentUser?._id}
+                            registrationCount={registrations[selectedPost._id]}
+                        />
+                        <hr className="section-divider" />
+                        <h3 className="section-subtitle">More Posts</h3>
+                        <div className="posts-container">
+                            {posts
+                                .filter(p => p._id !== selectedPost._id)
+                                .map(post => (
+                                    <PostCard
+                                        key={post._id}
+                                        post={post}
+                                        {...postCardProps}
+                                        isProfileView={false}
+                                        registrationCount={registrations[post._id]}
+                                    />
+                                ))}
+                        </div>
                     </div>
                 </div>
             );
@@ -5240,7 +5282,7 @@ const callApi = async (endpoint, options = {}) => {
                                         setActiveSection(item.id);
                                         setOpenCommentPostId(null);
                                         setSelectedEvent(null);
-                                        setSelectedPost(null);
+                                        setSelectedPost(null); // FIX: Clear single post view on tab switch
                                     }
                                 }}
                             >

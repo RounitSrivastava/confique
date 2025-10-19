@@ -190,14 +190,9 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
     // Determine initial upvoted state using the likedIdeas Set passed from parent
     const [isUpvoted, setIsUpvoted] = useState(likedIdeas.has(project.id));
     
-    // FIXED: Ensure comments is always an array, never a number
-    const [localComments, setLocalComments] = useState(
-        Array.isArray(project.comments) ? project.comments : []
-    );
-    
-    // FIXED: Ensure commentCount is calculated safely
+    // FIXED: Use project.commentCount if available, otherwise calculate from comments array
     const [commentCount, setCommentCount] = useState(
-        Array.isArray(project.comments) ? project.comments.length : 0
+        project.commentCount || (Array.isArray(project.comments) ? project.comments.length : 0)
     );
     
     const [isUpvoting, setIsUpvoting] = useState(false);
@@ -207,10 +202,10 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
         setUpvotes(project.upvotes || project.likes || 0);
         setIsUpvoted(likedIdeas.has(project.id));
         
-        // FIXED: Always ensure comments is an array
-        const safeComments = Array.isArray(project.comments) ? project.comments : [];
-        setLocalComments(safeComments);
-        setCommentCount(safeComments.length);
+        // FIXED: Always use commentCount if available, otherwise calculate
+        const calculatedCount = project.commentCount || 
+                              (Array.isArray(project.comments) ? project.comments.length : 0);
+        setCommentCount(calculatedCount);
     }, [project, likedIdeas]);
 
     // Upvote function using the handler passed from parent (ShowcaseComponent)
@@ -253,6 +248,9 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
         }
 
         try {
+            // Optimistically update the comment count
+            setCommentCount(prev => prev + 1);
+            
             // Call parent's handler to post comment to the server
             await onAddComment(project.id, commentText);
             
@@ -261,7 +259,8 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             
         } catch(error) {
             console.error('Failed to post comment via parent handler:', error);
-            // Optionally show a local error message here
+            // Rollback optimistic update on error
+            setCommentCount(prev => Math.max(0, prev - 1));
         }
     };
 
@@ -313,7 +312,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
                   <p className="project-tagline">{project.description}</p>
                 </div>
               </div>
-              {/* UPVOTE BUTTON */}
+              {/* UPVOTE BUTTON - REMOVED COUNT FROM BUTTON TEXT */}
               <button 
                 className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
                 onClick={handleUpvote}
@@ -324,7 +323,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
                   fill={isUpvoted ? '#ef4444' : 'none'}
                   style={{ marginRight: '8px' }}
                 />
-                {isUpvoting ? 'Loading...' : (isUpvoted ? `Upvoted (${upvotes})` : `Upvote (${upvotes})`)}
+                {isUpvoting ? 'Loading...' : (isUpvoted ? 'Upvoted' : 'Upvote')}
               </button>
             </div>
 
@@ -401,7 +400,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             <div className="section-divider"></div>
       
             <CommentSection 
-              initialComments={localComments}
+              initialComments={project.comments || []}
               onNewComment={handleNewCommentPosted}
               currentUser={currentUser}
               onRequireLogin={onRequireLogin}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Showcase.css';
-import { ChevronDown, Search, X, Image as ImageIcon, ThumbsUp, AlertCircle, Link as LinkIcon, MessageCircle } from 'lucide-react';
+import { ChevronDown, Search, X, Image as ImageIcon, ThumbsUp, AlertCircle, Link as LinkIcon, MessageCircle, Trash2, MoreVertical } from 'lucide-react';
 import ProjectDetailsPage from './ProjectDetailsPage';
 
 // IMPORT YOUR BANNER IMAGE HERE
@@ -280,10 +280,12 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
   );
 };
 
-// === StartupCard Component (with authentication for upvotes) ===
-const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin, likedIdeas }) => {
+// === StartupCard Component (with authentication for upvotes and admin delete) ===
+const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, onRequireLogin, likedIdeas, isAdmin }) => {
   const isLiked = likedIdeas?.has(idea.id);
   const [isUpvoting, setIsUpvoting] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const handleUpvote = async (e) => {
     e.stopPropagation();
@@ -307,6 +309,30 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin
     }
   };
 
+  const handleDelete = async (e) => {
+    e.stopPropagation();
+    if (!isAdmin) return;
+
+    const confirmDelete = window.confirm(`Are you sure you want to delete "${idea.name}"? This action cannot be undone.`);
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteIdea(idea.id);
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('Failed to delete idea. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setShowMenu(false);
+    }
+  };
+
+  const toggleMenu = (e) => {
+    e.stopPropagation();
+    setShowMenu(!showMenu);
+  };
+
   return (
     <div className="startup-card" onClick={() => onSelectIdea(idea)}>
       <div className="card-content">
@@ -323,14 +349,48 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin
             </div>
         </div>
       </div>
-      <div className={`card-upvote ${isLiked ? 'liked' : ''} ${isUpvoting ? 'upvoting' : ''}`} onClick={handleUpvote}>
-        <ThumbsUp 
-          size={20} 
-          className="upvote-icon"
-          fill={isLiked ? '#ef4444' : 'none'}
-        />
-        <span className="upvote-count">{idea.upvotes}</span>
+      
+      <div className="card-actions">
+        <div className={`card-upvote ${isLiked ? 'liked' : ''} ${isUpvoting ? 'upvoting' : ''}`} onClick={handleUpvote}>
+          <ThumbsUp 
+            size={20} 
+            className="upvote-icon"
+            fill={isLiked ? '#ef4444' : 'none'}
+          />
+          <span className="upvote-count">{idea.upvotes}</span>
+        </div>
+
+        {/* Admin Menu */}
+        {isAdmin && (
+          <div className="admin-menu-container">
+            <button 
+              className="admin-menu-btn" 
+              onClick={toggleMenu}
+              disabled={isDeleting}
+            >
+              <MoreVertical size={16} />
+            </button>
+            
+            {showMenu && (
+              <div className="admin-dropdown-menu">
+                <button 
+                  className="admin-menu-item delete-item" 
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  <Trash2 size={14} />
+                  {isDeleting ? 'Deleting...' : 'Delete Idea'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Overlay for menu */}
+      {showMenu && (
+        <div className="menu-overlay" onClick={() => setShowMenu(false)} />
+      )}
     </div>
   );
 };
@@ -354,13 +414,17 @@ const ShowcaseComponent = ({
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [submissionError, setSubmissionError] = useState('');
 
+  // Check if current user is admin (confique01@gmail.com)
+  const isAdmin = currentUser && currentUser.email === 'confique01@gmail.com';
+
   // Use passed likedIdeas or local state
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
 
   useEffect(() => {
     console.log('🔧 ShowcaseComponent mounted with API_URL:', API_URL);
     console.log('🔧 callApi function available:', !!callApi);
-  }, [API_URL, callApi]);
+    console.log('🔧 Admin status:', isAdmin ? 'YES - confique01@gmail.com' : 'NO');
+  }, [API_URL, callApi, isAdmin]);
 
   // --- Date/Time Closure Logic ---
   const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
@@ -443,6 +507,7 @@ const ShowcaseComponent = ({
           websiteLink: post.websiteLink,
           launchedDate: post.launchedDate,
           comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [],
+          commentCount: post.commentCount || (Array.isArray(post.showcaseComments) ? post.showcaseComments.length : 0),
           creator: {
             name: post.author || 'Anonymous',
             role: 'Creator',
@@ -651,6 +716,33 @@ const ShowcaseComponent = ({
     }
   };
 
+  // ✅ ADMIN: Delete showcase idea
+  const handleDeleteIdea = async (ideaId) => {
+    if (!isAdmin) {
+      alert('You do not have permission to delete ideas.');
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/posts/${ideaId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete idea');
+      }
+
+      // Remove idea from local state
+      setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
+      
+      console.log('🗑️ Idea deleted successfully');
+      
+    } catch (error) {
+      console.error('Error deleting idea:', error);
+      throw new Error('Failed to delete idea: ' + error.message);
+    }
+  };
+
   // ✅ FIXED: Add comment to showcase idea using showcase comments endpoint
   const handleAddComment = async (ideaId, commentText) => {
     if (!currentUser) {
@@ -668,19 +760,29 @@ const ShowcaseComponent = ({
       if (response.ok) {
         const newComment = await response.json();
         
-        // Refetch the entire ideas list to pull the updated comments for consistency
-        await fetchIdeas();
+        // Update the ideas list with new comment count
+        setIdeas(prevIdeas =>
+          prevIdeas.map(idea =>
+            idea.id === ideaId
+              ? {
+                  ...idea,
+                  comments: [newComment, ...(idea.comments || [])],
+                  commentCount: (idea.commentCount || idea.comments?.length || 0) + 1
+                }
+              : idea
+          )
+        );
 
-        // Also update the selectedIdea if it is the one being commented on
+        // Also update the selectedIdea if it's the one being commented on
         setSelectedIdea(prev => {
-            if (prev && prev.id === ideaId) {
-                return { 
-                    ...prev, 
-                    comments: [newComment, ...prev.comments], 
-                    commentCount: (prev.commentCount || 0) + 1 
-                };
-            }
-            return prev;
+          if (prev && prev.id === ideaId) {
+            return { 
+              ...prev, 
+              comments: [newComment, ...(prev.comments || [])],
+              commentCount: (prev.commentCount || prev.comments?.length || 0) + 1
+            };
+          }
+          return prev;
         });
 
       } else {
@@ -723,7 +825,13 @@ const ShowcaseComponent = ({
     <div className="showcase-page-container">
       <header className="showcase-top-header">
         <div className="logo">Startup Showcase</div>
-        <button 
+        <div className="header-actions">
+          {isAdmin && (
+            <div className="admin-badge">
+              🔧 Admin Mode
+            </div>
+          )}
+          <button 
             className={`post-idea-btn ${!isPostingEnabled ? 'disabled-btn' : ''}`}
             onClick={() => {
               if (!currentUser) {
@@ -736,9 +844,10 @@ const ShowcaseComponent = ({
               }
             }}
             disabled={!isPostingEnabled}
-        >
-          {isPostingEnabled ? 'Post an Idea' : 'Submissions Closed'}
-        </button>
+          >
+            {isPostingEnabled ? 'Post an Idea' : 'Submissions Closed'}
+          </button>
+        </div>
       </header>
 
       <nav className="month-tabs">
@@ -808,9 +917,11 @@ const ShowcaseComponent = ({
               idea={idea} 
               onSelectIdea={handleSelectIdea}
               onUpvote={handleUpvoteIdea}
+              onDeleteIdea={handleDeleteIdea}
               currentUser={currentUser}
               onRequireLogin={onRequireLogin}
               likedIdeas={effectiveLikedIdeas}
+              isAdmin={isAdmin}
             />
           ))
         ) : (
