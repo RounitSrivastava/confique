@@ -35,11 +35,14 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
         .populate('bookmarkedPosts', 'title month upvotes logoUrl');
 
     if (user) {
+        // ✅ Standardized avatar handling - always return string URL
+        const avatarUrl = typeof user.avatar === 'object' ? user.avatar?.url : user.avatar;
+        
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
-            avatar: user.avatar?.url || user.avatar, // ✅ Handle both object and string
+            avatar: avatarUrl || null,
             isAdmin: user.isAdmin,
             // Showcase-specific fields
             upvotedPosts: user.upvotedPosts || [],
@@ -56,6 +59,15 @@ router.get('/profile', protect, asyncHandler(async (req, res) => {
 // @access  Private
 router.put('/profile', protect, asyncHandler(async (req, res) => {
     const { name, bio, website, linkedin, twitter } = req.body;
+    
+    // Basic validation
+    if (name && name.length < 2) {
+        return res.status(400).json({ message: 'Name must be at least 2 characters long' });
+    }
+
+    if (bio && bio.length > 500) {
+        return res.status(400).json({ message: 'Bio must be less than 500 characters' });
+    }
     
     const user = await User.findByIdAndUpdate(
         req.user._id,
@@ -77,14 +89,13 @@ router.put('/profile', protect, asyncHandler(async (req, res) => {
 // @access  Private
 router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
     try {
-        const { avatarUrl } = req.body; // Expect avatarUrl as string
+        const { avatarUrl } = req.body;
         
         if (!avatarUrl) {
             return res.status(400).json({ message: 'No avatar URL provided' });
         }
 
         console.log('🔄 Updating avatar for user:', req.user._id);
-        console.log('🖼️ New avatar URL:', avatarUrl);
 
         // Get current user to check existing avatar
         const user = await User.findById(req.user._id);
@@ -93,7 +104,7 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
         }
 
         // Handle Cloudinary cleanup for old avatar if it exists
-        if (user.avatar && user.avatar.url && user.avatar.url.includes('cloudinary') && user.avatar.publicId !== 'default_avatar') {
+        if (user.avatar && typeof user.avatar === 'object' && user.avatar.url && user.avatar.url.includes('cloudinary') && user.avatar.publicId && user.avatar.publicId !== 'default_avatar') {
             try {
                 await cloudinary.uploader.destroy(user.avatar.publicId);
                 console.log('🗑️ Deleted old Cloudinary avatar:', user.avatar.publicId);
@@ -152,7 +163,7 @@ router.put('/profile/avatar', protect, asyncHandler(async (req, res) => {
             { arrayFilters: [{ 'elem.user': req.user._id }] }
         );
 
-        // ✅ FIX: Return avatar as string URL for frontend compatibility
+        // ✅ Return avatar as string URL for frontend compatibility
         res.json({
             _id: updatedUser._id,
             name: updatedUser.name,
@@ -229,7 +240,14 @@ router.get('/bookmarked-showcase', protect, asyncHandler(async (req, res) => {
 // @route   POST /api/users/bookmark/:postId
 // @access  Private
 router.post('/bookmark/:postId', protect, asyncHandler(async (req, res) => {
-    const post = await Post.findById(req.params.postId);
+    const postId = req.params.postId;
+    
+    // Validate postId format
+    if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: 'Invalid post ID format' });
+    }
+
+    const post = await Post.findById(postId);
     
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
@@ -263,8 +281,15 @@ router.post('/bookmark/:postId', protect, asyncHandler(async (req, res) => {
 // @route   GET /api/users/check-bookmark/:postId
 // @access  Private
 router.get('/check-bookmark/:postId', protect, asyncHandler(async (req, res) => {
+    const postId = req.params.postId;
+    
+    // Validate postId format
+    if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ bookmarked: false, message: 'Invalid post ID' });
+    }
+
     const user = await User.findById(req.user._id);
-    const isBookmarked = user.bookmarkedPosts.includes(req.params.postId);
+    const isBookmarked = user.bookmarkedPosts.includes(postId);
     
     res.json({ bookmarked: isBookmarked });
 }));
@@ -347,6 +372,11 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
     const { eventId } = req.params;
     const userId = req.user._id;
 
+    // Validate eventId format
+    if (!eventId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: 'Invalid event ID format' });
+    }
+
     const event = await Post.findById(eventId);
     if (!event) {
         res.status(404);
@@ -369,6 +399,11 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
         totalPrice,
         ...customFields
     } = req.body;
+
+    // Basic validation
+    if (!name || !email) {
+        return res.status(400).json({ message: 'Name and email are required' });
+    }
 
     const newRegistrationData = {
         eventId,
@@ -406,6 +441,12 @@ router.post('/register-event/:eventId', protect, asyncHandler(async (req, res) =
 router.get('/export-registrations/:eventId', protect, asyncHandler(async (req, res) => {
     try {
         const { eventId } = req.params;
+        
+        // Validate eventId format
+        if (!eventId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: 'Invalid event ID format' });
+        }
+
         console.log('🔍 Export request received for event:', eventId);
         console.log('👤 Request from user:', req.user._id, req.user.name);
 
@@ -509,7 +550,14 @@ router.get('/admin/reported-posts', protect, admin, asyncHandler(async (req, res
 // @route   GET /api/users/admin/registrations/:eventId
 // @access  Private, Admin
 router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, res) => {
-    const event = await Post.findById(req.params.eventId);
+    const eventId = req.params.eventId;
+    
+    // Validate eventId format
+    if (!eventId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: 'Invalid event ID format' });
+    }
+
+    const event = await Post.findById(eventId);
     
     if (!event) {
         return res.status(404).json({ message: 'Event not found' });
@@ -528,6 +576,12 @@ router.get('/admin/registrations/:eventId', protect, asyncHandler(async (req, re
 // @access  Private, Admin
 router.delete('/admin/delete-post/:id', protect, admin, asyncHandler(async (req, res) => {
     const postId = req.params.id;
+    
+    // Validate postId format
+    if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+        return res.status(400).json({ message: 'Invalid post ID format' });
+    }
+
     const post = await Post.findById(postId);
 
     if (post) {

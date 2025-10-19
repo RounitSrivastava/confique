@@ -29,19 +29,37 @@ const cronRoutes = require('./routes/cronRoutes.js');
 
 const app = express();
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+// Configure Cloudinary with error handling
+try {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+  console.log('✅ Cloudinary configured with cloud_name:', process.env.CLOUDINARY_CLOUD_NAME);
+} catch (error) {
+  console.warn('⚠️ Cloudinary configuration failed:', error.message);
+}
+
+// Connect to MongoDB with better error handling and options
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log('✅ MongoDB connected successfully'))
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1); // Exit if database connection fails
+  });
+
+// MongoDB connection event handlers
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected');
 });
 
-console.log('Cloudinary configured with cloud_name:', process.env.CLOUDINARY_CLOUD_NAME);
-
-// Connect to MongoDB with fallback
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+});
 
 // Middleware
 app.use(express.json({ limit: '50mb' }));
@@ -88,7 +106,8 @@ app.use(passport.session());
 app.get('/test', (req, res) => {
   res.json({ 
     message: 'Startup Showcase Server working',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 console.log('✅ Basic test route registered');
@@ -99,7 +118,9 @@ app.get('/health', (req, res) => {
     status: 'OK',
     service: 'Startup Showcase API',
     timestamp: new Date().toISOString(),
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
+    environment: process.env.NODE_ENV || 'development',
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+    uptime: process.uptime()
   });
 });
 
@@ -135,7 +156,8 @@ app.get('/api/showcase/submission-status', (req, res) => {
   res.json({
     isPostingEnabled,
     deadline: '2025-10-31T23:59:59',
-    daysRemaining: Math.ceil((SUBMISSION_DEADLINE - now) / (1000 * 60 * 60 * 24))
+    daysRemaining: Math.ceil((SUBMISSION_DEADLINE - now) / (1000 * 60 * 60 * 24)),
+    currentTime: new Date().toISOString()
   });
 });
 
@@ -179,6 +201,13 @@ app.use((err, req, res, next) => {
     });
   }
   
+  // Handle CORS errors
+  if (err.name === 'CorsError') {
+    return res.status(403).json({
+      message: 'CORS Error: Request blocked'
+    });
+  }
+  
   res.status(500).json({
     message: 'Internal Server Error',
     ...(process.env.NODE_ENV === 'development' && { error: err.message })
@@ -194,8 +223,25 @@ app.use('/api/*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Received SIGINT. Shutting down gracefully...');
+  await mongoose.connection.close();
+  console.log('✅ MongoDB connection closed.');
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM. Shutting down gracefully...');
+  await mongoose.connection.close();
+  console.log('✅ MongoDB connection closed.');
+  process.exit(0);
+});
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Startup Showcase Server running on port ${PORT}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 CORS enabled for frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+  console.log(`📊 Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
 });
