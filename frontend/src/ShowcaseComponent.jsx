@@ -371,6 +371,17 @@ const ShowcaseComponent = ({
 
   // Simple API fetch function as fallback if callApi is not provided
   const apiFetch = async (endpoint, options = {}) => {
+    // DEBUG: Log what's being sent
+    if (options.method === 'POST' && options.body) {
+      console.log('🔍 API_FETCH - Raw body before any processing:', options.body);
+      try {
+        const parsedBody = JSON.parse(options.body);
+        console.log('🔍 API_FETCH - Parsed body comments field:', typeof parsedBody.comments, parsedBody.comments);
+      } catch (e) {
+        console.log('🔍 API_FETCH - Could not parse body as JSON');
+      }
+    }
+    
     const user = JSON.parse(localStorage.getItem('currentUser'));
     const headers = {
       'Content-Type': 'application/json',
@@ -487,7 +498,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // Submit new showcase idea using existing posts endpoint - FIXED VERSION
+  // Submit new showcase idea using existing posts endpoint - ULTRA FIXED VERSION
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -495,20 +506,21 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Create a CLEAN payload - remove any potential array fields
+      // Create the most basic payload possible to avoid any transformations
       const postPayload = {
-        // Required fields
+        // Basic required fields only
         title: ideaData.title,
         content: ideaData.description,
         type: 'showcase',
+        
+        // User info
         author: currentUser.name,
         authorAvatar: currentUser.avatar,
         userId: currentUser._id,
-        timestamp: new Date().toISOString(),
         
-        // NUMBERS ONLY - no arrays
-        likes: 0,
-        comments: 0,
+        // NUMERIC FIELDS - ensure they are numbers
+        likes: Number(0),
+        comments: Number(0), // Force to number
         
         // Showcase fields
         logoUrl: ideaData.logoUrl,
@@ -518,29 +530,66 @@ const ShowcaseComponent = ({
         fullDescription: ideaData.fullDescription,
         month: ideaData.month,
         status: 'pending',
+        
+        // Timestamp
+        timestamp: new Date().toISOString(),
       };
 
-      // Remove any undefined or null fields that might cause issues
-      Object.keys(postPayload).forEach(key => {
-        if (postPayload[key] === undefined || postPayload[key] === null) {
-          delete postPayload[key];
+      // EXTREME CLEANING: Remove ANY field that could be problematic
+      const finalPayload = {};
+      
+      // Only include essential fields
+      const allowedFields = [
+        'title', 'content', 'type', 'author', 'authorAvatar', 'userId',
+        'likes', 'comments', 'logoUrl', 'bannerUrl', 'websiteLink', 
+        'launchedDate', 'fullDescription', 'month', 'status', 'timestamp'
+      ];
+      
+      allowedFields.forEach(field => {
+        if (postPayload[field] !== undefined && postPayload[field] !== null) {
+          finalPayload[field] = postPayload[field];
         }
       });
 
-      console.log('📤 FINAL Payload being sent:', JSON.stringify(postPayload, null, 2));
-      console.log('🔍 Comments field type:', typeof postPayload.comments, 'Value:', postPayload.comments);
+      // DOUBLE CHECK: Ensure comments is a number
+      finalPayload.comments = 0;
+      finalPayload.likes = 0;
 
-      const response = await apiFetch('/posts', {
+      console.log('🚨 FINAL PAYLOAD BEFORE SENDING:', JSON.stringify(finalPayload, null, 2));
+      console.log('🔍 Comments type:', typeof finalPayload.comments, 'Value:', finalPayload.comments);
+
+      // Use direct fetch to avoid any middleware transformations
+      const user = JSON.parse(localStorage.getItem('currentUser'));
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (user && user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
+      }
+
+      const response = await fetch(`${API_URL}/posts`, {
         method: 'POST',
-        body: JSON.stringify(postPayload),
+        headers: headers,
+        body: JSON.stringify(finalPayload),
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create post');
+        let errorMessage = 'Failed to create post';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+          console.log('❌ Backend error details:', errorData);
+        } catch (e) {
+          console.log('❌ Non-JSON error response');
+        }
+        throw new Error(errorMessage);
       }
 
       const newPost = await response.json();
+      console.log('✅ Successfully created post:', newPost);
       
       // Refetch ideas
       await fetchIdeas();
@@ -549,7 +598,7 @@ const ShowcaseComponent = ({
       setIsAddIdeaModalOpen(false);
       setSubmissionError('');
     } catch (error) {
-      console.error('Failed to submit idea:', error);
+      console.error('🚨 Failed to submit idea:', error);
       setSubmissionError('Failed to submit idea: ' + (error.message || 'Please check your data and try again.'));
       throw error;
     }

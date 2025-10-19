@@ -334,7 +334,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
             {isOpen && (
                 <div className="post-options-menu">
-                    {isAuthorOrAdmin && (post.type === 'event' || post.type === 'culturalEvent') && (
+                    {isAuthorOrAdmin && (post.type === 'event' || post.type === 'culturalEvent' || post.type === 'confession') && (
                         <button className="post-option-item" onClick={handleEdit}>
                             <Edit3 size={16} />
                             <span>Edit</span>
@@ -346,7 +346,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
                             <span>Delete</span>
                         </button>
                     )}
-                    {!isAuthorOrAdmin && (
+                    {!isAuthorOrAdmin && (post.type === 'confession' || post.type === 'event' || post.type === 'culturalEvent') && (
                         <button className="post-option-item report" onClick={handleReport}>
                             <Flag size={16} />
                             <span>Report</span>
@@ -1109,7 +1109,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     </div>
                 ) : (
                     <p className="placeholder-text error-message">
-                        The event host has not provided a QR code for this event. Please contact them for payment details.
+                        The event host has not provided a payment option. Please contact them for payment details.
                     </p>
                 )}
             </div>
@@ -1508,9 +1508,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
         if (!files.length) return;
 
-        const availableSlots = 4 - imagePreviews.length;
+        const availableSlots = 5 - imagePreviews.length; // ✅ FIX: Changed from 4 to 5
         if (availableSlots <= 0) {
-            setUploadAlertMessage("You can only add up to 4 images per post.");
+            setUploadAlertMessage("You can only add up to 5 images per post.");
             setShowUploadAlert(true);
             return;
         }
@@ -1986,6 +1986,60 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                         </div>
                                     </div>
 
+                                    <div className="modal-actions">
+                                        <button type="button" className="btn-secondary" onClick={onClose}>
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="btn-primary">
+                                            {postToEdit ? 'Update' : 'Post'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* General Image Section (always visible for all posts now) */}
+                            {formData.type === 'confession' && (
+                                <div className="form-group">
+                                    <label className="form-label">Images (Max 5)</label>
+                                    <div className="image-upload-container">
+                                        <div className="upload-btn-wrapper">
+                                            <div className="upload-btn">
+                                                <ImageIcon size={16} />
+                                                <span>Upload Images</span>
+                                            </div>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                multiple
+                                                onChange={handleImageUpload}
+                                            />
+                                        </div>
+        
+                                        {imagePreviews.length > 0 && (
+                                            <div className="image-upload-preview">
+                                                {imagePreviews.map((preview, index) => (
+                                                    <div key={index} className="image-preview-item">
+                                                        <img
+                                                            src={preview}
+                                                            alt={`Post image ${index + 1}`}
+                                                            className="post-image"
+                                                            onError={handleImageError}
+                                                            loading="lazy"
+                                                            decoding="async"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="remove-image-btn"
+                                                            onClick={() => removeImage(index)}
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="modal-actions">
                                         <button type="button" className="btn-secondary" onClick={onClose}>
                                             Cancel
@@ -2764,37 +2818,46 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen }) => {
     const confessionPosts = posts.filter(post => post.type === 'confession');
 
     return (
         <div>
             <div className="posts-container">
-                {confessionPosts.map(post => (
-                    <PostCard
-                        key={post._id}
-                        post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
-                        isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
-                        isRegistered={false} // Confessions don't have registrations
-                        isProfileView={false}
-                        registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onRequireLogin={onRequireLogin}
-                    />
-                ))}
+                {confessionPosts.length > 0 ? (
+                    confessionPosts.map(post => (
+                        <PostCard
+                            key={post._id}
+                            post={post}
+                            onLike={onLike}
+                            onShare={onShare}
+                            onAddComment={onAddComment}
+                            likedPosts={likedPosts}
+                            isCommentsOpen={openCommentPostId === post._id}
+                            setOpenCommentPostId={setOpenCommentPostId}
+                            onOpenEventDetail={onOpenEventDetail}
+                            onAddToCalendar={onAddToCalendar}
+                            currentUser={currentUser}
+                            isRegistered={false} // Confessions don't have registrations
+                            isProfileView={false}
+                            registrationCount={registrations[post._id]}
+                            onReportPost={onReportPost}
+                            onDeletePost={onDeletePost}
+                            onEditPost={onEditPost}
+                            onShowCalendarAlert={onShowCalendarAlert}
+                            isLoggedIn={!!currentUser}
+                            onExportData={onExportData}
+                            onRequireLogin={onRequireLogin}
+                        />
+                    ))
+                ) : (
+                    <div className="placeholder-card">
+                        <p className="placeholder-text">No Consights posted yet.</p>
+                        <button className="btn-primary" onClick={() => setIsModalOpen(true)}>
+                            <Plus size={16} /> Share a Consight
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -3395,7 +3458,32 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 avatar: isRegistering ? placeholderAvatar : undefined
             }),
         });
-        // ... rest of the code
+        
+        if (!res.ok) {
+            const errorData = await res.json();
+            setError(errorData.message || 'Login/Registration failed.');
+            return;
+        }
+
+        const data = await res.json();
+
+        if (isRegistering) {
+            // After successful registration, automatically log them in or ask to login
+            setError('Registration successful! Please log in now.');
+            setIsRegistering(false);
+            setFormData(prev => ({ ...prev, password: '' })); // Clear password field
+        } else {
+            // Handle successful login
+            onLogin({
+                _id: data.user._id,
+                name: data.user.name,
+                email: data.user.email,
+                avatar: data.user.avatar,
+                token: data.token,
+                isAdmin: data.user.isAdmin
+            });
+            onClose();
+        }
     } catch (err) {
         setError('An error occurred. Please check your network connection.');
         console.error(err);
@@ -4957,7 +5045,11 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Consights',
             icon: <MessageCircle className="nav-icon" />,
             action: () => setActiveSection('confessions'),
-            component: () => <ConfessionsComponent posts={filteredPosts.filter(post => post.type === 'confession')} {...postCardProps} />,
+            component: () => <ConfessionsComponent 
+                posts={filteredPosts.filter(post => post.type === 'confession')} 
+                {...postCardProps} 
+                setIsModalOpen={setIsModalOpen} // ✅ Passed setIsModalOpen here
+            />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
@@ -4993,7 +5085,7 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Profile',
             icon: <User className="nav-icon" />,
             action: () => setActiveSection('profile'),
-            component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} />,
+            component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} setIsModalOpen={setIsModalOpen} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
@@ -5002,14 +5094,14 @@ const callApi = async (endpoint, options = {}) => {
             icon: <Star className="nav-icon" />,
             action: () => setActiveSection('showcase'),
             component: () => (
-    <ShowcaseComponent 
-    currentUser={currentUser}
-    onRequireLogin={() => setShowLoginModal(true)}
-    API_URL={API_URL}
-    callApi={callApi} // Pass the callApi function
-    likedIdeas={likedPosts} // Pass the liked posts state
-  />
-),
+                <ShowcaseComponent 
+                    currentUser={currentUser}
+                    onRequireLogin={() => setShowLoginModal(true)}
+                    API_URL={API_URL}
+                    callApi={callApi} // Pass the callApi function
+                    likedIdeas={likedPosts} // Pass the liked posts state
+                />
+            ),
             rightSidebar: () => (
                 <ShowcaseRightSidebar 
                     posts={posts.filter(p => p.type === 'showcase')} 
@@ -5119,6 +5211,7 @@ const callApi = async (endpoint, options = {}) => {
                 onClose={handleCloseReportModal}
                 onReport={handleReportPost}
                 post={reportPostData}
+                currentUser={currentUser} // Pass currentUser to PostOptions in ReportModal
             />
             {currentUser && (
                 <ProfileSettingsModal
