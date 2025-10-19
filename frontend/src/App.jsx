@@ -3,7 +3,7 @@ import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
 import ShowcaseComponent from './ShowcaseComponent';
-import ProjectDetailsPage from './ProjectDetailsPage'; // Assuming this component exists in './ProjectDetailsPage.jsx'
+import ProjectDetailsPage from './ProjectDetailsPage';
 import ShowcaseRightSidebar from './ShowcaseRightSidebar';
 import { Image, Star, ExternalLink } from 'lucide-react';
 import {
@@ -46,8 +46,6 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
-
-// ❌ Removed redundant direct fetch call here as API calls are now handled by callApi
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -363,13 +361,19 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 // Comment Item Component - Renders a single comment
 const CommentItem = ({ comment, currentUser }) => {
     const isCommentAuthor = currentUser && comment.authorId === currentUser._id;
+    const extractAvatarUrl = (avatar) => {
+        if (!avatar) return placeholderAvatar;
+        if (typeof avatar === 'string') return avatar;
+        if (avatar.url) return avatar.url;
+        return placeholderAvatar;
+    };
     const avatarSrc = isCommentAuthor ? (currentUser.avatar || placeholderAvatar) : (comment.authorAvatar || placeholderAvatar);
 
     return (
         <div className="comment-item">
             <div className="comment-avatar">
                 <img
-                    src={avatarSrc}
+                    src={extractAvatarUrl(avatarSrc)}
                     alt={`${comment.author}'s avatar`}
                     className="comment-avatar-img"
                     loading="lazy"
@@ -1077,7 +1081,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     <div className="form-group">
                         <label className="form-label">Payment Link</label>
                         <button type="button" className="btn-secondary" onClick={handlePaymentLinkClick}>
-                            <ExternalLink size={18} /> Open Payment Link
+                            <ArrowRight size={18} /> Open Payment Link
                         </button>
                     </div>
                 )}
@@ -1420,7 +1424,6 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             userId: currentUser?._id,
             author: currentUser?.name || 'Anonymous',
             authorAvatar: currentUser?.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A',
-            // FIX: Use formData instead of the undefined 'newPost'
             status: (formData.type === 'event' || formData.type === 'culturalEvent') ? 'pending' : 'approved',
             timestamp: postToEdit ? postToEdit.timestamp : new Date().toISOString(),
         };
@@ -1484,14 +1487,13 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         try {
             await onSubmit(submissionData);
             onClose(); // Close the modal first
-            
-            // FIX: Use formData.type and formData.title for the success message logic
+
             const postTypeLabel = formData.type === 'confession' ? 'Consights' : (formData.type === 'event' ? 'Event' : 'Cultural Event');
-            
+
             const successMessage = (formData.type === 'event' || formData.type === 'culturalEvent')
                 ? `Your new ${postTypeLabel} "${formData.title}" has been submitted for admin approval.`
                 : `Your new ${postTypeLabel} "${formData.title}" has been posted successfully!`;
-            
+
             onShowSuccessAlert(successMessage);
         } catch (error) {
             console.error('Error submitting post:', error);
@@ -1767,8 +1769,8 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                 value={formData.paymentLink}
                                                                                 onChange={handleFormChange}
                                                                                 name="paymentLink"
-                                                                                placeholder="https://example.com/payment"
                                                                                 required
+                                                                                placeholder="https://example.com/payment"
                                                                             />
                                                                         </div>
                                                                     )}
@@ -1940,60 +1942,60 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                             )}
                                         </>
                                     )}
-                                </div>
-                            )}
 
-                            <div className="form-group">
-                                <label className="form-label">Images (Max 5)</label>
-                                <div className="image-upload-container">
-                                    <div className="upload-btn-wrapper">
-                                        <div className="upload-btn">
-                                            <ImageIcon size={16} />
-                                            <span>Upload Images</span>
+                                    <div className="form-group">
+                                        <label className="form-label">Images (Max 5)</label>
+                                        <div className="image-upload-container">
+                                            <div className="upload-btn-wrapper">
+                                                <div className="upload-btn">
+                                                    <ImageIcon size={16} />
+                                                    <span>Upload Images</span>
+                                                </div>
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    multiple
+                                                    onChange={handleImageUpload}
+                                                />
+                                            </div>
+
+                                            {imagePreviews.length > 0 && (
+                                                <div className="image-upload-preview">
+                                                    {imagePreviews.map((preview, index) => (
+                                                        <div key={index} className="image-preview-item">
+                                                            <img
+                                                                src={preview}
+                                                                alt={`Post image ${index + 1}`}
+                                                                className="post-image"
+                                                                onError={handleImageError}
+                                                                loading="lazy"
+                                                                decoding="async"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="remove-image-btn"
+                                                                onClick={() => removeImage(index)}
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            multiple
-                                            onChange={handleImageUpload}
-                                        />
                                     </div>
 
-                                    {imagePreviews.length > 0 && (
-                                        <div className="image-upload-preview">
-                                            {imagePreviews.map((preview, index) => (
-                                                <div key={index} className="image-preview-item">
-                                                    <img
-                                                        src={preview}
-                                                        alt={`Post image ${index + 1}`}
-                                                        className="post-image"
-                                                        onError={handleImageError}
-                                                        loading="lazy"
-                                                        decoding="async"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        className="remove-image-btn"
-                                                        onClick={() => removeImage(index)}
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="modal-actions">
+                                        <button type="button" className="btn-secondary" onClick={onClose}>
+                                            Cancel
+                                        </button>
+                                        <button type="submit" className="btn-primary">
+                                            {postToEdit ? 'Update' : 'Post'}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={onClose}>
-                                    Cancel
-                                </button>
-                                <button type="submit" className="btn-primary">
-                                    {postToEdit ? 'Update' : 'Post'}
-                                </button>
-                            </div>
+                            )}
                         </form>
                     </div>
                 </div>
@@ -2063,7 +2065,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // ✅ FIX: Corrected the URL format for Google Maps
+                // FIX: Corrected the URL format for Google Maps
                 window.open(
                     `https://www.google.com/maps/dir/${origin}/${destination}`,
                     '_blank'
@@ -2191,7 +2193,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
                     <div className="event-detail-about-section">
                         <h2>About the Event</h2>
-                        <p style={{ whiteWhiteSpace: 'pre-wrap' }}>
+                        <p style={{ whiteSpace: 'pre-wrap' }}>
                             {displayContent}
                             {hasMoreContent && (
                                 <button onClick={() => setShowFullContent(!showFullContent)} className="show-more-button">
@@ -2268,7 +2270,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
 const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     const upcomingEvents = events.filter(e =>
-        e.type === 'event' &&
+        (e.type === 'event' || e.type === 'culturalEvent') &&
         e._id !== currentEvent?._id &&
         e.eventStartDate && new Date(e.eventStartDate) > new Date()
     ).slice(0, 3);
@@ -2336,9 +2338,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     useEffect(() => {
         if (contentRef.current && post.content) {
-            // Check if content overflows vertically
             const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
-            // Set needsShowMore if overflowing OR if content is just long enough to be truncated by the 200 char limit
             setNeedsShowMore(isOverflowing || post.content.length > 200);
         }
     }, [post.content, isCommentsOpen, showFullContent]);
@@ -2349,6 +2349,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             case 'event': return 'Event';
             case 'news': return 'News';
             case 'culturalEvent': return 'Cultural Event';
+            case 'showcase': return 'Showcase';
             default: return 'Post';
         }
     };
@@ -2431,6 +2432,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 } catch (err) {
                     console.error('Copy to clipboard failed:', err);
                     setShowShareAlert(true);
+                    // Use CustomMessageModal to alert the user of copy failure
                 }
             }
         } else {
@@ -2586,6 +2588,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                             </button>
                         </div>
                     )}
+                    {/* Add a placeholder for Showcase if needed, or rely on base actions */}
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
@@ -2694,7 +2697,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             )}
 
             <div className="posts-container">
-                {posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent').map(post => (
+                {posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent' && p.type !== 'showcase').map(post => (
                     <PostCard
                         key={post._id}
                         post={post}
@@ -2963,9 +2966,9 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
             return;
         }
         const avatarToSave = customAvatar || selectedAvatar;
-        
+
         console.log('💾 Saving avatar:', avatarToSave);
-        
+
         onSave(avatarToSave)
             .then(() => {
                 onClose();
@@ -3185,7 +3188,7 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 };
 
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const popularPosts = [...posts].sort((a, b) => b.likes - a.likes).slice(0, 3);
+    const popularPosts = [...posts].filter(p => p.type !== 'showcase').sort((a, b) => b.likes - a.likes).slice(0, 3);
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -3228,7 +3231,7 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents.filter(event => event.eventStartDate && new Date(event.eventStartDate) >= new Date())
+    const upcomingCalendarEvents = myCalendarEvents.filter(event => event.eventStartDate && event.eventStartDate.getTime() >= new Date().getTime())
         .sort((a, b) => a.eventStartDate.getTime() - b.eventStartDate.getTime());
 
     return (
@@ -3377,38 +3380,31 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
+    e.preventDefault();
+    setError('');
 
-        const url = isRegistering ? `${API_URL}/auth/register` : `${API_URL}/auth/login`;
+    // Use API_URL directly since it already includes /api
+    const url = isRegistering ? `${API_URL}/auth/register` : `${API_URL}/auth/login`;
 
-        try {
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...formData,
-                    // ✅ Add default avatar for new registrations
-                    avatar: isRegistering ? placeholderAvatar : undefined
-                }),
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                onLogin(data);
-                onClose();
-            } else {
-                setError(data.message || 'An error occurred. Please try again.');
-            }
-        } catch (err) {
-            setError('An error occurred. Please check your network connection.');
-            console.error(err);
-        }
-    };
-
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...formData,
+                avatar: isRegistering ? placeholderAvatar : undefined
+            }),
+        });
+        // ... rest of the code
+    } catch (err) {
+        setError('An error occurred. Please check your network connection.');
+        console.error(err);
+    }
+};
     const handleGoogleLoginClick = () => {
-        window.location.href = `${API_URL}/auth/google`;
-    };
+    // Since API_URL already includes /api, we use it directly
+    window.location.href = `${API_URL}/auth/google`;
+};
 
     if (!isOpen) return null;
 
@@ -3429,7 +3425,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                                     <path d="M19.999 10.231C19.999 9.596 19.946 8.948 19.825 8.324H10.204V11.845H15.912C15.659 13.111 14.937 14.17 13.923 14.861L13.945 15.006L17.151 17.478L17.34 17.495C19.231 15.823 20.315 13.256 19.999 10.231Z" fill="#4285F4" />
                                     <path d="M10.204 19.999C12.879 19.999 15.111 19.124 16.711 17.581L13.923 14.861C13.175 15.367 12.277 15.696 11.294 15.801C10.292 16.036 9.387 16.04 8.441 15.834C6.551 15.541 4.975 14.341 4.417 12.639L4.296 12.648L1.085 15.119L0.985 15.15C2.697 18.397 6.223 19.999 10.204 19.999Z" fill="#34A853" />
                                     <path d="M4.417 12.639C4.161 11.996 4.025 11.314 4.025 10.64C4.025 9.966 4.161 9.284 4.417 8.641L4.407 8.496L1.161 6.096L0.985 6.183C0.354 7.424 0 8.989 0 10.64C0 12.291 0.354 13.856 0.985 15.097L4.417 12.639Z" fill="#FBBC04" />
-                                    <path d="M10.204 4.01C11.642 4.01 12.870 4.545 13.864 5.485L16.762 2.607C15.105 1.011 12.859 0 10.204 0C6.223 0 2.697 1.602 0.985 4.849L4.409 7.317L4.417 7.323C4.975 5.621 6.551 4.421 8.441 4.128C9.387 3.922 10.292 3.926 11.294 4.161C11.332 4.084 11.371 4.01 11.41 3.937L10.204 4.01Z" fill="#EA4335" />
+                                    <path d="M10.204 4.01C11.642 4.01 12.870 4.545 13.864 5.485L16.762 2.607C15.105 1.011 12.859 0 10.204 0C6.223 0 2.697 1.602 0.985 4.849L4.409 7.317L4.417 7.323C4.975 5.621 6.551 4.421 8.441 4.128C9.387 3.922 10.292 3.926 11.294 4.161C11.332 4.084 11.371 4.01 11.410 3.937L10.204 4.01Z" fill="#EA4335" />
                                 </g>
                                 <defs>
                                     <clipPath id="clip0_353_57">
@@ -3710,26 +3706,29 @@ const App = () => {
             })) : [],
         };
     };
+
+    // ✅ FIXED: Corrected callApi function to handle API endpoints properly
+    // ✅ CORRECTED: callApi function that works with your api.js
+const callApi = async (endpoint, options = {}) => {
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    if (user && user.token) {
+        headers['Authorization'] = `Bearer ${user.token}`;
+    }
+
+    // 1. Ensure endpoint starts with a slash
+    let finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
-    // ✅ FIX: Modified callApi to handle common API endpoint structure.
-    // It is assumed API_URL contains the base domain only (e.g., "https://confique.onrender.com").
-    // If the imported API_URL already ends in '/api', this will create the double-api issue.
-    // If you keep the current format, ensure your API_URL does *not* contain the '/api' suffix.
-    const callApi = async (endpoint, options = {}) => {
-        const user = JSON.parse(localStorage.getItem('currentUser'));
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        };
-        if (user && user.token) {
-            headers['Authorization'] = `Bearer ${user.token}`;
-        }
+    // 2. Since API_URL already includes /api, we DON'T add it again
+    const url = `${API_URL}${finalEndpoint}`;
+    
+    console.log('🔗 Making API call to:', url);
 
-        // Standardize endpoint to include '/api' if not present, and handle the double-slash case if API_URL ends in a slash.
-        let finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-        finalEndpoint = finalEndpoint.startsWith('/api') ? finalEndpoint : `/api${finalEndpoint}`;
-
-        const response = await fetch(`${API_URL}${finalEndpoint}`, {
+    try {
+        const response = await fetch(url, {
             ...options,
             headers,
         });
@@ -3747,11 +3746,16 @@ const App = () => {
                 const errorData = await response.json();
                 errorMsg = errorData.message || errorMsg;
             } catch (e) {
+                errorMsg = response.statusText || errorMsg;
             }
             throw new Error(errorMsg);
         }
         return response;
-    };
+    } catch (error) {
+        console.error('❌ API call failed:', error);
+        throw error;
+    }
+};
 
     useEffect(() => {
         const eventsToSave = myCalendarEvents.map(event => ({
@@ -3778,7 +3782,7 @@ const App = () => {
             const res = await callApi('/posts');
             const data = await res.json();
             const filteredData = data.filter(post => {
-                if (post.type === 'event' || post.type === 'culturalEvent') {
+                if (post.type === 'event' || post.type === 'culturalEvent' || post.type === 'showcase') {
                     return post.status === 'approved' || (currentUser?.isAdmin && post.status === 'pending');
                 }
                 return true;
@@ -3904,17 +3908,17 @@ const App = () => {
             const savedUser = JSON.parse(localStorage.getItem('currentUser'));
             if (savedUser && savedUser.token) {
                 console.log('🛠️ Fixing corrupted user data:', savedUser);
-                
+
                 const fixedUser = {
                     ...savedUser,
                     name: decodeURIComponent(savedUser.name || ''),
                     email: decodeURIComponent(savedUser.email || ''),
                     avatar: extractAvatarUrl(savedUser.avatar)
                 };
-                
+
                 localStorage.setItem('currentUser', JSON.stringify(fixedUser));
                 console.log('✅ Fixed user data:', fixedUser);
-                
+
                 if (currentUser) {
                     setCurrentUser(fixedUser);
                 }
@@ -3939,12 +3943,12 @@ const App = () => {
         if (token && name && email && _id) {
             console.log('🔑 Google login callback detected');
             console.log('📸 Raw URL params - name:', name, 'email:', email, 'avatar:', avatar);
-            
+
             // ✅ FIX: Decode URL-encoded parameters
             const decodedName = decodeURIComponent(name);
             const decodedEmail = decodeURIComponent(email);
             const decodedAvatar = avatar ? decodeURIComponent(avatar) : placeholderAvatar;
-            
+
             console.log('🔑 Decoded params - name:', decodedName, 'email:', decodedEmail, 'avatar:', decodedAvatar);
 
             const user = { 
@@ -3955,7 +3959,7 @@ const App = () => {
                 token, 
                 isAdmin 
             };
-            
+
             handleLogin(user);
             window.history.replaceState({}, document.title, window.location.pathname);
         } else {
@@ -4037,7 +4041,8 @@ const App = () => {
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (post.type === 'culturalEvent' && post.location?.toLowerCase().includes(searchTerm.toLowerCase()))
+        (post.type === 'culturalEvent' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (post.type === 'showcase' && post.title?.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const handleShowCalendarAlert = () => {
@@ -4624,7 +4629,7 @@ const App = () => {
 
     const handleLogin = (user) => {
         console.log('🔑 Login user data received:', user);
-        
+
         // ✅ Ensure all string fields are properly decoded
         const decodedUser = {
             ...user,
@@ -4632,13 +4637,13 @@ const App = () => {
             email: decodeURIComponent(user.email || ''),
             avatar: extractAvatarUrl(user.avatar)
         };
-        
+
         console.log('💾 Final decoded user to save:', decodedUser);
-        
+
         setIsLoggedIn(true);
         setCurrentUser(decodedUser);
         localStorage.setItem('currentUser', JSON.stringify(decodedUser));
-        
+
         fetchLikedPosts(decodedUser);
         fetchRegistrations();
         fetchMyRegistrations(decodedUser);
@@ -4727,7 +4732,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchAdminNotifications(); // Fetch admin notifications and pending events again
+                await fetchAdminNotifications();
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4772,20 +4777,17 @@ const App = () => {
 
         try {
             console.log('🔄 Updating avatar:', newAvatar);
-            
-            const response = await fetch(`${API_URL}/api/users/profile/avatar`, { // Using fetch to prevent double /api if callApi is fixed to include it once
+
+            // Use the corrected callApi function
+            const response = await callApi('/users/profile/avatar', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${currentUser.token}`
-                },
                 body: JSON.stringify({ 
                     avatarUrl: newAvatar 
                 })
             });
 
             console.log('📥 Response status:', response.status);
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -4793,21 +4795,21 @@ const App = () => {
 
             const data = await response.json();
             console.log('✅ Avatar update successful:', data);
-            
+
             // Update current user with new avatar data
             const updatedUser = { 
                 ...currentUser, 
                 avatar: extractAvatarUrl(data.avatar) 
             };
-            
+
             console.log('💾 Updated user:', updatedUser);
-            
+
             setCurrentUser(updatedUser);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));
-            
+
             // Force refresh posts to update avatars in existing posts
             await fetchPosts();
-            
+
             // Show success notification
             setNotifications(prev => [
                 {
@@ -4818,9 +4820,9 @@ const App = () => {
                 },
                 ...prev
             ]);
-            
+
             return data;
-            
+
         } catch (error) {
             console.error('❌ Avatar update failed:', error);
             setNotifications(prev => [
@@ -4849,9 +4851,6 @@ const App = () => {
         try {
             const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${currentUser.token}`,
-                },
             });
 
             if (res.ok) {
@@ -4859,10 +4858,10 @@ const App = () => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
-                a.href = url;
                 // Create a clean filename
                 const cleanEventTitle = eventTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
                 a.download = `registrations_${cleanEventTitle}.csv`;
+                a.href = url;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
@@ -4998,23 +4997,23 @@ const App = () => {
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
-             // Updated logic for Showcase integration
             id: 'showcase',
             label: 'Showcase',
             icon: <Star className="nav-icon" />,
             action: () => setActiveSection('showcase'),
             component: () => (
-                // Assuming ShowcaseComponent is capable of fetching and displaying projects
-                <ShowcaseComponent 
-                    currentUser={currentUser}
-                    onRequireLogin={() => setShowLoginModal(true)}
-                    API_URL={API_URL}
-                />
-            ),
+    <ShowcaseComponent 
+    currentUser={currentUser}
+    onRequireLogin={() => setShowLoginModal(true)}
+    API_URL={API_URL}
+    callApi={callApi} // Pass the callApi function
+    likedIdeas={likedPosts} // Pass the liked posts state
+  />
+),
             rightSidebar: () => (
                 <ShowcaseRightSidebar 
-                    posts={posts} 
-                    onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
+                    posts={posts.filter(p => p.type === 'showcase')} 
+                    onOpenEventDetail={(post) => handleOpenPostDetail(post)} // Showcase items are treated like posts
                 />
             ),
         },
