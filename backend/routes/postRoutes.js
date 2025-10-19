@@ -1,14 +1,43 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
+const { body, param, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const { Post, Registration } = require('../models/Post');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
 const cloudinary = require('cloudinary').v2;
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const NodeCache = require('node-cache');
 
 const router = express.Router();
 
+// Initialize cache (optional - for performance)
+const cache = new NodeCache({ stdTTL: 300 }); // 5 minutes TTL
+
+// Rate limiting for showcase interactions
+const showcaseLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limiting for general posts
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 200 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later.'
+  }
+});
+
+// Helper function to upload images to Cloudinary
 const uploadImage = async (image) => {
     if (!image) return null;
     try {
@@ -39,7 +68,7 @@ const extractPublicId = (url) => {
     return null;
 };
 
-// ✅ ADD: Helper function to populate showcase posts
+// ✅ Helper function to populate showcase posts
 const populateShowcasePost = async (post) => {
     if (post.type === 'showcase') {
         await post.populate('upvoters', 'name avatar');
@@ -48,7 +77,7 @@ const populateShowcasePost = async (post) => {
     return post;
 };
 
-// ✅ ADD: Helper function to transform showcase post for frontend
+// ✅ Helper function to transform showcase post for frontend
 const transformShowcasePostForFrontend = (post) => {
     if (post.type !== 'showcase') return post;
     
@@ -62,13 +91,45 @@ const transformShowcasePostForFrontend = (post) => {
 };
 
 // ==============================================
-// ✅ PRESERVED: ALL ORIGINAL ROUTES WITH MINIMAL MODIFICATIONS
+// ✅ VALIDATION MIDDLEWARE
+// ==============================================
+
+const validateUpvote = [
+    param('id').isMongoId().withMessage('Invalid post ID')
+];
+
+const validateShowcaseComment = [
+    param('id').isMongoId().withMessage('Invalid post ID'),
+    body('text')
+        .isLength({ min: 1, max: 1000 })
+        .withMessage('Comment must be between 1 and 1000 characters')
+        .trim()
+        .escape()
+];
+
+const validatePostCreation = [
+    body('type')
+        .isIn(['confession', 'event', 'culturalEvent', 'news', 'showcase'])
+        .withMessage('Invalid post type'),
+    body('title')
+        .isLength({ min: 1, max: 100 })
+        .withMessage('Title must be between 1 and 100 characters')
+        .trim()
+        .escape(),
+    body('content')
+        .isLength({ min: 1 })
+        .withMessage('Content is required')
+        .trim()
+];
+
+// ==============================================
+// ✅ ROUTES
 // ==============================================
 
 // @desc    Get all posts (UPDATED WITH PROPER POPULATION)
 // @route   GET /api/posts
 // @access  Public (for approved posts), Private (for all posts as admin)
-router.get('/', asyncHandler(async (req, res) => {
+router.get('/', generalLimiter, asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
 
@@ -105,7 +166,7 @@ router.get('/', asyncHandler(async (req, res) => {
     res.json(populatedPosts);
 }));
 
-// @desc    Get all pending events (for admin approval) - ✅ UNCHANGED
+// @desc    Get all pending events (for admin approval)
 // @route   GET /api/posts/pending-events
 // @access  Private (Admin only)
 router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
@@ -113,7 +174,7 @@ router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
     res.json(pendingEvents);
 }));
 
-// @desc    Get all registrations for a specific event - ✅ UNCHANGED
+// @desc    Get all registrations for a specific event
 // @route   GET /api/posts/:id/registrations
 // @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
@@ -140,30 +201,55 @@ router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     res.json(registrations);
 }));
 
-// @desc    Get a single post by ID (UPDATED WITH POPULATION)
+// @desc    Get a single post by ID (UPDATED WITH POPULATION AND CACHING)
 // @route   GET /api/posts/:id
 // @access  Public
 router.get('/:id', asyncHandler(async (req, res) => {
-    let post = await Post.findById(req.params.id);
+    const cacheKey = `post_${req.params.id}`;
+    let post = cache.get(cacheKey);
+    
+    if (!post) {
+        post = await Post.findById(req.params.id);
+        
+        if (post) {
+            // ✅ ONLY ADDITION: Populate showcase data for showcase posts
+            if (post.type === 'showcase') {
+                await post.populate('upvoters', 'name avatar');
+                await post.populate('showcaseComments.user', 'name avatar');
+                
+                // Track views for showcase posts
+                post.views = (post.views || 0) + 1;
+                await post.save();
+                
+                post = transformShowcasePostForFrontend(post);
+            }
+            
+            // Cache for 5 minutes
+            cache.set(cacheKey, post, 300);
+        }
+    }
     
     if (post) {
-        // ✅ ONLY ADDITION: Populate showcase data for showcase posts
-        if (post.type === 'showcase') {
-            await post.populate('upvoters', 'name avatar');
-            await post.populate('showcaseComments.user', 'name avatar');
-            post = transformShowcasePostForFrontend(post);
-        }
-        
         res.json(post);
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
 
-// @desc    Create a new post - ✅ PRESERVED ORIGINAL LOGIC
+// @desc    Create a new post
 // @route   POST /api/posts
 // @access  Private
-router.post('/', protect, asyncHandler(async (req, res) => {
+router.post('/', protect, validatePostCreation, asyncHandler(async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors.array()
+        });
+    }
+
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     
     const authorAvatarFinal = avatarFromUser?.url || avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -186,6 +272,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         const now = new Date().getTime();
         if (now > SUBMISSION_DEADLINE) {
             return res.status(400).json({ 
+                success: false,
                 message: 'Submissions are closed for Startup Showcase. The deadline was October 31, 2025.' 
             });
         }
@@ -229,6 +316,7 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         newPostData.month = restOfPostData.month || new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
         newPostData.launchedDate = restOfPostData.launchedDate || new Date().toLocaleDateString('en-IN');
         newPostData.status = 'approved';
+        newPostData.views = 0;
     }
 
     // ✅ PRESERVED: Original field cleanup logic
@@ -297,27 +385,37 @@ router.post('/', protect, asyncHandler(async (req, res) => {
         const post = new Post(newPostData);
         const createdPost = await post.save();
         
+        // Clear relevant caches
+        cache.del('posts_all');
+        
         // ✅ ONLY ADDITION: Populate the created post before returning
         const populatedPost = await populateShowcasePost(createdPost);
         const transformedPost = transformShowcasePostForFrontend(populatedPost);
         
-        res.status(201).json(transformedPost);
+        res.status(201).json({
+            success: true,
+            post: transformedPost
+        });
     } catch (error) {
         console.error('❌ Post creation error details:', error);
         
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: `Validation Failed: ${messages.join(', ')}` });
+            return res.status(400).json({ 
+                success: false,
+                message: `Validation Failed: ${messages.join(', ')}` 
+            });
         }
         
         res.status(500).json({ 
+            success: false,
             message: 'Internal server error during post creation',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
         });
     }
 }));
 
-// @desc    Update a post - ✅ PRESERVED ORIGINAL LOGIC
+// @desc    Update a post
 // @route   PUT /api/posts/:id
 // @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
@@ -459,17 +557,28 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 
     try {
         const updatedPost = await post.save();
-        res.json(updatedPost);
+        
+        // Clear caches
+        cache.del(`post_${req.params.id}`);
+        cache.del('posts_all');
+        
+        res.json({
+            success: true,
+            post: updatedPost
+        });
     } catch (error) {
         if (error.name === 'ValidationError') {
             const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: `Validation Failed during update: ${messages.join(', ')}` });
+            return res.status(400).json({ 
+                success: false,
+                message: `Validation Failed during update: ${messages.join(', ')}` 
+            });
         }
         throw error;
     }
 }));
 
-// @desc    Approve a pending event - ✅ UNCHANGED
+// @desc    Approve a pending event
 // @route   PUT /api/posts/approve-event/:id
 // @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
@@ -481,13 +590,18 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
         }
         event.status = 'approved';
         const updatedEvent = await event.save();
+        
+        // Clear caches
+        cache.del(`post_${req.params.id}`);
+        cache.del('posts_all');
+        
         res.json(updatedEvent);
     } else {
         res.status(404).json({ message: 'Event not found' });
     }
 }));
 
-// @desc    Reject and delete a pending event - ✅ UNCHANGED
+// @desc    Reject and delete a pending event
 // @route   DELETE /api/posts/reject-event/:id
 // @access  Private (Admin only)
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
@@ -522,13 +636,18 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
         
         await event.deleteOne();
         await Registration.deleteMany({ eventId: event._id });
+        
+        // Clear caches
+        cache.del(`post_${req.params.id}`);
+        cache.del('posts_all');
+        
         res.json({ message: 'Event rejected and removed' });
     } else {
         res.status(404).json({ message: 'Event not found' });
     }
 }));
 
-// @desc    Delete a post - ✅ UNCHANGED
+// @desc    Delete a post
 // @route   DELETE /api/posts/:id
 // @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
@@ -564,13 +683,18 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
         if (post.type === 'event' || post.type === 'culturalEvent') {
             await Registration.deleteMany({ eventId: post._id });
         }
+        
+        // Clear caches
+        cache.del(`post_${req.params.id}`);
+        cache.del('posts_all');
+        
         res.json({ message: 'Post removed' });
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
 
-// @desc    Add a comment to a post - ✅ UNCHANGED (for regular posts)
+// @desc    Add a comment to a post (for regular posts)
 // @route   POST /api/posts/:id/comments
 // @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
@@ -593,13 +717,17 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
         post.commentData.push(newComment);
         post.comments = post.commentData.length;
         await post.save();
+        
+        // Clear cache
+        cache.del(`post_${req.params.id}`);
+        
         res.status(201).json(post.commentData);
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
 
-// @desc    Like a post - ✅ UNCHANGED (for regular posts)
+// @desc    Like a post (for regular posts)
 // @route   PUT /api/posts/:id/like
 // @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
@@ -611,13 +739,17 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
         post.likes += 1;
         post.likedBy.push(req.user._id);
         await post.save();
+        
+        // Clear cache
+        cache.del(`post_${req.params.id}`);
+        
         res.json({ likes: post.likes, likedBy: post.likedBy });
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
 
-// @desc    Unlike a post - ✅ UNCHANGED (for regular posts)
+// @desc    Unlike a post (for regular posts)
 // @route   PUT /api/posts/:id/unlike
 // @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
@@ -631,13 +763,17 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
         }
         post.likedBy = post.likedBy.filter(userId => userId.toString() !== req.user._id.toString());
         await post.save();
+        
+        // Clear cache
+        cache.del(`post_${req.params.id}`);
+        
         res.json({ likes: post.likes, likedBy: post.likedBy });
     } else {
         res.status(404).json({ message: 'Post not found' });
     }
 }));
 
-// @desc    Report a post - ✅ UNCHANGED
+// @desc    Report a post
 // @route   POST /api/posts/:id/report
 // @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
@@ -663,23 +799,47 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
 }));
 
 // ==============================================
-// ✅ ADDED: SHOWCASE-SPECIFIC ROUTES (NEW FUNCTIONALITY)
+// ✅ SHOWCASE-SPECIFIC ROUTES (NEW FUNCTIONALITY)
 // ==============================================
 
 // @desc    Upvote a showcase post (NEW ROUTE)
 // @route   PUT /api/posts/:id/upvote
 // @access  Private
-router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
+router.put('/:id/upvote', protect, showcaseLimiter, validateUpvote, asyncHandler(async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors.array()
+        });
+    }
+
     console.log('🔼 Upvote request received for post:', req.params.id, 'from user:', req.user._id);
     
     const post = await Post.findById(req.params.id);
     
     if (!post) {
-        return res.status(404).json({ message: 'Post not found' });
+        return res.status(404).json({ 
+            success: false,
+            message: 'Post not found' 
+        });
     }
 
     if (post.type !== 'showcase') {
-        return res.status(400).json({ message: 'Only showcase posts can be upvoted' });
+        return res.status(400).json({ 
+            success: false,
+            message: 'Only showcase posts can be upvoted' 
+        });
+    }
+
+    // Prevent users from upvoting their own posts
+    if (post.userId.toString() === req.user._id.toString()) {
+        return res.status(400).json({
+            success: false,
+            message: 'You cannot upvote your own post'
+        });
     }
 
     const hasUpvoted = post.upvoters.some(upvoterId => 
@@ -698,25 +858,26 @@ router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
         post.upvoters.push(req.user._id);
 
         // Create notification for post creator
-        if (post.userId.toString() !== req.user._id.toString()) {
-            try {
-                const notification = new Notification({
-                    user: post.userId,
-                    type: 'upvote',
-                    message: `${req.user.name} upvoted your startup idea "${post.title}"`,
-                    relatedPost: post._id,
-                    relatedUser: req.user._id
-                });
-                await notification.save();
-            } catch (notifError) {
-                console.error('❌ Failed to create notification:', notifError);
-            }
+        try {
+            const notification = new Notification({
+                user: post.userId,
+                type: 'upvote',
+                message: `${req.user.name} upvoted your startup idea "${post.title}"`,
+                relatedPost: post._id,
+                relatedUser: req.user._id
+            });
+            await notification.save();
+        } catch (notifError) {
+            console.error('❌ Failed to create notification:', notifError);
         }
     }
 
     try {
         await post.save();
         await post.populate('upvoters', 'name avatar');
+        
+        // Clear cache
+        cache.del(`post_${req.params.id}`);
         
         res.json({
             success: true,
@@ -729,6 +890,7 @@ router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
     } catch (saveError) {
         console.error('❌ Failed to save upvote:', saveError);
         res.status(500).json({ 
+            success: false,
             message: 'Failed to save upvote',
             error: saveError.message 
         });
@@ -738,20 +900,32 @@ router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
 // @desc    Add comment to showcase post (NEW ROUTE)
 // @route   POST /api/posts/:id/showcase-comments
 // @access  Private
-router.post('/:id/showcase-comments', protect, asyncHandler(async (req, res) => {
+router.post('/:id/showcase-comments', protect, showcaseLimiter, validateShowcaseComment, asyncHandler(async (req, res) => {
+    // Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({
+            success: false,
+            message: 'Validation failed',
+            errors: errors.array()
+        });
+    }
+
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
 
     if (!post) {
-        return res.status(404).json({ message: 'Post not found' });
+        return res.status(404).json({ 
+            success: false,
+            message: 'Post not found' 
+        });
     }
 
     if (post.type !== 'showcase') {
-        return res.status(400).json({ message: 'Only showcase posts can use this comment endpoint' });
-    }
-
-    if (!text || text.trim() === '') {
-        return res.status(400).json({ message: 'Comment text cannot be empty' });
+        return res.status(400).json({ 
+            success: false,
+            message: 'Only showcase posts can use this comment endpoint' 
+        });
     }
 
     const userAvatar = req.user.avatar?.url || req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
@@ -808,7 +982,11 @@ router.post('/:id/showcase-comments', protect, asyncHandler(async (req, res) => 
             authorAvatar: userAvatar
         };
 
+        // Clear cache
+        cache.del(`post_${req.params.id}`);
+        
         res.status(201).json({
+            success: true,
             comment: populatedComment,
             post: transformShowcasePostForFrontend(post),
             commentCount: post.commentCount
@@ -817,6 +995,7 @@ router.post('/:id/showcase-comments', protect, asyncHandler(async (req, res) => 
     } catch (saveError) {
         console.error('❌ Failed to save comment:', saveError);
         res.status(500).json({ 
+            success: false,
             message: 'Failed to save comment',
             error: saveError.message 
         });
@@ -833,11 +1012,17 @@ router.get('/:id/showcase-comments', asyncHandler(async (req, res) => {
         .select('showcaseComments commentCount');
 
     if (!post) {
-        return res.status(404).json({ message: 'Post not found' });
+        return res.status(404).json({ 
+            success: false,
+            message: 'Post not found' 
+        });
     }
 
     if (post.type !== 'showcase') {
-        return res.status(400).json({ message: 'Only showcase posts can use this comment endpoint' });
+        return res.status(400).json({ 
+            success: false,
+            message: 'Only showcase posts can use this comment endpoint' 
+        });
     }
 
     const startIndex = (page - 1) * limit;
@@ -847,11 +1032,42 @@ router.get('/:id/showcase-comments', asyncHandler(async (req, res) => {
     const totalComments = post.showcaseComments.length;
 
     res.json({
+        success: true,
         comments: comments,
         totalPages: Math.ceil(totalComments / limit),
-        currentPage: page,
+        currentPage: parseInt(page),
         totalComments,
         postId: post._id
+    });
+}));
+
+// @desc    Get top showcase posts
+// @route   GET /api/posts/showcase/top
+// @access  Public
+router.get('/showcase/top', asyncHandler(async (req, res) => {
+    const { limit = 10, month = null } = req.query;
+    
+    const topShowcases = await Post.findTopShowcases(parseInt(limit), month);
+    
+    res.json({
+        success: true,
+        posts: topShowcases,
+        count: topShowcases.length
+    });
+}));
+
+// @desc    Get showcase analytics
+// @route   GET /api/posts/showcase/analytics
+// @access  Private (Admin only)
+router.get('/showcase/analytics', protect, admin, asyncHandler(async (req, res) => {
+    const { month = null } = req.query;
+    
+    const analytics = await Post.getShowcaseAnalytics(month);
+    
+    res.json({
+        success: true,
+        analytics: analytics[0] || {},
+        month: month || 'all'
     });
 }));
 

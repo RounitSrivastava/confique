@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
 // Token verification with better error handling
@@ -17,6 +18,36 @@ const verifyToken = (token) => {
         }
     }
 };
+
+// Rate limiting for showcase interactions
+const showcaseRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each user to 100 requests per windowMs
+    keyGenerator: (req) => {
+        return req.user ? `showcase:user:${req.user._id}` : `showcase:ip:${req.ip}`;
+    },
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many showcase actions. Please try again later.'
+        });
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate limiting for authentication attempts
+const authRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // limit each IP to 10 login attempts per windowMs
+    keyGenerator: (req) => `auth:ip:${req.ip}`,
+    handler: (req, res) => {
+        res.status(429).json({
+            success: false,
+            message: 'Too many authentication attempts. Please try again later.'
+        });
+    }
+});
 
 // @desc    Protect routes for authenticated users
 // @access  Private
@@ -53,22 +84,22 @@ const protect = asyncHandler(async (req, res, next) => {
         } catch (error) {
             console.error("[Auth Middleware] Authentication failed:", error.message);
             
-            // Provide more specific error messages
+            // Provide more specific error messages for frontend
             if (error.message === 'Token expired') {
                 res.status(401);
-                throw new Error('Not authorized, token expired');
+                throw new Error('SESSION_EXPIRED');
             } else if (error.message === 'Invalid token') {
                 res.status(401);
-                throw new Error('Not authorized, invalid token');
+                throw new Error('INVALID_TOKEN');
             } else {
                 res.status(401);
-                throw new Error('Not authorized, authentication failed');
+                throw new Error('AUTHENTICATION_FAILED');
             }
         }
     } else {
         console.error("[Auth Middleware] No token provided");
         res.status(401);
-        throw new Error('Not authorized, no token provided');
+        throw new Error('NO_TOKEN_PROVIDED');
     }
 });
 
@@ -128,8 +159,8 @@ const showcaseParticipantOrAdmin = asyncHandler(async (req, res, next) => {
     }
     
     // Check if user has showcase posts (basic participation check)
-    // You can enhance this with more specific checks
-    const showcasePostCount = await require('../models/Post').countDocuments({
+    const { Post } = require('../models/Post');
+    const showcasePostCount = await Post.countDocuments({
         userId: req.user._id,
         type: 'showcase'
     });
@@ -141,6 +172,57 @@ const showcaseParticipantOrAdmin = asyncHandler(async (req, res, next) => {
         console.warn(`[Auth] Showcase access denied for user ${req.user._id}`);
         res.status(403);
         throw new Error('Not authorized - showcase participation required');
+    }
+});
+
+// @desc    Restrict access to showcase post owners or admins
+// @access  Private (Showcase post owner or Admin)
+const showcaseOwnerOrAdmin = asyncHandler(async (req, res, next) => {
+    if (!req.user) {
+        res.status(401);
+        throw new Error('Authentication required');
+    }
+    
+    // Allow admins
+    if (req.user.isAdmin) {
+        return next();
+    }
+    
+    const { Post } = require('../models/Post');
+    const postId = req.params.id || req.params.postId;
+    
+    if (!postId) {
+        res.status(400);
+        throw new Error('Post ID is required');
+    }
+    
+    // Validate post ID format
+    if (!postId.match(/^[0-9a-fA-F]{24}$/)) {
+        res.status(400);
+        throw new Error('Invalid post ID format');
+    }
+    
+    const post = await Post.findById(postId);
+    
+    if (!post) {
+        res.status(404);
+        throw new Error('Post not found');
+    }
+    
+    // Check if it's a showcase post
+    if (post.type !== 'showcase') {
+        res.status(400);
+        throw new Error('This endpoint is only for showcase posts');
+    }
+    
+    // Check if user owns the showcase post
+    if (post.userId.toString() === req.user._id.toString()) {
+        console.log(`[Auth] Showcase owner access granted for user ${req.user._id}`);
+        next();
+    } else {
+        console.warn(`[Auth] Showcase owner access denied for user ${req.user._id}`);
+        res.status(403);
+        throw new Error('Not authorized - you do not own this showcase post');
     }
 });
 
@@ -180,7 +262,21 @@ const ownerOrAdmin = (resourceUserIdField = 'userId') => {
     });
 };
 
-// Rate limiting helper (can be integrated with express-rate-limit)
+// @desc    Log all authenticated requests for analytics
+// @access  Private
+const requestLogger = asyncHandler(async (req, res, next) => {
+    if (req.user) {
+        console.log(`[Request] ${req.method} ${req.originalUrl} - User: ${req.user._id} - IP: ${req.ip} - Time: ${new Date().toISOString()}`);
+        
+        // Log showcase-specific actions
+        if (req.originalUrl.includes('/showcase') || req.originalUrl.includes('/upvote')) {
+            console.log(`[Showcase Action] User ${req.user._id} - ${req.method} ${req.originalUrl}`);
+        }
+    }
+    next();
+});
+
+// Rate limiting helper
 const createRateLimitKey = (req) => {
     return req.user ? `user:${req.user._id}` : `ip:${req.ip}`;
 };
@@ -190,6 +286,10 @@ module.exports = {
     admin, 
     optional,
     showcaseParticipantOrAdmin,
+    showcaseOwnerOrAdmin,
     ownerOrAdmin,
-    createRateLimitKey
+    requestLogger,
+    createRateLimitKey,
+    showcaseRateLimit,
+    authRateLimit
 };
