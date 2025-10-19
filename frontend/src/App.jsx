@@ -310,6 +310,7 @@ const PostOptions = ({ post, onDelete, onEdit, isProfilePage, onReport, currentU
 
     const handleReport = (e) => {
         e.stopPropagation();
+        // FIX: Ensure onReport opens the modal correctly by passing post object
         onReport(post);
         setIsOpen(false);
     };
@@ -836,7 +837,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
     const hasDatesSelected = (formData.selectedDates || []).length > 0;
     const isFree = totalPrice === 0;
     const isPaymentMethodSet = event.culturalPaymentMethod === 'link' || event.culturalPaymentMethod === 'qr';
-    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && hasDatesSelected && isPaymentMethodSet;
+    const isProceedToPaymentEnabled = totalPrice > 0 && hasTicketsSelected && (availableDates.length === 0 || hasDatesSelected) && isPaymentMethodSet;
 
 
     const handleProceedToPayment = (e) => {
@@ -1508,7 +1509,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             setUploadAlertMessage(`Error submitting post: ${error.message || 'Unknown error.'}`);
             setShowUploadAlert(true);
         } finally {
-             setIsSubmitting(false); // FIX: Re-enable the button on success or failure
+            setIsSubmitting(false); // FIX: Re-enable the button on success or failure
         }
     };
 
@@ -1785,14 +1786,14 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                             <button
                                                 type="button"
                                                 className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
-                                                onClick={() => setHasRegistration(false)}
+                                                onClick={() => handleRegistrationToggle(false)}
                                             >
                                                 No
                                             </button>
                                             <button
                                                 type="button"
                                                 className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
-                                                onClick={() => setHasRegistration(true)}
+                                                onClick={() => handleRegistrationToggle(true)}
                                             >
                                                 Yes
                                             </button>
@@ -2297,6 +2298,7 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     useEffect(() => {
         if (contentRef.current && post.content) {
+            // Recalculate if content should show 'Show More'
             const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
             setNeedsShowMore(isOverflowing || post.content.length > 200);
         }
@@ -2383,21 +2385,22 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 });
             } catch (error) {
                 console.error('Share failed:', error);
+                // Fallback to clipboard copy
                 try {
-                    const tempInput = document.createElement('textarea');
-                    tempInput.value = shareUrl;
-                    document.body.appendChild(tempInput);
-                    document.execCommand('copy');
-                    document.body.removeChild(tempInput);
+                    await navigator.clipboard.writeText(shareUrl);
                     setShowShareAlert(true);
                 } catch (err) {
                     console.error('Copy to clipboard failed:', err);
                     setShowShareAlert(true);
-                    // Use CustomMessageModal to alert the user of copy failure
                 }
             }
         } else {
+            // Fallback for browsers not supporting navigator.share
             try {
+                await navigator.clipboard.writeText(shareUrl);
+                setShowShareAlert(true);
+            } catch (err) {
+                // If clipboard API fails (e.g., non-secure context in some browsers)
                 const tempInput = document.createElement('textarea');
                 tempInput.value = shareUrl;
                 document.body.appendChild(tempInput);
@@ -2405,11 +2408,10 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
                 document.execCommand('copy');
                 document.body.removeChild(tempInput);
                 setShowShareAlert(true);
-            } catch (err) {
-                setShowShareAlert(true);
             }
         }
     };
+
 
     const registrationButtonText = () => {
         if (isRegistered) return "REGISTERED";
@@ -2424,8 +2426,13 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
     const handleCardClick = (e) => {
         if (isCommentsOpen) return; // Don't open if comments are already open
         
-        // Check if the click originated from an interactive element (button/link/icon)
-        const isInteractiveElement = e.target.closest('button') || e.target.closest('a') || e.target.closest('.post-options-container') || e.target.closest('svg') || e.target.closest('span');
+        // Check if the click originated from an interactive element (button/link/icon/dropdown)
+        const isInteractiveElement = e.target.closest('button') || 
+                                     e.target.closest('a') || 
+                                     e.target.closest('.post-options-container') ||
+                                     e.target.closest('.post-actions') || 
+                                     e.target.closest('.event-action-buttons-top');
+        
         if (isInteractiveElement) return;
 
         if (post.type === 'event' || post.type === 'culturalEvent') {
