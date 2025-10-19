@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './Showcase.css';
-import { ChevronDown, Search, X, Image as ImageIcon, ThumbsUp, AlertCircle, Link as LinkIcon, MessageCircle, Trash2, MoreVertical } from 'lucide-react';
+import { Search, X, Image as ImageIcon, ThumbsUp, AlertCircle, Trash2, MoreVertical } from 'lucide-react';
 import ProjectDetailsPage from './ProjectDetailsPage';
 
 // IMPORT YOUR BANNER IMAGE HERE
@@ -17,7 +17,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// === AddIdeaModal Component (with authentication check) ===
+// === AddIdeaModal Component ===
 const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onRequireLogin }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -32,7 +32,6 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
   const [validationError, setValidationError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Check authentication when modal opens
   useEffect(() => {
     if (isOpen && !currentUser) {
       onRequireLogin();
@@ -60,30 +59,26 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if user is logged in
     if (!currentUser) {
       setValidationError('Please log in to submit an idea.');
       return;
     }
 
-    // Mandatory check for logo
     if (!formData.logoUrl) {
       setValidationError('Please upload an Idea Logo. It is mandatory.');
       return;
     }
-    // Mandatory check for banner
     if (!formData.bannerUrl) {
       setValidationError('Please upload a Banner Image. It is mandatory.');
       return;
     }
-    // Mandatory check for Launch Date/Status
     if (!formData.launchedDate.trim()) {
-        setValidationError('Launch On / Status (e.g., YYYY-MM-DD or Coming Soon) is mandatory.');
-        return;
+      setValidationError('Launch On / Status (e.g., YYYY-MM-DD or Coming Soon) is mandatory.');
+      return;
     }
 
     setIsSubmitting(true);
-    setValidationError(''); // Clear previous errors
+    setValidationError('');
     
     try {
       await onSubmit({
@@ -94,7 +89,6 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
         authorAvatar: currentUser.avatar,
       });
       
-      // Reset form on success
       setFormData({
         title: '',
         description: '',
@@ -104,12 +98,9 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
         bannerUrl: '',
         fullDescription: '',
       });
-      setValidationError('');
       onClose();
     } catch (error) {
       console.error('Submission error:', error);
-      // The error message will come from the handleAddIdeaSubmit function
-      // Don't set a generic error here as the parent function handles it
     } finally {
       setIsSubmitting(false);
     }
@@ -280,7 +271,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
   );
 };
 
-// === StartupCard Component (with authentication for upvotes and admin delete) ===
+// === StartupCard Component ===
 const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, onRequireLogin, likedIdeas, isAdmin }) => {
   const isLiked = likedIdeas?.has(idea.id);
   const [isUpvoting, setIsUpvoting] = useState(false);
@@ -294,10 +285,7 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
       return;
     }
 
-    // Prevent multiple clicks and already liked
-    if (isUpvoting || isLiked) {
-      return;
-    }
+    if (isUpvoting) return;
 
     setIsUpvoting(true);
     try {
@@ -360,7 +348,6 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
           <span className="upvote-count">{idea.upvotes}</span>
         </div>
 
-        {/* Admin Menu */}
         {isAdmin && (
           <div className="admin-menu-container">
             <button 
@@ -387,7 +374,6 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
         )}
       </div>
 
-      {/* Overlay for menu */}
       {showMenu && (
         <div className="menu-overlay" onClick={() => setShowMenu(false)} />
       )}
@@ -395,13 +381,13 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
   );
 };
 
-// === ShowcaseComponent (Main Component - Updated) ===
+// === ShowcaseComponent (Main Component - Optimized) ===
 const ShowcaseComponent = ({ 
   currentUser, 
   onRequireLogin, 
   API_URL = DEFAULT_API_URL,
-  callApi, // Add callApi prop from main App
-  likedIdeas = new Set() // Add likedIdeas prop
+  callApi,
+  likedIdeas = new Set()
 }) => {
   const [activeMonth, setActiveMonth] = useState('October \'25');
   const [searchTerm, setSearchTerm] = useState('');
@@ -414,19 +400,10 @@ const ShowcaseComponent = ({
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [submissionError, setSubmissionError] = useState('');
 
-  // Check if current user is admin (confique01@gmail.com)
   const isAdmin = currentUser && currentUser.email === 'confique01@gmail.com';
-
-  // Use passed likedIdeas or local state
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
 
-  useEffect(() => {
-    console.log('🔧 ShowcaseComponent mounted with API_URL:', API_URL);
-    console.log('🔧 callApi function available:', !!callApi);
-    console.log('🔧 Admin status:', isAdmin ? 'YES - confique01@gmail.com' : 'NO');
-  }, [API_URL, callApi, isAdmin]);
-
-  // --- Date/Time Closure Logic ---
+  // Date/Time Closure Logic
   const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
   const [isPostingEnabled, setIsPostingEnabled] = useState(() => {
     const now = new Date().getTime();
@@ -447,8 +424,8 @@ const ShowcaseComponent = ({
     return () => clearInterval(intervalId);
   }, [isPostingEnabled]);
 
-  // Simple API fetch function as fallback if callApi is not provided
-  const apiFetch = async (endpoint, options = {}) => {
+  // Optimized API fetch function
+  const apiFetch = useCallback(async (endpoint, options = {}) => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     const headers = {
       'Content-Type': 'application/json',
@@ -458,16 +435,14 @@ const ShowcaseComponent = ({
       headers['Authorization'] = `Bearer ${user.token}`;
     }
 
-    // Use callApi if available, otherwise use direct fetch
     if (callApi) {
       return await callApi(endpoint, { ...options, headers });
     }
 
-    // Fallback: direct fetch
     const finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_URL}${finalEndpoint}`;
     
-    console.log('🔗 Showcase API call to:', url);
+    console.log('🔗 API call to:', url);
 
     const response = await fetch(url, { ...options, headers });
     
@@ -482,10 +457,10 @@ const ShowcaseComponent = ({
       throw new Error(errorMsg);
     }
     return response;
-  };
+  }, [API_URL, callApi]);
 
-  // Fetch showcase ideas from existing posts API
-  const fetchIdeas = async () => {
+  // Fetch showcase ideas
+  const fetchIdeas = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -493,7 +468,6 @@ const ShowcaseComponent = ({
       const response = await apiFetch('/posts');
       const allPosts = await response.json();
       
-      // Filter for showcase posts and transform data
       const showcasePosts = allPosts
         .filter(post => post.type === 'showcase' && post.status === 'approved')
         .map(post => ({
@@ -528,10 +502,10 @@ const ShowcaseComponent = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiFetch]);
 
-  // Fetch user's liked posts (existing endpoint)
-  const fetchLikedIdeas = async () => {
+  // Fetch user's liked posts
+  const fetchLikedIdeas = useCallback(async () => {
     if (!currentUser) {
       setLocalLikedIdeas(new Set());
       return;
@@ -547,12 +521,12 @@ const ShowcaseComponent = ({
     } catch (error) {
       console.error('Error fetching liked ideas:', error);
     }
-  };
+  }, [currentUser, apiFetch]);
 
   useEffect(() => {
     fetchIdeas();
     fetchLikedIdeas();
-  }, [currentUser, API_URL]);
+  }, [fetchIdeas, fetchLikedIdeas]);
 
   const months = ['October \'25'];
 
@@ -566,7 +540,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // ✅ FIXED: Submit new showcase idea - WORKING VERSION
+  // ✅ FIXED: Submit new showcase idea
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -574,34 +548,24 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Create clean payload that matches backend schema
       const postPayload = {
-        // Basic required fields
         title: ideaData.title,
         content: ideaData.description,
         type: 'showcase',
         author: currentUser.name,
         authorAvatar: currentUser.avatar,
         userId: currentUser._id,
-        
-        // Showcase-specific required fields
         logoUrl: ideaData.logoUrl,
         bannerUrl: ideaData.bannerUrl,
         month: ideaData.month,
         status: 'pending',
-        
-        // Optional showcase fields
         description: ideaData.description,
         fullDescription: ideaData.fullDescription,
         websiteLink: ideaData.websiteLink || '',
         launchedDate: ideaData.launchedDate,
-        
-        // Initialize showcase-specific fields as NUMBERS
         upvotes: 0,
         commentCount: 0,
         views: 0,
-        
-        // Initialize arrays as EMPTY ARRAYS
         upvoters: [],
         showcaseComments: [],
         images: [],
@@ -609,20 +573,10 @@ const ShowcaseComponent = ({
         commentData: []
       };
 
-      console.log('🚀 Submitting showcase idea payload:', postPayload);
+      console.log('🚀 Submitting showcase idea:', postPayload);
 
-      const user = JSON.parse(localStorage.getItem('currentUser'));
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (user && user.token) {
-        headers['Authorization'] = `Bearer ${user.token}`;
-      }
-
-      const response = await fetch(`${API_URL}/posts`, {
+      const response = await apiFetch('/posts', {
         method: 'POST',
-        headers: headers,
         body: JSON.stringify(postPayload),
       });
 
@@ -631,8 +585,7 @@ const ShowcaseComponent = ({
         throw new Error(errorData.message || 'Failed to create post');
       }
 
-      const newPost = await response.json();
-      console.log('✅ Success! Showcase created:', newPost);
+      await response.json();
       
       await fetchIdeas();
       fetchLikedIdeas();
@@ -646,7 +599,7 @@ const ShowcaseComponent = ({
     }
   };
 
-  // ✅ FIXED: Upvote showcase idea with proper single-vote logic
+  // ✅ FIXED: Upvote showcase idea with proper API integration
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
@@ -670,7 +623,12 @@ const ShowcaseComponent = ({
         idea.id === ideaId
           ? { 
               ...idea, 
-              upvotes: idea.upvotes + 1 
+              upvotes: idea.upvotes + 1,
+              upvoters: [...(idea.upvoters || []), { 
+                _id: currentUser._id, 
+                name: currentUser.name, 
+                avatar: currentUser.avatar 
+              }]
             }
           : idea
       )
@@ -683,7 +641,6 @@ const ShowcaseComponent = ({
     });
 
     try {
-      // Use the showcase-specific upvote endpoint
       const response = await apiFetch(`/posts/${ideaId}/upvote`, {
         method: 'PUT',
       });
@@ -692,7 +649,7 @@ const ShowcaseComponent = ({
         throw new Error('Upvote failed');
       }
 
-      // Optional: Refresh data from server to ensure consistency
+      // Refresh data to ensure consistency
       await fetchIdeas();
       
     } catch (error) {
@@ -703,7 +660,8 @@ const ShowcaseComponent = ({
           idea.id === ideaId
             ? { 
                 ...idea, 
-                upvotes: Math.max(0, idea.upvotes - 1) 
+                upvotes: Math.max(0, idea.upvotes - 1),
+                upvoters: (idea.upvoters || []).filter(upvoter => upvoter._id !== currentUser._id)
               }
             : idea
         )
@@ -732,7 +690,6 @@ const ShowcaseComponent = ({
         throw new Error('Failed to delete idea');
       }
 
-      // Remove idea from local state
       setIdeas(prevIdeas => prevIdeas.filter(idea => idea.id !== ideaId));
       
       console.log('🗑️ Idea deleted successfully');
@@ -743,7 +700,7 @@ const ShowcaseComponent = ({
     }
   };
 
-  // ✅ FIXED: Add comment to showcase idea using showcase comments endpoint
+  // ✅ FIXED: Add comment to showcase idea
   const handleAddComment = async (ideaId, commentText) => {
     if (!currentUser) {
       onRequireLogin();
@@ -751,7 +708,6 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Use showcase-specific comments endpoint
       const response = await apiFetch(`/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
         body: JSON.stringify({ text: commentText }),
@@ -760,33 +716,33 @@ const ShowcaseComponent = ({
       if (response.ok) {
         const newComment = await response.json();
         
-        // Update the ideas list with new comment count
+        // Update the ideas list with new comment
         setIdeas(prevIdeas =>
           prevIdeas.map(idea =>
             idea.id === ideaId
               ? {
                   ...idea,
                   comments: [newComment, ...(idea.comments || [])],
-                  commentCount: (idea.commentCount || idea.comments?.length || 0) + 1
+                  commentCount: (idea.commentCount || 0) + 1
                 }
               : idea
           )
         );
 
-        // Also update the selectedIdea if it's the one being commented on
+        // Update selected idea if it's the current one
         setSelectedIdea(prev => {
           if (prev && prev.id === ideaId) {
             return { 
               ...prev, 
               comments: [newComment, ...(prev.comments || [])],
-              commentCount: (prev.commentCount || prev.comments?.length || 0) + 1
+              commentCount: (prev.commentCount || 0) + 1
             };
           }
           return prev;
         });
 
       } else {
-        throw new Error('Failed to add comment to server.');
+        throw new Error('Failed to add comment');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -862,7 +818,7 @@ const ShowcaseComponent = ({
         ))}
       </nav>
 
-      {/* BANNER CODE using imported image */}
+      {/* BANNER */}
       <div className="hero-banner">
           <img 
             src={StartupBanner} 
@@ -888,7 +844,6 @@ const ShowcaseComponent = ({
         </div>
       </div>
 
-      {/* Show submission error if any */}
       {submissionError && (
         <div className="submission-error-message">
           <AlertCircle size={16} />

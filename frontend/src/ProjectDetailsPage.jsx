@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Showcase.css';
-import { ArrowLeft, ExternalLink, MessageSquare, ArrowRight, ThumbsUp } from 'lucide-react';
+import { ArrowLeft, ExternalLink, ArrowRight, ThumbsUp } from 'lucide-react';
 
 // --- Configuration ---
 const INITIAL_VISIBLE_LIMIT = 1;
@@ -14,65 +14,60 @@ const extractAvatarUrl = (avatar) => {
     return placeholderAvatar;
 };
 
-// Comment Section Component (Updated with authentication)
+// Comment Section Component (Optimized)
 const CommentSection = ({ initialComments = [], onNewComment, currentUser, onRequireLogin }) => {
-    // Ensure initialComments is always an array
-    const safeInitialComments = Array.isArray(initialComments) ? initialComments : [];
-    
-    // Sort comments by timestamp/id (most recent first) for display
-    const sortedComments = [...safeInitialComments].sort((a, b) => {
-        // Use ID (timestamp) for local sorting if proper timestamp isn't available
-        const timeA = new Date(a.timestamp).getTime();
-        const timeB = new Date(b.timestamp).getTime();
-        return timeB - timeA;
-    });
-
-    const [comments, setComments] = useState(sortedComments);
+    const [comments, setComments] = useState([]);
     const [newCommentText, setNewCommentText] = useState('');
     const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_LIMIT);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Sync comments from parent prop changes
+    // Initialize and sync comments
     useEffect(() => {
         const safeComments = Array.isArray(initialComments) ? initialComments : [];
-        const sortedSafeComments = [...safeComments].sort((a, b) => {
-            const timeA = new Date(a.timestamp).getTime();
-            const timeB = new Date(b.timestamp).getTime();
+        // Sort by timestamp (newest first)
+        const sortedComments = [...safeComments].sort((a, b) => {
+            const timeA = new Date(a.timestamp || a.createdAt).getTime();
+            const timeB = new Date(b.timestamp || b.createdAt).getTime();
             return timeB - timeA;
         });
-        setComments(sortedSafeComments);
+        setComments(sortedComments);
     }, [initialComments]);
 
-
-    const handlePostComment = () => {
+    const handlePostComment = async () => {
         if (!currentUser) {
             onRequireLogin();
             return;
         }
 
         const text = newCommentText.trim();
-        if (text === '') return;
+        if (text === '' || isSubmitting) return;
 
-        // Optimistic UI update for immediate feedback
-        const now = new Date();
-        const newComment = {
-            // Use a temporary unique ID for optimistic rendering
-            id: Date.now(), 
-            user: currentUser.name,
-            avatar: extractAvatarUrl(currentUser.avatar),
-            text: text,
-            timestamp: now.toISOString(), // Use ISO string for consistency
-        };
+        setIsSubmitting(true);
 
-        setComments([newComment, ...comments]);
-        
-        if (visibleCount < comments.length) {
-            setVisibleCount(prev => prev + 1);
+        try {
+            // Optimistic UI update
+            const tempComment = {
+                id: `temp-${Date.now()}`,
+                user: currentUser.name,
+                avatar: extractAvatarUrl(currentUser.avatar),
+                text: text,
+                timestamp: new Date().toISOString(),
+                isOptimistic: true
+            };
+
+            setComments(prev => [tempComment, ...prev]);
+            setNewCommentText('');
+
+            // Call parent handler to save to API
+            await onNewComment(text);
+            
+        } catch (error) {
+            // Remove optimistic comment on error
+            setComments(prev => prev.filter(comment => !comment.isOptimistic));
+            console.error('Failed to post comment:', error);
+        } finally {
+            setIsSubmitting(false);
         }
-        
-        setNewCommentText('');
-        
-        // Call the parent handler to post to the actual API
-        onNewComment(text);
     };
 
     const handleKeyDown = (e) => {
@@ -97,118 +92,108 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
     
     const formatTimestamp = (isoString) => {
         const date = new Date(isoString);
-        if (isNaN(date.getTime())) return "Unknown Date";
+        if (isNaN(date.getTime())) return "Just now";
 
-        const localDate = date.toLocaleDateString('en-US', {
-            day: '2-digit',
-            month: '2-digit',
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
             year: 'numeric',
-        }).replace(/\//g, '/');
-        
-        const localTime = date.toLocaleTimeString('en-US', {
             hour: '2-digit',
-            minute: '2-digit',
-            hour12: true,
+            minute: '2-digit'
         });
-
-        return `${localDate} at ${localTime}`;
     }
 
     return (
-    <div className="comment-section-wrapper">
-      <div className="comment-header-bar">
-        <ArrowLeft 
-            size={24} 
-            className={`back-arrow-icon ${isExpanded ? 'visible' : 'hidden'}`} 
-            onClick={handleCollapseComments} 
-        />
-        <h2 className="section-title comment-title-header">Comments ({comments.length})</h2>
-      </div>
-
-      <div className="comment-input-container-replicate">
-        <textarea
-          value={newCommentText}
-          onChange={(e) => setNewCommentText(e.target.value)}
-          placeholder={currentUser ? "Add a comment..." : "Please log in to comment"}
-          className="comment-input-field"
-          onKeyDown={handleKeyDown}
-          disabled={!currentUser}
-          rows={1}
-        />
-        <button 
-            type="button" 
-            className="post-comment-btn-replicate" 
-            onClick={handlePostComment} 
-            disabled={newCommentText.trim() === '' || !currentUser}
-        >
-          <ArrowRight size={28} /> 
-        </button>
-      </div>
-
-      <div className="comments-list-replicate">
-        {displayedComments.map(comment => (
-          <div key={comment.id || comment._id} className="comment-item-replicate">
-            <img 
-                src={extractAvatarUrl(comment.avatar || comment.authorAvatar)} 
-                alt={comment.user || comment.author} 
-                className="comment-avatar-replicate" 
-                onError={(e) => e.target.src = placeholderAvatar}
-            />
-            <div className="comment-content-wrapper-replicate">
-              <div className="comment-user-header-replicate">
-                <span className="comment-user-replicate">{comment.user || comment.author}</span>
-                <span className="comment-timestamp-replicate">{formatTimestamp(comment.timestamp)}</span>
-              </div>
-              <p className="comment-text-replicate">{comment.text}</p>
+        <div className="comment-section-wrapper">
+            <div className="comment-header-bar">
+                <ArrowLeft 
+                    size={24} 
+                    className={`back-arrow-icon ${isExpanded ? 'visible' : 'hidden'}`} 
+                    onClick={handleCollapseComments} 
+                />
+                <h2 className="section-title comment-title-header">Comments ({comments.length})</h2>
             </div>
-          </div>
-        ))}
 
-        {showLoadMoreButton && (
-            <div className="load-more-wrapper">
+            <div className="comment-input-container-replicate">
+                <textarea
+                    value={newCommentText}
+                    onChange={(e) => setNewCommentText(e.target.value)}
+                    placeholder={currentUser ? "Add a comment..." : "Please log in to comment"}
+                    className="comment-input-field"
+                    onKeyDown={handleKeyDown}
+                    disabled={!currentUser || isSubmitting}
+                    rows={1}
+                />
                 <button 
-                    onClick={handleLoadMore} 
-                    className="more-comments-btn"
+                    type="button" 
+                    className="post-comment-btn-replicate" 
+                    onClick={handlePostComment} 
+                    disabled={newCommentText.trim() === '' || !currentUser || isSubmitting}
                 >
-                    +{commentsToHide} more comment{commentsToHide > 1 ? 's' : ''}
+                    {isSubmitting ? '...' : <ArrowRight size={28} />}
                 </button>
             </div>
-        )}
-        
-        {comments.length === 0 && (
-            <p className="no-comments-replicate">No comments yet. Be the first!</p>
-        )}
-      </div>
-    </div>
-  );
+
+            <div className="comments-list-replicate">
+                {displayedComments.map(comment => (
+                    <div key={comment.id || comment._id} className="comment-item-replicate">
+                        <img 
+                            src={extractAvatarUrl(comment.avatar || comment.authorAvatar)} 
+                            alt={comment.user || comment.author} 
+                            className="comment-avatar-replicate" 
+                            onError={(e) => e.target.src = placeholderAvatar}
+                        />
+                        <div className="comment-content-wrapper-replicate">
+                            <div className="comment-user-header-replicate">
+                                <span className="comment-user-replicate">{comment.user || comment.author}</span>
+                                <span className="comment-timestamp-replicate">
+                                    {comment.isOptimistic ? 'Posting...' : formatTimestamp(comment.timestamp)}
+                                </span>
+                            </div>
+                            <p className="comment-text-replicate">{comment.text}</p>
+                        </div>
+                    </div>
+                ))}
+
+                {showLoadMoreButton && (
+                    <div className="load-more-wrapper">
+                        <button 
+                            onClick={handleLoadMore} 
+                            className="more-comments-btn"
+                        >
+                            +{commentsToHide} more comment{commentsToHide > 1 ? 's' : ''}
+                        </button>
+                    </div>
+                )}
+                
+                {comments.length === 0 && (
+                    <p className="no-comments-replicate">No comments yet. Be the first!</p>
+                )}
+            </div>
+        </div>
+    );
 };
 
-// Main Project Details Page Component (Updated with Backend Integration)
+// Main Project Details Page Component (Optimized)
 const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, onAddComment, API_URL, onUpvote, likedIdeas }) => {
-    // Initialize state from props. Use project.likes for upvotes.
     const [upvotes, setUpvotes] = useState(project.upvotes || project.likes || 0);
-    // Determine initial upvoted state using the likedIdeas Set passed from parent
     const [isUpvoted, setIsUpvoted] = useState(likedIdeas.has(project.id));
-    
-    // FIXED: Use project.commentCount if available, otherwise calculate from comments array
     const [commentCount, setCommentCount] = useState(
         project.commentCount || (Array.isArray(project.comments) ? project.comments.length : 0)
     );
-    
     const [isUpvoting, setIsUpvoting] = useState(false);
+    const [localComments, setLocalComments] = useState(project.comments || []);
 
-    // Sync upvotes and liked status if project prop changes
+    // Sync when project prop changes
     useEffect(() => {
         setUpvotes(project.upvotes || project.likes || 0);
         setIsUpvoted(likedIdeas.has(project.id));
-        
-        // FIXED: Always use commentCount if available, otherwise calculate
-        const calculatedCount = project.commentCount || 
-                              (Array.isArray(project.comments) ? project.comments.length : 0);
+        const calculatedCount = project.commentCount || (Array.isArray(project.comments) ? project.comments.length : 0);
         setCommentCount(calculatedCount);
+        setLocalComments(project.comments || []);
     }, [project, likedIdeas]);
 
-    // Upvote function using the handler passed from parent (ShowcaseComponent)
+    // Optimized upvote handler
     const handleUpvote = async () => {
         if (!currentUser) {
             onRequireLogin();
@@ -219,51 +204,40 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
 
         setIsUpvoting(true);
         
+        // Optimistic update
+        const previousUpvotes = upvotes;
+        const previousIsUpvoted = isUpvoted;
+        
+        setUpvotes(prev => isUpvoted ? prev - 1 : prev + 1);
+        setIsUpvoted(prev => !prev);
+
         try {
-            // Call parent's upvote handler, which handles API call and global state update
-            await onUpvote(project.id); 
-            
-            // Wait for parent component's state to update, then sync local state
-            // NOTE: The delay here is to ensure the parent's optimistic update has time to run
-            // A more robust solution involves passing the new upvote count/status from the parent.
-            // For now, we manually adjust, as the parent will trigger a re-render soon.
-            
-            // Manual optimistic sync:
-            setUpvotes(prev => isUpvoted ? prev - 1 : prev + 1);
-            setIsUpvoted(prev => !prev);
-            
+            await onUpvote(project.id);
         } catch (error) {
-            console.error('Upvote error:', error);
-            // Parent handles the rollback, we just stop loading
+            // Revert on error
+            setUpvotes(previousUpvotes);
+            setIsUpvoted(previousIsUpvoted);
+            console.error('Upvote failed:', error);
         } finally {
             setIsUpvoting(false);
         }
     };
 
-    // Comment function uses the handler passed from parent
+    // Optimized comment handler
     const handleNewCommentPosted = async (commentText) => {
-        if (!currentUser) {
-            onRequireLogin();
-            return;
-        }
-
         try {
-            // Optimistically update the comment count
+            // Optimistically update count
             setCommentCount(prev => prev + 1);
             
-            // Call parent's handler to post comment to the server
             await onAddComment(project.id, commentText);
             
-            // The parent (ShowcaseComponent) will refetch ideas and update the project prop,
-            // which in turn updates localComments via the useEffect sync.
-            
         } catch(error) {
-            console.error('Failed to post comment via parent handler:', error);
-            // Rollback optimistic update on error
+            // Rollback on error
             setCommentCount(prev => Math.max(0, prev - 1));
+            console.error('Failed to post comment:', error);
+            throw error; // Re-throw to handle in CommentSection
         }
     };
-
 
     if (!project) {
         return (
@@ -278,65 +252,59 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
 
     const handleVisitWebsite = () => {
         if (project.websiteLink && project.websiteLink.trim()) {
-            // Ensure URL starts with http/https
             const url = project.websiteLink.startsWith('http') ? project.websiteLink : `https://${project.websiteLink}`;
             window.open(url, '_blank');
         }
     };
     
     const hasWebsiteLink = project.websiteLink && project.websiteLink.trim().length > 0;
-    
-    // Get the first few upvoters to display next to the count
-    // NOTE: Upvoters structure in the project object needs to be an array of user objects { _id, avatar, name }
     const displayedUpvoters = (project.upvoters || []).slice(0, 5);
     const bannerSource = project.bannerUrl || project.banner || "https://assets.website-files.com/62c93d9b418a09618b6e6cf1/62d85b19c6e5a4f48348b47e_Hero%20Bg.png";
-
 
     return (
         <div className="project-details-container">
             {/* Back Button */}
             <button className="back-button" onClick={onGoBack}>
-              <ArrowLeft size={20} /> Back to Showcase
+                <ArrowLeft size={20} /> Back to Showcase
             </button>
 
             <div className="project-header">
-              <div className="project-info">
-                <img 
-                  src={project.logo} 
-                  alt={`${project.name} logo`} 
-                  className="project-logo" 
-                  onError={(e) => e.target.src = "https://placehold.co/60x60/cccccc/000000?text=L"}
-                />
-                <div className="project-text">
-                  <h1 className="project-name">{project.name}</h1>
-                  <p className="project-tagline">{project.description}</p>
+                <div className="project-info">
+                    <img 
+                        src={project.logo} 
+                        alt={`${project.name} logo`} 
+                        className="project-logo" 
+                        onError={(e) => e.target.src = "https://placehold.co/60x60/cccccc/000000?text=L"}
+                    />
+                    <div className="project-text">
+                        <h1 className="project-name">{project.name}</h1>
+                        <p className="project-tagline">{project.description}</p>
+                    </div>
                 </div>
-              </div>
-              {/* UPVOTE BUTTON - REMOVED COUNT FROM BUTTON TEXT */}
-              <button 
-                className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
-                onClick={handleUpvote}
-                disabled={isUpvoting}
-              >
-                <ThumbsUp 
-                  size={16} 
-                  fill={isUpvoted ? '#ef4444' : 'none'}
-                  style={{ marginRight: '8px' }}
-                />
-                {isUpvoting ? 'Loading...' : (isUpvoted ? 'Upvoted' : 'Upvote')}
-              </button>
+                {/* UPVOTE BUTTON - No count displayed */}
+                <button 
+                    className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
+                    onClick={handleUpvote}
+                    disabled={isUpvoting}
+                >
+                    <ThumbsUp 
+                        size={16} 
+                        fill={isUpvoted ? '#ef4444' : 'none'}
+                        style={{ marginRight: '8px' }}
+                    />
+                    {isUpvoting ? '...' : (isUpvoted ? 'Upvoted' : 'Upvote')}
+                </button>
             </div>
 
             <div className="project-meta-data">
-              <div className="meta-item">
-                <span className="meta-date">{project.launchedDate}</span>
-                <span className="meta-label">Launched On</span>
-              </div>
-              <div className="meta-item">
-                <span className="meta-count">{commentCount}</span>
-                <span className="meta-label">Comments</span>
-              </div>
-                {/* Conditional rendering based on website link existence */}
+                <div className="meta-item">
+                    <span className="meta-date">{project.launchedDate}</span>
+                    <span className="meta-label">Launched On</span>
+                </div>
+                <div className="meta-item">
+                    <span className="meta-count">{commentCount}</span>
+                    <span className="meta-label">Comments</span>
+                </div>
                 {hasWebsiteLink ? (
                     <button className="meta-link-btn" onClick={handleVisitWebsite}>
                         <ExternalLink size={16} /> Visit Website
@@ -377,35 +345,34 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             <div className="section-divider"></div>
 
             <div className="section-description">
-              <h2 className="section-title">Description</h2>
-              <div className="description-text">
-                <p className="concept-label">Concept:</p>
-                <p style={{ whiteSpace: 'pre-wrap' }}>{project.fullDescription || project.description}</p>
-              </div>
+                <h2 className="section-title">Description</h2>
+                <div className="description-text">
+                    <p className="concept-label">Concept:</p>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{project.fullDescription || project.description}</p>
+                </div>
             </div>
       
             <div className="section-divider"></div>
       
             <div className="section-features-in">
-              <h2 className="section-title">Features in</h2>
-              <div className="features-banner">
-                <img 
-                    src={bannerSource} 
-                    alt={`Banner for ${project.name}`} 
-                    onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Banner+Image"}
-                />
-              </div>
+                <h2 className="section-title">Features in</h2>
+                <div className="features-banner">
+                    <img 
+                        src={bannerSource} 
+                        alt={`Banner for ${project.name}`} 
+                        onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Banner+Image"}
+                    />
+                </div>
             </div>
 
             <div className="section-divider"></div>
       
             <CommentSection 
-              initialComments={project.comments || []}
-              onNewComment={handleNewCommentPosted}
-              currentUser={currentUser}
-              onRequireLogin={onRequireLogin}
+                initialComments={localComments}
+                onNewComment={handleNewCommentPosted}
+                currentUser={currentUser}
+                onRequireLogin={onRequireLogin}
             />
-
         </div>
     );
 };
