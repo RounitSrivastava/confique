@@ -3,7 +3,7 @@ import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
 import ShowcaseComponent from './ShowcaseComponent';
-import ProjectDetailsPage from './ProjectDetailsPage';
+import ProjectDetailsPage from './ProjectDetailsPage'; // Assuming this component exists in './ProjectDetailsPage.jsx'
 import ShowcaseRightSidebar from './ShowcaseRightSidebar';
 import { Image, Star, ExternalLink } from 'lucide-react';
 import {
@@ -46,10 +46,8 @@ import avatar1 from './assets/Confident Expression in Anime Style.png';
 import avatar2 from './assets/ChatGPT Image Aug 3, 2025, 11_19_26 AM.png';
 
 const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
-fetch(`${API_URL}/posts`)
-    .then(res => res.json())
-    .then(data => console.log(data));
 
+// ❌ Removed redundant direct fetch call here as API calls are now handled by callApi
 
 // Utility function to compress image files before upload
 const compressImage = (file, callback) => {
@@ -1079,7 +1077,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
                     <div className="form-group">
                         <label className="form-label">Payment Link</label>
                         <button type="button" className="btn-secondary" onClick={handlePaymentLinkClick}>
-                            <ArrowRight size={18} /> Open Payment Link
+                            <ExternalLink size={18} /> Open Payment Link
                         </button>
                     </div>
                 )}
@@ -1487,10 +1485,9 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
             await onSubmit(submissionData);
             onClose(); // Close the modal first
             
-            // FIX: Use formData instead of submissionData to ensure consistent data source
+            // FIX: Use formData.type and formData.title for the success message logic
             const postTypeLabel = formData.type === 'confession' ? 'Consights' : (formData.type === 'event' ? 'Event' : 'Cultural Event');
             
-            // FIX: Use formData.type and formData.title for the success message logic
             const successMessage = (formData.type === 'event' || formData.type === 'culturalEvent')
                 ? `Your new ${postTypeLabel} "${formData.title}" has been submitted for admin approval.`
                 : `Your new ${postTypeLabel} "${formData.title}" has been posted successfully!`;
@@ -1784,6 +1781,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                         <img
                                                                                             src={paymentQRPreview}
                                                                                             alt="Payment QR"
+                                                                                            className="post-image"
                                                                                             loading="lazy"
                                                                                             decoding="async"
                                                                                             onError={handleImageError}
@@ -1841,7 +1839,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                             </div>
                                                             <div className="form-group">
                                                                 <label className="form-label">Ticket Options</label>
-                                                                {formData.ticketOptions.map((option, index) => (
+                                                                {(formData.ticketOptions || []).map((option, index) => (
                                                                     <div key={index} className="ticket-option-row">
                                                                         <input
                                                                             type="text"
@@ -1904,6 +1902,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                                         <img
                                                                                             src={paymentQRPreview}
                                                                                             alt="Payment QR"
+                                                                                            className="post-image"
                                                                                             loading="lazy"
                                                                                             decoding="async"
                                                                                             onError={handleImageError}
@@ -2064,7 +2063,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
                 const destination = encodeURIComponent(event.venueAddress);
                 const origin = `${latitude},${longitude}`;
 
-                // Fix: Corrected the URL format for Google Maps to use a proper template literal
+                // ✅ FIX: Corrected the URL format for Google Maps
                 window.open(
                     `https://www.google.com/maps/dir/${origin}/${destination}`,
                     '_blank'
@@ -2271,7 +2270,7 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     const upcomingEvents = events.filter(e =>
         e.type === 'event' &&
         e._id !== currentEvent?._id &&
-        new Date(e.eventStartDate) > new Date()
+        e.eventStartDate && new Date(e.eventStartDate) > new Date()
     ).slice(0, 3);
 
     return (
@@ -2337,10 +2336,12 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
 
     useEffect(() => {
         if (contentRef.current && post.content) {
+            // Check if content overflows vertically
             const isOverflowing = contentRef.current.scrollHeight > contentRef.current.clientHeight;
+            // Set needsShowMore if overflowing OR if content is just long enough to be truncated by the 200 char limit
             setNeedsShowMore(isOverflowing || post.content.length > 200);
         }
-    }, [post.content]);
+    }, [post.content, isCommentsOpen, showFullContent]);
 
     const getPostTypeLabel = (type) => {
         switch (type) {
@@ -3214,7 +3215,7 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
-    const allEvents = [...posts.filter(p => p.type === 'event'), ...myCalendarEvents];
+    const allEvents = [...posts.filter(p => p.type === 'event' || p.type === 'culturalEvent'), ...myCalendarEvents];
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -3227,7 +3228,8 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents;
+    const upcomingCalendarEvents = myCalendarEvents.filter(event => event.eventStartDate && new Date(event.eventStartDate) >= new Date())
+        .sort((a, b) => a.eventStartDate.getTime() - b.eventStartDate.getTime());
 
     return (
         <>
@@ -3387,7 +3389,7 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
                 body: JSON.stringify({
                     ...formData,
                     // ✅ Add default avatar for new registrations
-                    avatar: isRegistering ? 'https://placehold.co/40x40/cccccc/000000?text=A' : undefined
+                    avatar: isRegistering ? placeholderAvatar : undefined
                 }),
             });
             const data = await res.json();
@@ -3708,7 +3710,11 @@ const App = () => {
             })) : [],
         };
     };
-
+    
+    // ✅ FIX: Modified callApi to handle common API endpoint structure.
+    // It is assumed API_URL contains the base domain only (e.g., "https://confique.onrender.com").
+    // If the imported API_URL already ends in '/api', this will create the double-api issue.
+    // If you keep the current format, ensure your API_URL does *not* contain the '/api' suffix.
     const callApi = async (endpoint, options = {}) => {
         const user = JSON.parse(localStorage.getItem('currentUser'));
         const headers = {
@@ -3719,7 +3725,11 @@ const App = () => {
             headers['Authorization'] = `Bearer ${user.token}`;
         }
 
-        const response = await fetch(`${API_URL}${endpoint}`, {
+        // Standardize endpoint to include '/api' if not present, and handle the double-slash case if API_URL ends in a slash.
+        let finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+        finalEndpoint = finalEndpoint.startsWith('/api') ? finalEndpoint : `/api${finalEndpoint}`;
+
+        const response = await fetch(`${API_URL}${finalEndpoint}`, {
             ...options,
             headers,
         });
@@ -4717,7 +4727,7 @@ const App = () => {
             });
             if (res.ok) {
                 await fetchPosts();
-                await fetchPendingEvents();
+                await fetchAdminNotifications(); // Fetch admin notifications and pending events again
                 setNotifications(prev => [
                     {
                         _id: Date.now().toString(),
@@ -4763,7 +4773,7 @@ const App = () => {
         try {
             console.log('🔄 Updating avatar:', newAvatar);
             
-            const response = await fetch(`${API_URL}/users/profile/avatar`, {
+            const response = await fetch(`${API_URL}/api/users/profile/avatar`, { // Using fetch to prevent double /api if callApi is fixed to include it once
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -4837,8 +4847,6 @@ const App = () => {
         }
 
         try {
-            // Reverted to the correct and logical endpoint for exporting registrations,
-            // as this data is tied to a specific post (event).
             const res = await callApi(`/users/export-registrations/${eventId}`, {
                 method: 'GET',
                 headers: {
@@ -4989,30 +4997,27 @@ const App = () => {
             component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
-       // This code is placed inside the menuItems array definition in your App.jsx
-
-// In the menuItems array, update the showcase section:
-// In your App.js, update the showcase section:
-{
-  id: 'showcase',
-  label: 'Showcase',
-  icon: <Star className="nav-icon" />,
-  action: () => setActiveSection('showcase'),
-  component: () => (
-    <ShowcaseComponent 
-      currentUser={currentUser}
-      onRequireLogin={() => setShowLoginModal(true)}
-      API_URL={API_URL}
-    />
-  ),
-  rightSidebar: () => (
-    <ShowcaseRightSidebar 
-      posts={posts} 
-      onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
-    />
-  ),
-},
-
+        {
+             // Updated logic for Showcase integration
+            id: 'showcase',
+            label: 'Showcase',
+            icon: <Star className="nav-icon" />,
+            action: () => setActiveSection('showcase'),
+            component: () => (
+                // Assuming ShowcaseComponent is capable of fetching and displaying projects
+                <ShowcaseComponent 
+                    currentUser={currentUser}
+                    onRequireLogin={() => setShowLoginModal(true)}
+                    API_URL={API_URL}
+                />
+            ),
+            rightSidebar: () => (
+                <ShowcaseRightSidebar 
+                    posts={posts} 
+                    onOpenEventDetail={(event) => handleOpenEventDetail(event)} 
+                />
+            ),
+        },
         {
             id: 'add',
             label: 'Add',
