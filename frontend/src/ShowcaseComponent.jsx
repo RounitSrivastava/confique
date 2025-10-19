@@ -371,17 +371,6 @@ const ShowcaseComponent = ({
 
   // Simple API fetch function as fallback if callApi is not provided
   const apiFetch = async (endpoint, options = {}) => {
-    // DEBUG: Log what's being sent
-    if (options.method === 'POST' && options.body) {
-      console.log('🔍 API_FETCH - Raw body before any processing:', options.body);
-      try {
-        const parsedBody = JSON.parse(options.body);
-        console.log('🔍 API_FETCH - Parsed body comments field:', typeof parsedBody.comments, parsedBody.comments);
-      } catch (e) {
-        console.log('🔍 API_FETCH - Could not parse body as JSON');
-      }
-    }
-    
     const user = JSON.parse(localStorage.getItem('currentUser'));
     const headers = {
       'Content-Type': 'application/json',
@@ -432,14 +421,14 @@ const ShowcaseComponent = ({
         .map(post => ({
           id: post._id,
           name: post.title,
-          description: post.content,
+          description: post.description || post.content, // Use description field if available
           logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
           banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
-          upvotes: post.likes || 0,
+          upvotes: post.upvotes || 0, // Use upvotes instead of likes
           month: post.month || 'October \'25',
-          websiteLink: post.registrationLink || post.websiteLink,
+          websiteLink: post.websiteLink,
           launchedDate: post.launchedDate,
-          comments: Array.isArray(post.commentData) ? post.commentData : [],
+          comments: Array.isArray(post.showcaseComments) ? post.showcaseComments : [], // Use showcaseComments
           creator: {
             name: post.author || 'Anonymous',
             role: 'Creator',
@@ -498,7 +487,7 @@ const ShowcaseComponent = ({
     return nameMatches || descriptionMatches;
   }).sort((a, b) => b.upvotes - a.upvotes);
 
-  // Submit new showcase idea using existing posts endpoint - ULTRA FIXED VERSION
+  // Submit new showcase idea - FIXED VERSION (No comments field)
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -506,59 +495,46 @@ const ShowcaseComponent = ({
     }
 
     try {
-      // Create the most basic payload possible to avoid any transformations
+      // Create payload that matches backend schema EXACTLY
       const postPayload = {
-        // Basic required fields only
+        // Basic required fields
         title: ideaData.title,
         content: ideaData.description,
         type: 'showcase',
-        
-        // User info
         author: currentUser.name,
         authorAvatar: currentUser.avatar,
         userId: currentUser._id,
+        timestamp: new Date().toISOString(),
         
-        // NUMERIC FIELDS - ensure they are numbers
-        likes: Number(0),
-        comments: Number(0), // Force to number
+        // CRITICAL: Don't send 'comments' or 'likes' fields - let backend use defaults
         
-        // Showcase fields
+        // Showcase-specific required fields
         logoUrl: ideaData.logoUrl,
         bannerUrl: ideaData.bannerUrl,
-        websiteLink: ideaData.websiteLink || '',
-        launchedDate: ideaData.launchedDate,
-        fullDescription: ideaData.fullDescription,
         month: ideaData.month,
         status: 'pending',
         
-        // Timestamp
-        timestamp: new Date().toISOString(),
+        // Optional showcase fields
+        description: ideaData.description, // Short description
+        fullDescription: ideaData.fullDescription,
+        websiteLink: ideaData.websiteLink || '',
+        launchedDate: ideaData.launchedDate,
+        
+        // Initialize showcase-specific fields
+        upvotes: 0,
+        commentCount: 0,
+        views: 0,
+        
+        // Initialize arrays as empty
+        upvoters: [],
+        showcaseComments: [],
+        images: [],
+        likedBy: [],
+        commentData: []
       };
 
-      // EXTREME CLEANING: Remove ANY field that could be problematic
-      const finalPayload = {};
-      
-      // Only include essential fields
-      const allowedFields = [
-        'title', 'content', 'type', 'author', 'authorAvatar', 'userId',
-        'likes', 'comments', 'logoUrl', 'bannerUrl', 'websiteLink', 
-        'launchedDate', 'fullDescription', 'month', 'status', 'timestamp'
-      ];
-      
-      allowedFields.forEach(field => {
-        if (postPayload[field] !== undefined && postPayload[field] !== null) {
-          finalPayload[field] = postPayload[field];
-        }
-      });
+      console.log('🚀 Submitting showcase idea:', JSON.stringify(postPayload, null, 2));
 
-      // DOUBLE CHECK: Ensure comments is a number
-      finalPayload.comments = 0;
-      finalPayload.likes = 0;
-
-      console.log('🚨 FINAL PAYLOAD BEFORE SENDING:', JSON.stringify(finalPayload, null, 2));
-      console.log('🔍 Comments type:', typeof finalPayload.comments, 'Value:', finalPayload.comments);
-
-      // Use direct fetch to avoid any middleware transformations
       const user = JSON.parse(localStorage.getItem('currentUser'));
       const headers = {
         'Content-Type': 'application/json',
@@ -571,34 +547,24 @@ const ShowcaseComponent = ({
       const response = await fetch(`${API_URL}/posts`, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(finalPayload),
+        body: JSON.stringify(postPayload),
       });
 
-      console.log('📡 Response status:', response.status);
-
       if (!response.ok) {
-        let errorMessage = 'Failed to create post';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-          console.log('❌ Backend error details:', errorData);
-        } catch (e) {
-          console.log('❌ Non-JSON error response');
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create post');
       }
 
       const newPost = await response.json();
-      console.log('✅ Successfully created post:', newPost);
+      console.log('✅ Success! Showcase created:', newPost);
       
-      // Refetch ideas
       await fetchIdeas();
       fetchLikedIdeas();
       
       setIsAddIdeaModalOpen(false);
       setSubmissionError('');
     } catch (error) {
-      console.error('🚨 Failed to submit idea:', error);
+      console.error('Failed to submit idea:', error);
       setSubmissionError('Failed to submit idea: ' + (error.message || 'Please check your data and try again.'));
       throw error;
     }
