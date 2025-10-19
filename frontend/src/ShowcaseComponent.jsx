@@ -542,6 +542,58 @@ const ShowcaseComponent = ({
     }
   }, [currentUser, apiFetch]);
 
+  // ✅ FIXED: Add showcase idea submission
+  const handleAddIdeaSubmit = async (ideaData) => {
+    if (!currentUser) {
+      onRequireLogin();
+      return;
+    }
+
+    console.log('🚀 Submitting new idea:', ideaData);
+
+    try {
+      const response = await apiFetch('/posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: ideaData.title,
+          description: ideaData.description,
+          fullDescription: ideaData.fullDescription,
+          websiteLink: ideaData.websiteLink,
+          launchedDate: ideaData.launchedDate,
+          logoUrl: ideaData.logoUrl,
+          bannerUrl: ideaData.bannerUrl,
+          month: ideaData.month,
+          type: 'showcase',
+          status: 'pending', // Ideas need admin approval
+          author: currentUser.name,
+          authorAvatar: currentUser.avatar,
+          userId: currentUser._id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Submission failed: ${response.status}`);
+      }
+
+      const newIdea = await response.json();
+      console.log('✅ Idea submitted successfully:', newIdea);
+
+      // Refresh the ideas list to show the new submission
+      await fetchIdeas();
+      
+      // Show success message
+      alert('Your idea has been submitted successfully! It will be reviewed by an admin before appearing in the showcase.');
+      
+      return newIdea;
+
+    } catch (error) {
+      console.error('❌ Idea submission failed:', error);
+      setSubmissionError(`Failed to submit idea: ${error.message}. Please try again.`);
+      throw error;
+    }
+  };
+
   // Initialize data
   useEffect(() => {
     const initializeApp = async () => {
