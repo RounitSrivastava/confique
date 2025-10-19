@@ -41,12 +41,11 @@ try {
   console.warn('⚠️ Cloudinary configuration failed:', error.message);
 }
 
-// Connect to MongoDB with better error handling and options
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('✅ MongoDB connected successfully'))
+// Connect to MongoDB - REMOVED DEPRECATED OPTIONS
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/startup-showcase')
+  .then(() => {
+    console.log('✅ MongoDB connected successfully');
+  })
   .catch(err => {
     console.error('❌ MongoDB connection error:', err);
     process.exit(1); // Exit if database connection fails
@@ -59,6 +58,10 @@ mongoose.connection.on('disconnected', () => {
 
 mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err);
+});
+
+mongoose.connection.on('connected', () => {
+  console.log('📊 MongoDB connection established');
 });
 
 // Middleware
@@ -107,20 +110,24 @@ app.get('/test', (req, res) => {
   res.json({ 
     message: 'Startup Showcase Server working',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 console.log('✅ Basic test route registered');
 
 // Health check endpoint for showcase
 app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected';
+  
   res.status(200).json({
     status: 'OK',
     service: 'Startup Showcase API',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-    uptime: process.uptime()
+    database: dbStatus,
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
   });
 });
 
@@ -167,21 +174,28 @@ console.log('All routes loaded, starting server...');
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, '..', 'frontend', 'dist');
   
-  // Serve the static files from the React app
-  app.use(express.static(buildPath));
-  
-  // Serve the index.html for all other routes (EXCEPT API routes)
-  app.get('*', (req, res, next) => {
-    // Skip API routes - let Express handle these
-    if (req.path.startsWith('/api/')) {
-      return next();
-    }
+  // Check if build directory exists
+  const fs = require('fs');
+  if (fs.existsSync(buildPath)) {
+    // Serve the static files from the React app
+    app.use(express.static(buildPath));
     
-    // For all other routes, serve the React app
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-  
-  console.log('✅ Production static file serving configured');
+    // Serve the index.html for all other routes (EXCEPT API routes)
+    app.get('*', (req, res, next) => {
+      // Skip API routes - let Express handle these
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      
+      // For all other routes, serve the React app
+      res.sendFile(path.join(buildPath, 'index.html'));
+    });
+    
+    console.log('✅ Production static file serving configured');
+  } else {
+    console.warn('⚠️ Frontend build directory not found:', buildPath);
+    console.log('💡 Run "npm run build" in the frontend directory to generate production build');
+  }
 }
 
 // Enhanced error handling middleware
@@ -239,9 +253,15 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Startup Showcase Server running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 CORS enabled for frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  console.log(`📊 Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
-});
+// Wait for MongoDB to connect before starting server
+const startServer = () => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Startup Showcase Server running on port ${PORT}`);
+    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔗 CORS enabled for frontend: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
+    console.log(`📊 Database: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'}`);
+  });
+};
+
+// Start server immediately, but log connection status
+startServer();
