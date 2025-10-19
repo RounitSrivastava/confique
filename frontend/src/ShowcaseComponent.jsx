@@ -285,7 +285,6 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
       return;
     }
 
-    // ✅ FIX: Remove the isLiked check - let backend handle toggle
     if (isUpvoting) {
       return;
     }
@@ -347,8 +346,10 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
             size={20} 
             className="upvote-icon"
             fill={isLiked ? '#ef4444' : 'none'}
+            color={isLiked ? '#ef4444' : '#6b7280'}
           />
           <span className="upvote-count">{idea.upvotes}</span>
+          {isLiked && <span className="upvote-text">Upvoted</span>}
         </div>
 
         {isAdmin && (
@@ -402,7 +403,6 @@ const ShowcaseComponent = ({
   const [isDetailsView, setIsDetailsView] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
   const [submissionError, setSubmissionError] = useState('');
-  const [backendStatus, setBackendStatus] = useState({ status: 'checking' });
 
   const isAdmin = currentUser && currentUser.email === 'confique01@gmail.com';
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
@@ -531,7 +531,7 @@ const ShowcaseComponent = ({
     }
   }, [apiFetch]);
 
-  // ✅ FIXED: Fetch user's liked posts
+  // ✅ FIXED: Fetch user's liked posts with better error handling
   const fetchLikedIdeas = useCallback(async () => {
     if (!currentUser) {
       setLocalLikedIdeas(new Set());
@@ -544,12 +544,16 @@ const ShowcaseComponent = ({
       
       if (response.ok) {
         const data = await response.json();
-        const likedSet = new Set(data.likedPostIds || []);
+        const likedSet = new Set(data.likedPostIds || data.likedPosts || []);
         console.log(`✅ User liked posts: ${likedSet.size} ideas`);
         setLocalLikedIdeas(likedSet);
+      } else {
+        console.warn('⚠️ Could not fetch liked posts, using empty set');
+        setLocalLikedIdeas(new Set());
       }
     } catch (error) {
       console.error('❌ Error fetching liked ideas:', error);
+      setLocalLikedIdeas(new Set());
     }
   }, [currentUser, apiFetch]);
 
@@ -606,20 +610,54 @@ const ShowcaseComponent = ({
     }
   };
 
-  // ✅ FIXED: Upvote showcase idea with proper error handling
+  // ✅ FIXED: Enhanced upvote function with proper state management
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
       return;
     }
 
+    const idea = ideas.find(idea => idea.id === ideaId);
+    if (!idea) {
+      console.error('❌ Idea not found for upvote:', ideaId);
+      return;
+    }
+
     console.log(`🔼 Upvoting idea ${ideaId} for user ${currentUser._id}`);
 
+    // Check if user already upvoted
+    const hasUserUpvoted = effectiveLikedIdeas.has(ideaId);
+    
+    // Optimistic update - update UI immediately
+    setIdeas(prevIdeas =>
+      prevIdeas.map(idea =>
+        idea.id === ideaId
+          ? { 
+              ...idea, 
+              upvotes: hasUserUpvoted ? idea.upvotes - 1 : idea.upvotes + 1
+            }
+          : idea
+      )
+    );
+
+    // Update liked ideas set optimistically
+    if (hasUserUpvoted) {
+      setLocalLikedIdeas(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(ideaId);
+        return newSet;
+      });
+    } else {
+      setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
+    }
+
     try {
+      // Send upvote request to backend
       const response = await apiFetch(`/posts/${ideaId}/upvote`, {
         method: 'PUT',
         body: JSON.stringify({
-          userId: currentUser._id // ✅ Ensure userId is sent
+          userId: currentUser._id,
+          action: hasUserUpvoted ? 'unvote' : 'upvote' // Explicit action
         }),
       });
 
@@ -632,21 +670,51 @@ const ShowcaseComponent = ({
       const result = await response.json();
       console.log('✅ Upvote successful:', result);
       
-      // ✅ FIXED: Update local state based on backend response
+      // Sync with server response
+      if (result.upvotes !== undefined) {
+        setIdeas(prevIdeas =>
+          prevIdeas.map(idea =>
+            idea.id === ideaId
+              ? { 
+                  ...idea, 
+                  upvotes: result.upvotes,
+                  upvoters: result.upvoters || idea.upvoters
+                }
+              : idea
+          )
+        );
+      }
+
+      // Update liked status based on server response
+      if (result.hasUpvoted !== undefined) {
+        if (result.hasUpvoted) {
+          setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
+        } else {
+          setLocalLikedIdeas(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(ideaId);
+            return newSet;
+          });
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Upvote failed:', error);
+      
+      // Revert optimistic update on error
       setIdeas(prevIdeas =>
         prevIdeas.map(idea =>
           idea.id === ideaId
             ? { 
                 ...idea, 
-                upvotes: result.upvotes || idea.upvotes + (result.hasUpvoted ? 1 : -1),
-                upvoters: result.upvoters || idea.upvoters
+                upvotes: hasUserUpvoted ? idea.upvotes + 1 : idea.upvotes - 1
               }
             : idea
         )
       );
 
-      // Update liked ideas set
-      if (result.hasUpvoted) {
+      // Revert liked status
+      if (hasUserUpvoted) {
         setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
       } else {
         setLocalLikedIdeas(prev => {
@@ -656,8 +724,6 @@ const ShowcaseComponent = ({
         });
       }
       
-    } catch (error) {
-      console.error('❌ Upvote failed:', error);
       alert(`Upvote failed: ${error.message}. Please try again.`);
     }
   };
