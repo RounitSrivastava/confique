@@ -633,7 +633,7 @@ const ShowcaseComponent = ({
     }
   };
 
-  // Add comment to showcase idea using existing comments endpoint
+  // ✅ FIXED: Add comment to showcase idea using showcase comments endpoint
   const handleAddComment = async (ideaId, commentText) => {
     if (!currentUser) {
       onRequireLogin();
@@ -641,7 +641,8 @@ const ShowcaseComponent = ({
     }
 
     try {
-      const response = await apiFetch(`/posts/${ideaId}/comments`, {
+      // Use showcase-specific comments endpoint
+      const response = await apiFetch(`/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
         body: JSON.stringify({ text: commentText }),
       });
