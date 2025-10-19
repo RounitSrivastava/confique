@@ -83,6 +83,8 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
     }
 
     setIsSubmitting(true);
+    setValidationError(''); // Clear previous errors
+    
     try {
       await onSubmit({
         ...formData,
@@ -105,7 +107,9 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
       setValidationError('');
       onClose();
     } catch (error) {
-      setValidationError('Failed to submit idea. Please try again.');
+      console.error('Submission error:', error);
+      // The error message will come from the handleAddIdeaSubmit function
+      // Don't set a generic error here as the parent function handles it
     } finally {
       setIsSubmitting(false);
     }
@@ -334,6 +338,7 @@ const ShowcaseComponent = ({
   const [error, setError] = useState(null);
   const [isDetailsView, setIsDetailsView] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState(null);
+  const [submissionError, setSubmissionError] = useState('');
 
   // Use passed likedIdeas or local state
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
@@ -417,8 +422,8 @@ const ShowcaseComponent = ({
           id: post._id,
           name: post.title,
           description: post.content,
-          logo: post.logoUrl,
-          banner: post.bannerUrl,
+          logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
+          banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
           upvotes: post.likes || 0,
           month: post.month || 'October \'25',
           websiteLink: post.registrationLink || post.websiteLink,
@@ -427,7 +432,7 @@ const ShowcaseComponent = ({
           creator: {
             name: post.author || 'Anonymous',
             role: 'Creator',
-            avatar: post.authorAvatar
+            avatar: post.authorAvatar || "https://placehold.co/40x40/cccccc/000000?text=U"
           },
           upvoters: post.upvoters || [],
           fullDescription: post.fullDescription || post.content,
@@ -490,16 +495,50 @@ const ShowcaseComponent = ({
     }
 
     try {
+      // Create a clean payload that matches your backend Post schema
+      const postPayload = {
+        // Required fields for any post
+        title: ideaData.title,
+        content: ideaData.description,
+        type: 'showcase',
+        author: currentUser.name,
+        authorAvatar: currentUser.avatar,
+        userId: currentUser._id,
+        timestamp: new Date().toISOString(),
+        
+        // Initialize numeric fields (NOT arrays)
+        likes: 0,
+        comments: 0, // This must be a number, not an array
+        
+        // Showcase-specific fields
+        logoUrl: ideaData.logoUrl,
+        bannerUrl: ideaData.bannerUrl,
+        websiteLink: ideaData.websiteLink || '',
+        launchedDate: ideaData.launchedDate,
+        fullDescription: ideaData.fullDescription,
+        month: ideaData.month,
+        
+        // Arrays should be empty
+        images: [],
+        
+        // Status for moderation
+        status: 'pending',
+        
+        // Remove any fields that might cause validation errors
+        // Don't include commentData, upvoters, or any other arrays that aren't in schema
+      };
+
+      console.log('📤 Submitting post payload:', postPayload);
+
       const response = await apiFetch('/posts', {
         method: 'POST',
-        body: JSON.stringify({
-          ...ideaData,
-          title: ideaData.title,
-          content: ideaData.description,
-          type: 'showcase',
-          images: [] 
-        }),
+        body: JSON.stringify(postPayload),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create post');
+      }
 
       const newPost = await response.json();
       
@@ -508,8 +547,10 @@ const ShowcaseComponent = ({
       fetchLikedIdeas();
       
       setIsAddIdeaModalOpen(false);
+      setSubmissionError('');
     } catch (error) {
       console.error('Failed to submit idea:', error);
+      setSubmissionError('Failed to submit idea: ' + (error.message || 'Please check your data and try again.'));
       throw error;
     }
   };
@@ -660,6 +701,7 @@ const ShowcaseComponent = ({
               }
               if (isPostingEnabled) {
                 setIsAddIdeaModalOpen(true);
+                setSubmissionError('');
               }
             }}
             disabled={!isPostingEnabled}
@@ -686,6 +728,10 @@ const ShowcaseComponent = ({
             src={StartupBanner} 
             alt="Startup Showcase Banner" 
             className="full-width-banner-image"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "https://placehold.co/1200x400/cccccc/000000?text=Startup+Showcase+Banner";
+            }}
           />
       </div>
 
@@ -701,6 +747,14 @@ const ShowcaseComponent = ({
           />
         </div>
       </div>
+
+      {/* Show submission error if any */}
+      {submissionError && (
+        <div className="submission-error-message">
+          <AlertCircle size={16} />
+          {submissionError}
+        </div>
+      )}
 
       <div className="idea-list-container">
         {isLoading ? (
@@ -740,7 +794,10 @@ const ShowcaseComponent = ({
 
       <AddIdeaModal
         isOpen={isAddIdeaModalOpen && isPostingEnabled} 
-        onClose={() => setIsAddIdeaModalOpen(false)}
+        onClose={() => {
+          setIsAddIdeaModalOpen(false);
+          setSubmissionError('');
+        }}
         onSubmit={handleAddIdeaSubmit}
         activeMonth={activeMonth}
         currentUser={currentUser}
