@@ -51,7 +51,7 @@ const placeholderAvatar = 'https://placehold.co/40x40/cccccc/000000?text=A';
 const compressImage = (file, callback) => {
     const reader = new FileReader();
     reader.onload = (event) => {
-        const img = new Image();
+        const img = new window.Image(); // FIX: Use window.Image for robust compatibility
         img.onload = () => {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
@@ -82,8 +82,10 @@ const compressImage = (file, callback) => {
             const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
             callback(compressedDataUrl);
         };
+        img.onerror = (err) => console.error("Error loading image in compressImage:", err);
         img.src = event.target.result;
     };
+    reader.onerror = (err) => console.error("Error reading file in compressImage:", err);
     reader.readAsDataURL(file);
 };
 
@@ -1504,13 +1506,15 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
+        // CRITICAL FIX: Reset file input value to allow re-selection of the same file
         e.target.value = null;
 
         if (!files.length) return;
 
-        const availableSlots = 5 - imagePreviews.length; // ✅ FIX: Changed from 4 to 5
+        const maxImages = 5;
+        const availableSlots = maxImages - imagePreviews.length;
         if (availableSlots <= 0) {
-            setUploadAlertMessage("You can only add up to 5 images per post.");
+            setUploadAlertMessage(`You can only add up to ${maxImages} images per post.`);
             setShowUploadAlert(true);
             return;
         }
@@ -1530,6 +1534,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         compressImage(file, (compressedDataUrl) => {
             setPaymentQRPreview(compressedDataUrl);
         });
+        // CRITICAL FIX: Reset file input value to allow re-selection of the same file
         e.target.value = null;
     };
 
@@ -1547,6 +1552,121 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
         e.target.src = "https://placehold.co/400x200/cccccc/000000?text=Image+Load+Error";
         e.target.onerror = null;
     };
+
+    // Helper to render the image upload section
+    const renderImageUploadSection = () => (
+        <div className="form-group">
+            <label className="form-label">Images (Max 5)</label>
+            <div className="image-upload-container">
+                <div className="upload-btn-wrapper">
+                    <div className="upload-btn">
+                        <ImageIcon size={16} />
+                        <span>Upload Images</span>
+                    </div>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                    />
+                </div>
+                {imagePreviews.length > 0 && (
+                    <div className="image-upload-preview">
+                        {imagePreviews.map((preview, index) => (
+                            <div key={index} className="image-preview-item">
+                                <img
+                                    src={preview}
+                                    alt={`Post image ${index + 1}`}
+                                    className="post-image"
+                                    onError={handleImageError}
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                                <button
+                                    type="button"
+                                    className="remove-image-btn"
+                                    onClick={() => removeImage(index)}
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
+    // Helper to render the QR Code upload section
+    const renderQrCodeUpload = (paymentMethod, paymentLinkName, paymentQrCodeName) => (
+        <div className="form-group">
+            <label className="form-label">Payment Method</label>
+            <select
+                className="form-select"
+                value={formData[paymentMethod]}
+                onChange={handleFormChange}
+                name={paymentMethod}
+            >
+                <option value="link">Payment Link</option>
+                <option value="qr">QR Code</option>
+            </select>
+
+            {formData[paymentMethod] === 'link' && (
+                <div className="form-group">
+                    <label className="form-label">Payment Link</label>
+                    <input
+                        type="url"
+                        className="form-input"
+                        value={formData[paymentLinkName]}
+                        onChange={handleFormChange}
+                        name={paymentLinkName}
+                        placeholder="https://example.com/payment"
+                        required
+                    />
+                </div>
+            )}
+            {formData[paymentMethod] === 'qr' && (
+                <div className="form-group">
+                    <label className="form-label">QR Code Image</label>
+                    <div className="image-upload-container">
+                        {paymentQRPreview ? (
+                            <div className="payment-qr-preview">
+                                <img
+                                    src={paymentQRPreview}
+                                    alt="Payment QR"
+                                    className="post-image"
+                                    loading="lazy"
+                                    decoding="async"
+                                    onError={handleImageError}
+                                />
+                                <button type="button" className="remove-image-btn" onClick={removeQRImage}>
+                                    <X size={14} />
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <label htmlFor="qr-file-input" className="upload-btn-wrapper">
+                                    <div className="upload-btn">
+                                        <ImageIcon size={16} />
+                                        <span>Upload QR Code</span>
+                                    </div>
+                                </label>
+                                <input
+                                    id="qr-file-input"
+                                    ref={qrFileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handlePaymentQRUpload}
+                                    style={{ display: 'none' }}
+                                />
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     if (!isOpen) return null;
 
@@ -1652,30 +1772,30 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                         />
                                     </div>
 
-                                    {(formData.type === 'event' || formData.type === 'culturalEvent') && (
-                                        <div className="form-group">
-                                            <label className="form-label">Registration Required?</label>
-                                            <div className="registration-toggle-group">
-                                                <button
-                                                    type="button"
-                                                    className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
-                                                    onClick={() => setHasRegistration(false)}
-                                                >
-                                                    No
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
-                                                    onClick={() => setHasRegistration(true)}
-                                                >
-                                                    Yes
-                                                </button>
-                                            </div>
+                                    {/* Registration Toggle */}
+                                    <div className="form-group">
+                                        <label className="form-label">Registration Required?</label>
+                                        <div className="registration-toggle-group">
+                                            <button
+                                                type="button"
+                                                className={`btn-toggle-option ${!hasRegistration ? 'active' : ''}`}
+                                                onClick={() => setHasRegistration(false)}
+                                            >
+                                                No
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`btn-toggle-option ${hasRegistration ? 'active' : ''}`}
+                                                onClick={() => setHasRegistration(true)}
+                                            >
+                                                Yes
+                                            </button>
                                         </div>
-                                    )}
+                                    </div>
 
                                     {hasRegistration && (
                                         <>
+                                            {/* Registration Method Selector (Link/Form) */}
                                             <div className="form-group">
                                                 <label className="form-label">Registration Method</label>
                                                 <div className="registration-method-options">
@@ -1732,6 +1852,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                         />
                                                     </div>
 
+                                                    {/* Standard Event Registration Form Fields & Payment */}
                                                     {formData.type === 'event' && (
                                                         <>
                                                             <div className="form-group">
@@ -1747,76 +1868,11 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                 />
                                                             </div>
 
-                                                            {formData.price > 0 && (
-                                                                <div className="form-group">
-                                                                    <label className="form-label">Payment Method</label>
-                                                                    <select
-                                                                        className="form-select"
-                                                                        value={formData.paymentMethod}
-                                                                        onChange={handleFormChange}
-                                                                        name="paymentMethod"
-                                                                    >
-                                                                        <option value="link">Payment Link</option>
-                                                                        <option value="qr">QR Code</option>
-                                                                    </select>
-
-                                                                    {formData.paymentMethod === 'link' && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">Payment Link</label>
-                                                                            <input
-                                                                                type="url"
-                                                                                className="form-input"
-                                                                                value={formData.paymentLink}
-                                                                                onChange={handleFormChange}
-                                                                                name="paymentLink"
-                                                                                required
-                                                                                placeholder="https://example.com/payment"
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                    {formData.paymentMethod === 'qr' && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">QR Code Image</label>
-                                                                            <div className="image-upload-container">
-                                                                                {paymentQRPreview ? (
-                                                                                    <div className="payment-qr-preview">
-                                                                                        <img
-                                                                                            src={paymentQRPreview}
-                                                                                            alt="Payment QR"
-                                                                                            className="post-image"
-                                                                                            loading="lazy"
-                                                                                            decoding="async"
-                                                                                            onError={handleImageError}
-                                                                                        />
-                                                                                        <button type="button" className="remove-image-btn" onClick={removeQRImage}>
-                                                                                            <X size={14} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                                            <div className="upload-btn">
-                                                                                                <ImageIcon size={16} />
-                                                                                                <span>Upload QR Code</span>
-                                                                                            </div>
-                                                                                        </label>
-                                                                                        <input
-                                                                                            id="qr-file-input"
-                                                                                            ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
+                                                            {formData.price > 0 && renderQrCodeUpload('paymentMethod', 'paymentLink', 'paymentQRCode')}
                                                         </>
                                                     )}
+
+                                                    {/* Cultural Event Registration Form Fields & Payment */}
                                                     {formData.type === 'culturalEvent' && (
                                                         <div className="cultural-event-section">
                                                             <div className="form-group">
@@ -1839,6 +1895,7 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                     Add Date
                                                                 </button>
                                                             </div>
+
                                                             <div className="form-group">
                                                                 <label className="form-label">Ticket Options</label>
                                                                 {(formData.ticketOptions || []).map((option, index) => (
@@ -1869,187 +1926,29 @@ const AddPostModal = ({ isOpen, onClose, onSubmit, postToEdit, currentUser, onSh
                                                                     Add Ticket Option
                                                                 </button>
                                                             </div>
-                                                            {formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0 && (
-                                                                <div className="form-group">
-                                                                    <label className="form-label">Payment Method</label>
-                                                                    <select
-                                                                        className="form-select"
-                                                                        value={formData.culturalPaymentMethod}
-                                                                        onChange={handleFormChange}
-                                                                        name="culturalPaymentMethod"
-                                                                    >
-                                                                        <option value="link">Payment Link</option>
-                                                                        <option value="qr">QR Code</option>
-                                                                    </select>
-                                                                    {formData.culturalPaymentMethod === 'link' && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">Payment Link</label>
-                                                                            <input
-                                                                                type="url"
-                                                                                className="form-input"
-                                                                                value={formData.culturalPaymentLink}
-                                                                                onChange={handleFormChange}
-                                                                                name="culturalPaymentLink"
-                                                                                placeholder="https://example.com/payment"
-                                                                                required
-                                                                            />
-                                                                        </div>
-                                                                    )}
-                                                                    {formData.culturalPaymentMethod === 'qr' && (
-                                                                        <div className="form-group">
-                                                                            <label className="form-label">QR Code Image</label>
-                                                                            <div className="image-upload-container">
-                                                                                {paymentQRPreview ? (
-                                                                                    <div className="payment-qr-preview">
-                                                                                        <img
-                                                                                            src={paymentQRPreview}
-                                                                                            alt="Payment QR"
-                                                                                            className="post-image"
-                                                                                            loading="lazy"
-                                                                                            decoding="async"
-                                                                                            onError={handleImageError}
-                                                                                        />
-                                                                                        <button type="button" className="remove-image-btn" onClick={removeQRImage}>
-                                                                                            <X size={14} />
-                                                                                        </button>
-                                                                                    </div>
-                                                                                ) : (
-                                                                                    <>
-                                                                                        <label htmlFor="qr-file-input" className="upload-btn-wrapper">
-                                                                                            <div className="upload-btn">
-                                                                                                <ImageIcon size={16} />
-                                                                                                <span>Upload QR Code</span>
-                                                                                            </div>
-                                                                                        </label>
-                                                                                        <input
-                                                                                            id="qr-file-input"
-                                                                                            ref={qrFileInputRef}
-                                                                                            type="file"
-                                                                                            accept="image/*"
-                                                                                            onChange={handlePaymentQRUpload}
-                                                                                            style={{ display: 'none' }}
-                                                                                        />
-                                                                                    </>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            )}
+
+                                                            {formData.ticketOptions.reduce((sum, opt) => sum + opt.ticketPrice, 0) > 0 &&
+                                                                renderQrCodeUpload('culturalPaymentMethod', 'culturalPaymentLink', 'culturalPaymentQRCode')}
                                                         </div>
                                                     )}
                                                 </>
                                             )}
                                         </>
                                     )}
-
-                                    <div className="form-group">
-                                        <label className="form-label">Images (Max 5)</label>
-                                        <div className="image-upload-container">
-                                            <div className="upload-btn-wrapper">
-                                                <div className="upload-btn">
-                                                    <ImageIcon size={16} />
-                                                    <span>Upload Images</span>
-                                                </div>
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    multiple
-                                                    onChange={handleImageUpload}
-                                                />
-                                            </div>
-
-                                            {imagePreviews.length > 0 && (
-                                                <div className="image-upload-preview">
-                                                    {imagePreviews.map((preview, index) => (
-                                                        <div key={index} className="image-preview-item">
-                                                            <img
-                                                                src={preview}
-                                                                alt={`Post image ${index + 1}`}
-                                                                className="post-image"
-                                                                onError={handleImageError}
-                                                                loading="lazy"
-                                                                decoding="async"
-                                                            />
-                                                            <button
-                                                                type="button"
-                                                                className="remove-image-btn"
-                                                                onClick={() => removeImage(index)}
-                                                            >
-                                                                <X size={14} />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="modal-actions">
-                                        <button type="button" className="btn-secondary" onClick={onClose}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn-primary">
-                                            {postToEdit ? 'Update' : 'Post'}
-                                        </button>
-                                    </div>
                                 </div>
                             )}
-                            
-                            {/* General Image Section (always visible for all posts now) */}
-                            {formData.type === 'confession' && (
-                                <div className="form-group">
-                                    <label className="form-label">Images (Max 5)</label>
-                                    <div className="image-upload-container">
-                                        <div className="upload-btn-wrapper">
-                                            <div className="upload-btn">
-                                                <ImageIcon size={16} />
-                                                <span>Upload Images</span>
-                                            </div>
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                multiple
-                                                onChange={handleImageUpload}
-                                            />
-                                        </div>
-        
-                                        {imagePreviews.length > 0 && (
-                                            <div className="image-upload-preview">
-                                                {imagePreviews.map((preview, index) => (
-                                                    <div key={index} className="image-preview-item">
-                                                        <img
-                                                            src={preview}
-                                                            alt={`Post image ${index + 1}`}
-                                                            className="post-image"
-                                                            onError={handleImageError}
-                                                            loading="lazy"
-                                                            decoding="async"
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            className="remove-image-btn"
-                                                            onClick={() => removeImage(index)}
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="modal-actions">
-                                        <button type="button" className="btn-secondary" onClick={onClose}>
-                                            Cancel
-                                        </button>
-                                        <button type="submit" className="btn-primary">
-                                            {postToEdit ? 'Update' : 'Post'}
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
+
+                            {/* Consolidated Image Upload Section (visible for all post types) */}
+                            {renderImageUploadSection()}
+
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={onClose}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn-primary">
+                                    {postToEdit ? 'Update' : 'Post'}
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -3010,6 +2909,8 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
     const handleCustomImageUpload = (e) => {
         const file = e.target.files[0];
+        e.target.value = null; // FIX: Reset file input
+
         if (file) {
             if (file.size > 2 * 1024 * 1024) {
                 setAvatarError('Image size cannot exceed 2MB.');
@@ -3795,8 +3696,7 @@ const App = () => {
         };
     };
 
-    // ✅ FIXED: Corrected callApi function to handle API endpoints properly
-    // ✅ CORRECTED: callApi function that works with your api.js
+    // Corrected callApi function to handle API endpoints properly
 const callApi = async (endpoint, options = {}) => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     const headers = {
@@ -3810,7 +3710,7 @@ const callApi = async (endpoint, options = {}) => {
     // 1. Ensure endpoint starts with a slash
     let finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     
-    // 2. Since API_URL already includes /api, we DON'T add it again
+    // 2. Since API_URL already includes /api, we prepend it correctly.
     const url = `${API_URL}${finalEndpoint}`;
     
     console.log('🔗 Making API call to:', url);
@@ -4032,7 +3932,7 @@ const callApi = async (endpoint, options = {}) => {
             console.log('🔑 Google login callback detected');
             console.log('📸 Raw URL params - name:', name, 'email:', email, 'avatar:', avatar);
 
-            // ✅ FIX: Decode URL-encoded parameters
+            // FIX: Decode URL-encoded parameters
             const decodedName = decodeURIComponent(name);
             const decodedEmail = decodeURIComponent(email);
             const decodedAvatar = avatar ? decodeURIComponent(avatar) : placeholderAvatar;
@@ -4718,7 +4618,7 @@ const callApi = async (endpoint, options = {}) => {
     const handleLogin = (user) => {
         console.log('🔑 Login user data received:', user);
 
-        // ✅ Ensure all string fields are properly decoded
+        // Ensure all string fields are properly decoded
         const decodedUser = {
             ...user,
             name: decodeURIComponent(user.name || ''),
@@ -5089,6 +4989,21 @@ const callApi = async (endpoint, options = {}) => {
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
+            id: 'add',
+            label: 'Add',
+            icon: <Plus className="nav-icon" />,
+            action: () => {
+                if (!isLoggedIn) {
+                    setShowLoginModal(true);
+                } else {
+                    setPostToEdit(null);
+                    setIsModalOpen(true);
+                    setSelectedPost(null);
+                    setSelectedEvent(null);
+                }
+            }
+        },
+        {
             id: 'showcase',
             label: 'Showcase',
             icon: <Star className="nav-icon" />,
@@ -5108,21 +5023,6 @@ const callApi = async (endpoint, options = {}) => {
                     onOpenEventDetail={(post) => handleOpenPostDetail(post)} // Showcase items are treated like posts
                 />
             ),
-        },
-        {
-            id: 'add',
-            label: 'Add',
-            icon: <Plus className="nav-icon" />,
-            action: () => {
-                if (!isLoggedIn) {
-                    setShowLoginModal(true);
-                } else {
-                    setPostToEdit(null);
-                    setIsModalOpen(true);
-                    setSelectedPost(null);
-                    setSelectedEvent(null);
-                }
-            }
         },
     ];
 

@@ -283,14 +283,28 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
 // === StartupCard Component (with authentication for upvotes) ===
 const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin, likedIdeas }) => {
   const isLiked = likedIdeas?.has(idea.id);
+  const [isUpvoting, setIsUpvoting] = useState(false);
   
-  const handleUpvote = (e) => {
+  const handleUpvote = async (e) => {
     e.stopPropagation();
     if (!currentUser) {
       onRequireLogin();
       return;
     }
-    onUpvote(idea.id);
+
+    // Prevent multiple clicks and already liked
+    if (isUpvoting || isLiked) {
+      return;
+    }
+
+    setIsUpvoting(true);
+    try {
+      await onUpvote(idea.id);
+    } catch (error) {
+      console.error('Upvote error:', error);
+    } finally {
+      setIsUpvoting(false);
+    }
   };
 
   return (
@@ -309,7 +323,7 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, currentUser, onRequireLogin
             </div>
         </div>
       </div>
-      <div className={`card-upvote ${isLiked ? 'liked' : ''}`} onClick={handleUpvote}>
+      <div className={`card-upvote ${isLiked ? 'liked' : ''} ${isUpvoting ? 'upvoting' : ''}`} onClick={handleUpvote}>
         <ThumbsUp 
           size={20} 
           className="upvote-icon"
@@ -567,23 +581,31 @@ const ShowcaseComponent = ({
     }
   };
 
-  // Upvote showcase idea using existing upvote endpoint
+  // ✅ FIXED: Upvote showcase idea with proper single-vote logic
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
       return;
     }
 
+    const idea = ideas.find(idea => idea.id === ideaId);
+    if (!idea) return;
+
     const isCurrentlyLiked = effectiveLikedIdeas.has(ideaId);
-    const endpoint = isCurrentlyLiked ? `/posts/${ideaId}/unlike` : `/posts/${ideaId}/like`;
     
+    // Prevent multiple upvotes from same user
+    if (isCurrentlyLiked) {
+      console.log('User already upvoted this idea');
+      return;
+    }
+
     // Optimistic update
     setIdeas(prevIdeas =>
       prevIdeas.map(idea =>
         idea.id === ideaId
           ? { 
               ...idea, 
-              upvotes: isCurrentlyLiked ? idea.upvotes - 1 : idea.upvotes + 1 
+              upvotes: idea.upvotes + 1 
             }
           : idea
       )
@@ -591,22 +613,22 @@ const ShowcaseComponent = ({
 
     setLocalLikedIdeas(prev => {
       const newLiked = new Set(prev);
-      if (isCurrentlyLiked) {
-        newLiked.delete(ideaId);
-      } else {
-        newLiked.add(ideaId);
-      }
+      newLiked.add(ideaId);
       return newLiked;
     });
 
     try {
-      const response = await apiFetch(endpoint, {
+      // Use the showcase-specific upvote endpoint
+      const response = await apiFetch(`/posts/${ideaId}/upvote`, {
         method: 'PUT',
       });
 
       if (!response.ok) {
         throw new Error('Upvote failed');
       }
+
+      // Optional: Refresh data from server to ensure consistency
+      await fetchIdeas();
       
     } catch (error) {
       console.error('Error upvoting idea:', error);
@@ -616,18 +638,14 @@ const ShowcaseComponent = ({
           idea.id === ideaId
             ? { 
                 ...idea, 
-                upvotes: isCurrentlyLiked ? idea.upvotes + 1 : idea.upvotes - 1 
+                upvotes: Math.max(0, idea.upvotes - 1) 
               }
             : idea
         )
       );
       setLocalLikedIdeas(prev => {
         const newLiked = new Set(prev);
-        if (isCurrentlyLiked) {
-          newLiked.add(ideaId);
-        } else {
-          newLiked.delete(ideaId);
-        }
+        newLiked.delete(ideaId);
         return newLiked;
       });
     }
