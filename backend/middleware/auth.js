@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('express-async-handler');
-const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
 // Token verification with better error handling
@@ -18,36 +17,6 @@ const verifyToken = (token) => {
         }
     }
 };
-
-// Rate limiting for showcase interactions
-const showcaseRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each user to 100 requests per windowMs
-    keyGenerator: (req) => {
-        return req.user ? `showcase:user:${req.user._id}` : `showcase:ip:${req.ip}`;
-    },
-    handler: (req, res) => {
-        res.status(429).json({
-            success: false,
-            message: 'Too many showcase actions. Please try again later.'
-        });
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-// Rate limiting for authentication attempts
-const authRateLimit = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10, // limit each IP to 10 login attempts per windowMs
-    keyGenerator: (req) => `auth:ip:${req.ip}`,
-    handler: (req, res) => {
-        res.status(429).json({
-            success: false,
-            message: 'Too many authentication attempts. Please try again later.'
-        });
-    }
-});
 
 // @desc    Protect routes for authenticated users
 // @access  Private
@@ -276,11 +245,6 @@ const requestLogger = asyncHandler(async (req, res, next) => {
     next();
 });
 
-// Rate limiting helper
-const createRateLimitKey = (req) => {
-    return req.user ? `user:${req.user._id}` : `ip:${req.ip}`;
-};
-
 module.exports = { 
     protect, 
     admin, 
@@ -288,8 +252,5 @@ module.exports = {
     showcaseParticipantOrAdmin,
     showcaseOwnerOrAdmin,
     ownerOrAdmin,
-    requestLogger,
-    createRateLimitKey,
-    showcaseRateLimit,
-    authRateLimit
+    requestLogger
 };

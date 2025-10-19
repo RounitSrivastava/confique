@@ -1,7 +1,5 @@
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const { body, param, validationResult } = require('express-validator');
-const rateLimit = require('express-rate-limit');
 const { Post, Registration } = require('../models/Post');
 const Notification = require('../models/Notification');
 const { protect, admin } = require('../middleware/auth');
@@ -14,28 +12,6 @@ const router = express.Router();
 
 // Initialize cache (optional - for performance)
 const cache = new NodeCache({ stdTTL: 300 }); // 5 minutes TTL
-
-// Rate limiting for showcase interactions
-const showcaseLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// Rate limiting for general posts
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // limit each IP to 200 requests per windowMs
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later.'
-  }
-});
 
 // Helper function to upload images to Cloudinary
 const uploadImage = async (image) => {
@@ -91,36 +67,21 @@ const transformShowcasePostForFrontend = (post) => {
 };
 
 // ==============================================
-// ✅ VALIDATION MIDDLEWARE
+// ✅ BASIC VALIDATION FUNCTIONS (replaced express-validator)
 // ==============================================
 
-const validateUpvote = [
-    param('id').isMongoId().withMessage('Invalid post ID')
-];
+const validateMongoId = (id) => {
+    return id && id.match(/^[0-9a-fA-F]{24}$/);
+};
 
-const validateShowcaseComment = [
-    param('id').isMongoId().withMessage('Invalid post ID'),
-    body('text')
-        .isLength({ min: 1, max: 1000 })
-        .withMessage('Comment must be between 1 and 1000 characters')
-        .trim()
-        .escape()
-];
+const validateText = (text, min = 1, max = 1000) => {
+    return text && text.trim().length >= min && text.trim().length <= max;
+};
 
-const validatePostCreation = [
-    body('type')
-        .isIn(['confession', 'event', 'culturalEvent', 'news', 'showcase'])
-        .withMessage('Invalid post type'),
-    body('title')
-        .isLength({ min: 1, max: 100 })
-        .withMessage('Title must be between 1 and 100 characters')
-        .trim()
-        .escape(),
-    body('content')
-        .isLength({ min: 1 })
-        .withMessage('Content is required')
-        .trim()
-];
+const validatePostType = (type) => {
+    const validTypes = ['confession', 'event', 'culturalEvent', 'news', 'showcase'];
+    return validTypes.includes(type);
+};
 
 // ==============================================
 // ✅ ROUTES
@@ -129,7 +90,7 @@ const validatePostCreation = [
 // @desc    Get all posts (UPDATED WITH PROPER POPULATION)
 // @route   GET /api/posts
 // @access  Public (for approved posts), Private (for all posts as admin)
-router.get('/', generalLimiter, asyncHandler(async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
     let posts;
     let isAdmin = false;
 
@@ -179,6 +140,14 @@ router.get('/pending-events', protect, admin, asyncHandler(async (req, res) => {
 // @access  Private (Event creator or Admin only)
 router.get('/:id/registrations', protect, asyncHandler(async (req, res) => {
     const eventId = req.params.id;
+
+    // Basic validation
+    if (!validateMongoId(eventId)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid event ID' 
+        });
+    }
 
     const event = await Post.findById(eventId).select('userId type');
 
@@ -239,20 +208,18 @@ router.get('/:id', asyncHandler(async (req, res) => {
 // @desc    Create a new post
 // @route   POST /api/posts
 // @access  Private
-router.post('/', protect, validatePostCreation, asyncHandler(async (req, res) => {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            success: false,
-            message: 'Validation failed',
-            errors: errors.array()
-        });
-    }
-
+router.post('/', protect, asyncHandler(async (req, res) => {
     const { _id: userId, name: authorNameFromUser, avatar: avatarFromUser } = req.user;
     
-    const authorAvatarFinal = avatarFromUser?.url || avatarFromUser || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    // ✅ CONSISTENT: Use the same avatar helper as auth.js
+    const getAvatarUrl = (avatar) => {
+        if (!avatar) return 'https://placehold.co/40x40/cccccc/000000?text=A';
+        if (typeof avatar === 'object' && avatar.url) return avatar.url;
+        if (typeof avatar === 'string') return avatar;
+        return 'https://placehold.co/40x40/cccccc/000000?text=A';
+    };
+    
+    const authorAvatarFinal = getAvatarUrl(avatarFromUser);
 
     const {
         type,
@@ -263,8 +230,39 @@ router.post('/', protect, validatePostCreation, asyncHandler(async (req, res) =>
         ticketOptions,
         culturalPaymentMethod,
         availableDates,
+        title,
+        content,
         ...restOfPostData
     } = req.body;
+
+    // Basic validation
+    if (!type || !title || !content) {
+        return res.status(400).json({
+            success: false,
+            message: 'Type, title, and content are required'
+        });
+    }
+
+    if (!validatePostType(type)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid post type'
+        });
+    }
+
+    if (!validateText(title, 1, 100)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Title must be between 1 and 100 characters'
+        });
+    }
+
+    if (!validateText(content, 1)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Content is required'
+        });
+    }
 
     // STARTUP SHOWCASE: Check submission deadline for showcase posts
     if (type === 'showcase') {
@@ -294,6 +292,8 @@ router.post('/', protect, validatePostCreation, asyncHandler(async (req, res) =>
 
     const newPostData = {
         ...restOfPostData,
+        title,
+        content,
         images: imageUrls.filter(url => url !== null),
         type,
         author: authorNameFromUser,
@@ -419,6 +419,14 @@ router.post('/', protect, validatePostCreation, asyncHandler(async (req, res) =>
 // @route   PUT /api/posts/:id
 // @access  Private (Author or Admin only)
 router.put('/:id', protect, asyncHandler(async (req, res) => {
+    // Basic validation
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const post = await Post.findById(req.params.id);
     if (!post) {
         return res.status(404).json({ message: 'Post not found' });
@@ -440,6 +448,28 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
         availableDates,
         ...rest
     } = req.body;
+
+    // Validate input
+    if (type && !validatePostType(type)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post type' 
+        });
+    }
+
+    if (title && !validateText(title, 1, 100)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Title must be between 1 and 100 characters' 
+        });
+    }
+
+    if (content && !validateText(content, 1)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Content is required' 
+        });
+    }
 
     // ✅ PRESERVED: Original image handling logic
     if (images !== undefined) {
@@ -582,6 +612,13 @@ router.put('/:id', protect, asyncHandler(async (req, res) => {
 // @route   PUT /api/posts/approve-event/:id
 // @access  Private (Admin only)
 router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid event ID' 
+        });
+    }
+
     const event = await Post.findById(req.params.id);
 
     if (event) {
@@ -605,6 +642,13 @@ router.put('/approve-event/:id', protect, admin, asyncHandler(async (req, res) =
 // @route   DELETE /api/posts/reject-event/:id
 // @access  Private (Admin only)
 router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid event ID' 
+        });
+    }
+
     const event = await Post.findById(req.params.id);
 
     if (event) {
@@ -651,6 +695,13 @@ router.delete('/reject-event/:id', protect, admin, asyncHandler(async (req, res)
 // @route   DELETE /api/posts/:id
 // @access  Private (Author or Admin only)
 router.delete('/:id', protect, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const post = await Post.findById(req.params.id);
     if (post) {
         if (post.userId.toString() !== req.user._id.toString() && !req.user.isAdmin) {
@@ -698,14 +749,29 @@ router.delete('/:id', protect, asyncHandler(async (req, res) => {
 // @route   POST /api/posts/:id/comments
 // @access  Private
 router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const { text } = req.body;
     const post = await Post.findById(req.params.id);
     if (post) {
-        if (!text || text.trim() === '') {
-            return res.status(400).json({ message: 'Comment text cannot be empty' });
+        if (!validateText(text, 1, 1000)) {
+            return res.status(400).json({ message: 'Comment text must be between 1 and 1000 characters' });
         }
         
-        const userAvatar = req.user.avatar?.url || req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+        // ✅ CONSISTENT: Use the same avatar helper
+        const getAvatarUrl = (avatar) => {
+            if (!avatar) return 'https://placehold.co/40x40/cccccc/000000?text=A';
+            if (typeof avatar === 'object' && avatar.url) return avatar.url;
+            if (typeof avatar === 'string') return avatar;
+            return 'https://placehold.co/40x40/cccccc/000000?text=A';
+        };
+        
+        const userAvatar = getAvatarUrl(req.user.avatar);
         
         const newComment = {
             author: req.user.name,
@@ -731,6 +797,13 @@ router.post('/:id/comments', protect, asyncHandler(async (req, res) => {
 // @route   PUT /api/posts/:id/like
 // @access  Private
 router.put('/:id/like', protect, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const post = await Post.findById(req.params.id);
     if (post) {
         if (post.likedBy.includes(req.user._id)) {
@@ -753,6 +826,13 @@ router.put('/:id/like', protect, asyncHandler(async (req, res) => {
 // @route   PUT /api/posts/:id/unlike
 // @access  Private
 router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const post = await Post.findById(req.params.id);
     if (post) {
         if (!post.likedBy.includes(req.user._id)) {
@@ -777,11 +857,18 @@ router.put('/:id/unlike', protect, asyncHandler(async (req, res) => {
 // @route   POST /api/posts/:id/report
 // @access  Private
 router.post('/:id/report', protect, asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const { reason } = req.body;
     const post = await Post.findById(req.params.id);
     if (post) {
-        if (!reason || reason.trim() === '') {
-            return res.status(400).json({ message: 'Report reason cannot be empty' });
+        if (!validateText(reason, 1, 500)) {
+            return res.status(400).json({ message: 'Report reason must be between 1 and 500 characters' });
         }
         const notification = new Notification({
             message: `Post "${post.title}" has been reported by ${req.user.name} for: ${reason}`,
@@ -805,14 +892,12 @@ router.post('/:id/report', protect, asyncHandler(async (req, res) => {
 // @desc    Upvote a showcase post (NEW ROUTE)
 // @route   PUT /api/posts/:id/upvote
 // @access  Private
-router.put('/:id/upvote', protect, showcaseLimiter, validateUpvote, asyncHandler(async (req, res) => {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+router.put('/:id/upvote', protect, asyncHandler(async (req, res) => {
+    // Basic validation
+    if (!validateMongoId(req.params.id)) {
         return res.status(400).json({
             success: false,
-            message: 'Validation failed',
-            errors: errors.array()
+            message: 'Invalid post ID'
         });
     }
 
@@ -900,18 +985,24 @@ router.put('/:id/upvote', protect, showcaseLimiter, validateUpvote, asyncHandler
 // @desc    Add comment to showcase post (NEW ROUTE)
 // @route   POST /api/posts/:id/showcase-comments
 // @access  Private
-router.post('/:id/showcase-comments', protect, showcaseLimiter, validateShowcaseComment, asyncHandler(async (req, res) => {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+router.post('/:id/showcase-comments', protect, asyncHandler(async (req, res) => {
+    // Basic validation
+    if (!validateMongoId(req.params.id)) {
         return res.status(400).json({
             success: false,
-            message: 'Validation failed',
-            errors: errors.array()
+            message: 'Invalid post ID'
         });
     }
 
     const { text } = req.body;
+
+    if (!validateText(text, 1, 1000)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Comment must be between 1 and 1000 characters'
+        });
+    }
+
     const post = await Post.findById(req.params.id);
 
     if (!post) {
@@ -928,7 +1019,15 @@ router.post('/:id/showcase-comments', protect, showcaseLimiter, validateShowcase
         });
     }
 
-    const userAvatar = req.user.avatar?.url || req.user.avatar || 'https://placehold.co/40x40/cccccc/000000?text=A';
+    // ✅ CONSISTENT: Use the same avatar helper
+    const getAvatarUrl = (avatar) => {
+        if (!avatar) return 'https://placehold.co/40x40/cccccc/000000?text=A';
+        if (typeof avatar === 'object' && avatar.url) return avatar.url;
+        if (typeof avatar === 'string') return avatar;
+        return 'https://placehold.co/40x40/cccccc/000000?text=A';
+    };
+
+    const userAvatar = getAvatarUrl(req.user.avatar);
 
     const comment = {
         user: req.user._id,
@@ -1006,6 +1105,13 @@ router.post('/:id/showcase-comments', protect, showcaseLimiter, validateShowcase
 // @route   GET /api/posts/:id/showcase-comments
 // @access  Public
 router.get('/:id/showcase-comments', asyncHandler(async (req, res) => {
+    if (!validateMongoId(req.params.id)) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Invalid post ID' 
+        });
+    }
+
     const { page = 1, limit = 10 } = req.query;
     const post = await Post.findById(req.params.id)
         .populate('showcaseComments.user', 'name avatar')
