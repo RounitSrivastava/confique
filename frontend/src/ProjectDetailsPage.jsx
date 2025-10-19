@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Showcase.css';
 import { ArrowLeft, ExternalLink, MessageSquare, ArrowRight, ThumbsUp } from 'lucide-react';
 
@@ -16,9 +16,12 @@ const extractAvatarUrl = (avatar) => {
 
 // Comment Section Component (Updated with authentication)
 const CommentSection = ({ initialComments = [], onNewComment, currentUser, onRequireLogin }) => {
+    // Ensure initialComments is always an array
+    const safeInitialComments = Array.isArray(initialComments) ? initialComments : [];
+    
     // Sort comments by timestamp/id (most recent first) for display
-    const sortedComments = [...initialComments].sort((a, b) => {
-        // Use ID (timestamp) for local sorting if proper timestamp isn.t available
+    const sortedComments = [...safeInitialComments].sort((a, b) => {
+        // Use ID (timestamp) for local sorting if proper timestamp isn't available
         const timeA = new Date(a.timestamp).getTime();
         const timeB = new Date(b.timestamp).getTime();
         return timeB - timeA;
@@ -30,7 +33,13 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
 
     // Sync comments from parent prop changes
     useEffect(() => {
-        setComments(sortedComments);
+        const safeComments = Array.isArray(initialComments) ? initialComments : [];
+        const sortedSafeComments = [...safeComments].sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
+            return timeB - timeA;
+        });
+        setComments(sortedSafeComments);
     }, [initialComments]);
 
 
@@ -106,103 +115,115 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
     }
 
     return (
-    <div className="comment-section-wrapper">
-      <div className="comment-header-bar">
-        <ArrowLeft 
-            size={24} 
-            className={`back-arrow-icon ${isExpanded ? 'visible' : 'hidden'}`} 
-            onClick={handleCollapseComments} 
-        />
-        <h2 className="section-title comment-title-header">Comments ({comments.length})</h2>
-      </div>
+    <div className="comment-section-wrapper">
+      <div className="comment-header-bar">
+        <ArrowLeft 
+            size={24} 
+            className={`back-arrow-icon ${isExpanded ? 'visible' : 'hidden'}`} 
+            onClick={handleCollapseComments} 
+        />
+        <h2 className="section-title comment-title-header">Comments ({comments.length})</h2>
+      </div>
 
-      <div className="comment-input-container-replicate">
-        <textarea
-          value={newCommentText}
-          onChange={(e) => setNewCommentText(e.target.value)}
-          placeholder={currentUser ? "Add a comment..." : "Please log in to comment"}
-          className="comment-input-field"
-          onKeyDown={handleKeyDown}
-          disabled={!currentUser}
-          rows={1}
-        />
-        <button 
-            type="button" 
-            className="post-comment-btn-replicate" 
-            onClick={handlePostComment} 
-            disabled={newCommentText.trim() === '' || !currentUser}
-        >
-          <ArrowRight size={28} /> 
-        </button>
-      </div>
+      <div className="comment-input-container-replicate">
+        <textarea
+          value={newCommentText}
+          onChange={(e) => setNewCommentText(e.target.value)}
+          placeholder={currentUser ? "Add a comment..." : "Please log in to comment"}
+          className="comment-input-field"
+          onKeyDown={handleKeyDown}
+          disabled={!currentUser}
+          rows={1}
+        />
+        <button 
+            type="button" 
+            className="post-comment-btn-replicate" 
+            onClick={handlePostComment} 
+            disabled={newCommentText.trim() === '' || !currentUser}
+        >
+          <ArrowRight size={28} /> 
+        </button>
+      </div>
 
-      <div className="comments-list-replicate">
-        {displayedComments.map(comment => (
-          <div key={comment.id || comment._id} className="comment-item-replicate">
-            <img 
+      <div className="comments-list-replicate">
+        {displayedComments.map(comment => (
+          <div key={comment.id || comment._id} className="comment-item-replicate">
+            <img 
                 src={extractAvatarUrl(comment.avatar || comment.authorAvatar)} 
                 alt={comment.user || comment.author} 
                 className="comment-avatar-replicate" 
                 onError={(e) => e.target.src = placeholderAvatar}
             />
-            <div className="comment-content-wrapper-replicate">
-              <div className="comment-user-header-replicate">
-                <span className="comment-user-replicate">{comment.user || comment.author}</span>
-                <span className="comment-timestamp-replicate">{formatTimestamp(comment.timestamp)}</span>
-              </div>
-              <p className="comment-text-replicate">{comment.text}</p>
-            </div>
-          </div>
-        ))}
+            <div className="comment-content-wrapper-replicate">
+              <div className="comment-user-header-replicate">
+                <span className="comment-user-replicate">{comment.user || comment.author}</span>
+                <span className="comment-timestamp-replicate">{formatTimestamp(comment.timestamp)}</span>
+              </div>
+              <p className="comment-text-replicate">{comment.text}</p>
+            </div>
+          </div>
+        ))}
 
-        {showLoadMoreButton && (
-            <div className="load-more-wrapper">
-                <button 
-                    onClick={handleLoadMore} 
-                    className="more-comments-btn"
-                >
-                    +{commentsToHide} more comment{commentsToHide > 1 ? 's' : ''}
-                </button>
-            </div>
-        )}
-        
-        {comments.length === 0 && (
-            <p className="no-comments-replicate">No comments yet. Be the first!</p>
-        )}
-      </div>
-    </div>
-  );
+        {showLoadMoreButton && (
+            <div className="load-more-wrapper">
+                <button 
+                    onClick={handleLoadMore} 
+                    className="more-comments-btn"
+                >
+                    +{commentsToHide} more comment{commentsToHide > 1 ? 's' : ''}
+                </button>
+            </div>
+        )}
+        
+        {comments.length === 0 && (
+            <p className="no-comments-replicate">No comments yet. Be the first!</p>
+        )}
+      </div>
+    </div>
+  );
 };
 
 // Main Project Details Page Component (Updated with Backend Integration)
 const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, onAddComment, API_URL, onUpvote, likedIdeas }) => {
-    // Initialize state from props. Use project.likes for upvotes.
-    const [upvotes, setUpvotes] = useState(project.upvotes || project.likes || 0);
+    // Initialize state from props. Use project.likes for upvotes.
+    const [upvotes, setUpvotes] = useState(project.upvotes || project.likes || 0);
     // Determine initial upvoted state using the likedIdeas Set passed from parent
-    const [isUpvoted, setIsUpvoted] = useState(likedIdeas.has(project.id));
-    const [localComments, setLocalComments] = useState(project.comments || []);
-    const [commentCount, setCommentCount] = useState(project.comments ? project.comments.length : 0);
-    const [isUpvoting, setIsUpvoting] = useState(false);
+    const [isUpvoted, setIsUpvoted] = useState(likedIdeas.has(project.id));
+    
+    // FIXED: Ensure comments is always an array, never a number
+    const [localComments, setLocalComments] = useState(
+        Array.isArray(project.comments) ? project.comments : []
+    );
+    
+    // FIXED: Ensure commentCount is calculated safely
+    const [commentCount, setCommentCount] = useState(
+        Array.isArray(project.comments) ? project.comments.length : 0
+    );
+    
+    const [isUpvoting, setIsUpvoting] = useState(false);
 
     // Sync upvotes and liked status if project prop changes
     useEffect(() => {
         setUpvotes(project.upvotes || project.likes || 0);
         setIsUpvoted(likedIdeas.has(project.id));
-        setLocalComments(project.comments || []);
-        setCommentCount(project.comments ? project.comments.length : 0);
+        
+        // FIXED: Always ensure comments is an array
+        const safeComments = Array.isArray(project.comments) ? project.comments : [];
+        setLocalComments(safeComments);
+        setCommentCount(safeComments.length);
     }, [project, likedIdeas]);
 
-    // Upvote function using the handler passed from parent (ShowcaseComponent)
-    const handleUpvote = async () => {
-        if (!currentUser) {
-            onRequireLogin();
-            return;
-        }
+    // Upvote function using the handler passed from parent (ShowcaseComponent)
+    const handleUpvote = async () => {
+        if (!currentUser) {
+            onRequireLogin();
+            return;
+        }
 
-        if (isUpvoting) return;
+        if (isUpvoting) return;
 
-        setIsUpvoting(true);
-        
+        setIsUpvoting(true);
+        
         try {
             // Call parent's upvote handler, which handles API call and global state update
             await onUpvote(project.id); 
@@ -220,9 +241,9 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             console.error('Upvote error:', error);
             // Parent handles the rollback, we just stop loading
         } finally {
-            setIsUpvoting(false);
-        }
-    };
+            setIsUpvoting(false);
+        }
+    };
 
     // Comment function uses the handler passed from parent
     const handleNewCommentPosted = async (commentText) => {
@@ -245,149 +266,149 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
     };
 
 
-    if (!project) {
-        return (
-            <div className="project-details-container">
-                <h1 className="project-name">Project Not Found</h1>
-                <button className="back-button" onClick={onGoBack}>
-                    <ArrowLeft size={20} /> Back to Showcase
-                </button>
-            </div>
-        );
-    }
+    if (!project) {
+        return (
+            <div className="project-details-container">
+                <h1 className="project-name">Project Not Found</h1>
+                <button className="back-button" onClick={onGoBack}>
+                    <ArrowLeft size={20} /> Back to Showcase
+                </button>
+            </div>
+        );
+    }
 
-    const handleVisitWebsite = () => {
-        if (project.websiteLink && project.websiteLink.trim()) {
-            // Ensure URL starts with http/https
-            const url = project.websiteLink.startsWith('http') ? project.websiteLink : `https://${project.websiteLink}`;
-            window.open(url, '_blank');
-        }
-    };
-    
-    const hasWebsiteLink = project.websiteLink && project.websiteLink.trim().length > 0;
-    
-    // Get the first few upvoters to display next to the count
+    const handleVisitWebsite = () => {
+        if (project.websiteLink && project.websiteLink.trim()) {
+            // Ensure URL starts with http/https
+            const url = project.websiteLink.startsWith('http') ? project.websiteLink : `https://${project.websiteLink}`;
+            window.open(url, '_blank');
+        }
+    };
+    
+    const hasWebsiteLink = project.websiteLink && project.websiteLink.trim().length > 0;
+    
+    // Get the first few upvoters to display next to the count
     // NOTE: Upvoters structure in the project object needs to be an array of user objects { _id, avatar, name }
-    const displayedUpvoters = (project.upvoters || []).slice(0, 5);
+    const displayedUpvoters = (project.upvoters || []).slice(0, 5);
     const bannerSource = project.bannerUrl || project.banner || "https://assets.website-files.com/62c93d9b418a09618b6e6cf1/62d85b19c6e5a4f48348b47e_Hero%20Bg.png";
 
 
-    return (
-        <div className="project-details-container">
+    return (
+        <div className="project-details-container">
             {/* Back Button */}
-            <button className="back-button" onClick={onGoBack}>
-              <ArrowLeft size={20} /> Back to Showcase
-            </button>
+            <button className="back-button" onClick={onGoBack}>
+              <ArrowLeft size={20} /> Back to Showcase
+            </button>
 
-            <div className="project-header">
-              <div className="project-info">
-                <img 
-                  src={project.logo} 
-                  alt={`${project.name} logo`} 
-                  className="project-logo" 
-                  onError={(e) => e.target.src = "https://placehold.co/60x60/cccccc/000000?text=L"}
-                />
-                <div className="project-text">
-                  <h1 className="project-name">{project.name}</h1>
-                  <p className="project-tagline">{project.description}</p>
-                </div>
-              </div>
-              {/* UPVOTE BUTTON */}
-              <button 
-                className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
-                onClick={handleUpvote}
-                disabled={isUpvoting}
-              >
-                <ThumbsUp 
-                  size={16} 
-                  fill={isUpvoted ? '#ef4444' : 'none'}
-                  style={{ marginRight: '8px' }}
-                />
-                {isUpvoting ? 'Loading...' : (isUpvoted ? `Upvoted (${upvotes})` : `Upvote (${upvotes})`)}
-              </button>
-            </div>
+            <div className="project-header">
+              <div className="project-info">
+                <img 
+                  src={project.logo} 
+                  alt={`${project.name} logo`} 
+                  className="project-logo" 
+                  onError={(e) => e.target.src = "https://placehold.co/60x60/cccccc/000000?text=L"}
+                />
+                <div className="project-text">
+                  <h1 className="project-name">{project.name}</h1>
+                  <p className="project-tagline">{project.description}</p>
+                </div>
+              </div>
+              {/* UPVOTE BUTTON */}
+              <button 
+                className={`project-upvote-btn ${isUpvoted ? 'upvoted' : ''} ${isUpvoting ? 'loading' : ''}`}
+                onClick={handleUpvote}
+                disabled={isUpvoting}
+              >
+                <ThumbsUp 
+                  size={16} 
+                  fill={isUpvoted ? '#ef4444' : 'none'}
+                  style={{ marginRight: '8px' }}
+                />
+                {isUpvoting ? 'Loading...' : (isUpvoted ? `Upvoted (${upvotes})` : `Upvote (${upvotes})`)}
+              </button>
+            </div>
 
-            <div className="project-meta-data">
-              <div className="meta-item">
-                <span className="meta-date">{project.launchedDate}</span>
-                <span className="meta-label">Launched On</span>
-              </div>
-              <div className="meta-item" onClick={handleComment}>
-                <span className="meta-count">{commentCount}</span>
-                <span className="meta-label">Comments</span>
-              </div>
-                {/* Conditional rendering based on website link existence */}
-                {hasWebsiteLink ? (
-                    <button className="meta-link-btn" onClick={handleVisitWebsite}>
-                        <ExternalLink size={16} /> Visit Website
-                    </button>
-                ) : (
-                    <div className="meta-item no-link-item">
-                        <span className="meta-date" style={{ color: '#dc3545' }}>—</span>
-                        <span className="meta-label">No website provided</span>
-                    </div>
-                )}
-            </div>
-      
-            <div className="section-divider"></div>
+            <div className="project-meta-data">
+              <div className="meta-item">
+                <span className="meta-date">{project.launchedDate}</span>
+                <span className="meta-label">Launched On</span>
+              </div>
+              <div className="meta-item">
+                <span className="meta-count">{commentCount}</span>
+                <span className="meta-label">Comments</span>
+              </div>
+                {/* Conditional rendering based on website link existence */}
+                {hasWebsiteLink ? (
+                    <button className="meta-link-btn" onClick={handleVisitWebsite}>
+                        <ExternalLink size={16} /> Visit Website
+                    </button>
+                ) : (
+                    <div className="meta-item no-link-item">
+                        <span className="meta-date" style={{ color: '#dc3545' }}>—</span>
+                        <span className="meta-label">No website provided</span>
+                    </div>
+                )}
+            </div>
+      
+            <div className="section-divider"></div>
 
-            {/* UPVOTER SECTION */}
-            <div className="section-upvoters">
-                <div className="upvoters-header-row">
-                    <h2 className="section-title">{upvotes} Upvoters</h2> 
-                    {displayedUpvoters.length > 0 && (
-                        <div className="upvoters-list-inline">
-                            {displayedUpvoters.map((upvoter, index) => (
-                                <img 
+            {/* UPVOTER SECTION */}
+            <div className="section-upvoters">
+                <div className="upvoters-header-row">
+                    <h2 className="section-title">{upvotes} Upvoters</h2> 
+                    {displayedUpvoters.length > 0 && (
+                        <div className="upvoters-list-inline">
+                            {displayedUpvoters.map((upvoter, index) => (
+                                <img 
                                     key={index} 
                                     src={extractAvatarUrl(upvoter.avatar)} 
                                     alt="Upvoter" 
                                     className="upvoter-avatar" 
                                     onError={(e) => e.target.src = placeholderAvatar}
                                 />
-                            ))}
-                            {(project.upvoters && project.upvoters.length) > displayedUpvoters.length && (
-                                <span className="more-upvoters-count">+{project.upvoters.length - displayedUpvoters.length}</span>
-                            )}
-                        </div>
-                    )}
-                </div>
-            </div>
-      
-            <div className="section-divider"></div>
+                            ))}
+                            {(project.upvoters && project.upvoters.length) > displayedUpvoters.length && (
+                                <span className="more-upvoters-count">+{project.upvoters.length - displayedUpvoters.length}</span>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+      
+            <div className="section-divider"></div>
 
-            <div className="section-description">
-              <h2 className="section-title">Description</h2>
-              <div className="description-text">
-                <p className="concept-label">Concept:</p>
-                <p style={{ whiteSpace: 'pre-wrap' }}>{project.fullDescription || project.description}</p>
-              </div>
-            </div>
-      
-            <div className="section-divider"></div>
-      
-            <div className="section-features-in">
-              <h2 className="section-title">Features in</h2>
-              <div className="features-banner">
-                <img 
-                    src={bannerSource} 
-                    alt={`Banner for ${project.name}`} 
-                    onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Banner+Image"}
-                />
-              </div>
-            </div>
+            <div className="section-description">
+              <h2 className="section-title">Description</h2>
+              <div className="description-text">
+                <p className="concept-label">Concept:</p>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{project.fullDescription || project.description}</p>
+              </div>
+            </div>
+      
+            <div className="section-divider"></div>
+      
+            <div className="section-features-in">
+              <h2 className="section-title">Features in</h2>
+              <div className="features-banner">
+                <img 
+                    src={bannerSource} 
+                    alt={`Banner for ${project.name}`} 
+                    onError={(e) => e.target.src = "https://placehold.co/800x450/cccccc/000000?text=Banner+Image"}
+                />
+              </div>
+            </div>
 
-            <div className="section-divider"></div>
-      
-            <CommentSection 
-              initialComments={localComments}
-              onNewComment={handleNewCommentPosted}
-              currentUser={currentUser}
-              onRequireLogin={onRequireLogin}
-            />
+            <div className="section-divider"></div>
+      
+            <CommentSection 
+              initialComments={localComments}
+              onNewComment={handleNewCommentPosted}
+              currentUser={currentUser}
+              onRequireLogin={onRequireLogin}
+            />
 
-        </div>
-    );
+        </div>
+    );
 };
 
 export default ProjectDetailsPage;
