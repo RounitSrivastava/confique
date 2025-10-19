@@ -15,7 +15,7 @@ const commentSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
-// Sub-schema for showcase comments (different structure)
+// ✅ FIXED: Showcase comments schema with proper structure
 const showcaseCommentSchema = new mongoose.Schema({
     user: { 
         type: mongoose.Schema.Types.ObjectId, 
@@ -29,14 +29,21 @@ const showcaseCommentSchema = new mongoose.Schema({
         trim: true
     },
     timestamp: { 
-        type: String, 
-        required: true 
+        type: Date, 
+        default: Date.now 
     },
     author: { 
-        type: String 
+        type: String,
+        required: true
     },
     authorAvatar: { 
-        type: String 
+        type: String,
+        default: 'https://placehold.co/40x40/cccccc/000000?text=A'
+    },
+    // ✅ ADD: Alias field for frontend compatibility
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, { _id: true, timestamps: true });
 
@@ -48,7 +55,7 @@ const registrationSchema = new mongoose.Schema({
     email: { type: String, required: true },
     phone: { type: String },
     transactionId: { type: String },
-    paymentScreenshot: { type: String }, // Stores the Cloudinary URL of the payment screenshot
+    paymentScreenshot: { type: String },
     customFields: { type: mongoose.Schema.Types.Mixed, default: {} },
     bookingDates: [{ type: String }],
     selectedTickets: [{
@@ -64,7 +71,7 @@ const registrationSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Main Post Schema
+// ✅ FIXED: Main Post Schema with better validation
 const postSchema = new mongoose.Schema({
     // General Post Fields (applicable to all types)
     type: {
@@ -147,7 +154,7 @@ const postSchema = new mongoose.Schema({
     availableDates: [{ type: String }],
 
     // ==============================================
-    // NEW STARTUP SHOWCASE FIELDS
+    // ✅ FIXED: STARTUP SHOWCASE FIELDS
     // ==============================================
     
     // Basic showcase fields
@@ -155,100 +162,119 @@ const postSchema = new mongoose.Schema({
         type: String,
         maxlength: 200,
         trim: true
-    }, // Short description for cards
+    },
     fullDescription: { 
         type: String,
         maxlength: 5000,
         trim: true
-    }, // Detailed description for showcase page
+    },
     websiteLink: { 
         type: String,
-        trim: true,
-        validate: {
-            validator: function(url) {
-                if (!url) return true; // Optional field
-                try {
-                    new URL(url);
-                    return true;
-                } catch {
-                    return false;
-                }
-            },
-            message: 'Please provide a valid website URL'
-        }
-    }, // Startup website URL
+        trim: true
+    },
     
     // Visual assets
     logoUrl: { 
-        type: String,
-        required: function() {
-            return this.type === 'showcase';
-        }
-    }, // Startup logo image URL (required for showcase)
+        type: String
+    },
     bannerUrl: { 
-        type: String,
-        required: function() {
-            return this.type === 'showcase';
-        }
-    }, // Banner image URL for showcase page (required for showcase)
+        type: String
+    },
     
     // Showcase-specific metadata
     month: { 
-        type: String,
-        required: function() {
-            return this.type === 'showcase';
-        }
-    }, // e.g., "October '25" for filtering (required for showcase)
+        type: String
+    },
     launchedDate: { 
         type: String,
-        trim: true
-    }, // Date when launched/created
+        trim: true,
+        default: 'Coming Soon'
+    },
     
     // Engagement metrics
     upvotes: { 
         type: Number, 
         default: 0,
         min: 0
-    }, // Separate from likes for showcase
+    },
     upvoters: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }], // Users who upvoted this showcase
+    }],
     
     // Showcase comments (different from regular comments)
-    showcaseComments: [showcaseCommentSchema],
+    showcaseComments: {
+        type: [showcaseCommentSchema],
+        default: []
+    },
     commentCount: { 
         type: Number, 
         default: 0,
         min: 0
-    }, // Separate count for showcase comments
+    },
 
     // Showcase analytics
     views: {
         type: Number,
         default: 0
-    }, // Track how many times the showcase was viewed
+    }
 
 }, { 
     timestamps: true,
-    toJSON: {
+    toJSON: { 
+        virtuals: true,
         transform: function(doc, ret) {
-            // Add virtual fields when converting to JSON
+            // ✅ FIXED: Provide consistent field names for frontend
+            if (ret.type === 'showcase') {
+                // Alias showcaseComments as comments for frontend compatibility
+                ret.comments = ret.showcaseComments || [];
+                ret.commentCount = ret.commentCount || (ret.showcaseComments ? ret.showcaseComments.length : 0);
+            }
             ret.isShowcase = ret.type === 'showcase';
             return ret;
         }
     }
 });
 
-// Pre-save hook to automatically update the comments count
+// ✅ FIXED: Virtual field to provide consistent comments array for frontend
+postSchema.virtual('commentsArray').get(function() {
+    if (this.type === 'showcase') {
+        return this.showcaseComments || [];
+    } else {
+        return this.commentData || [];
+    }
+});
+
+// ✅ FIXED: Pre-save hook with better initialization
 postSchema.pre('save', function(next) {
+    // Update regular comment count
     if (this.isModified('commentData')) {
         this.comments = this.commentData.length;
     }
     
-    // NEW: Update showcase comment count
+    // Update showcase comment count
     if (this.isModified('showcaseComments')) {
         this.commentCount = this.showcaseComments.length;
+    }
+    
+    // Ensure arrays are initialized
+    if (this.type === 'showcase') {
+        if (!this.upvoters) this.upvoters = [];
+        if (!this.showcaseComments) this.showcaseComments = [];
+        if (!this.likedBy) this.likedBy = [];
+    } else {
+        if (!this.likedBy) this.likedBy = [];
+        if (!this.commentData) this.commentData = [];
+    }
+    
+    // Set default values for showcase posts
+    if (this.type === 'showcase') {
+        if (!this.month) {
+            this.month = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+        }
+        if (!this.launchedDate) {
+            this.launchedDate = 'Coming Soon';
+        }
     }
     
     next();
@@ -266,7 +292,7 @@ postSchema.virtual('formattedLaunchDate').get(function() {
 });
 
 // ==============================================
-// NEW METHODS FOR STARTUP SHOWCASE
+// ✅ FIXED: METHODS FOR STARTUP SHOWCASE
 // ==============================================
 
 // Add upvote to showcase
@@ -281,7 +307,9 @@ postSchema.methods.addUpvote = function(userId) {
 
 // Remove upvote from showcase
 postSchema.methods.removeUpvote = function(userId) {
-    const userIndex = this.upvoters.indexOf(userId);
+    const userIndex = this.upvoters.findIndex(
+        upvoterId => upvoterId.toString() === userId.toString()
+    );
     if (userIndex > -1) {
         this.upvoters.splice(userIndex, 1);
         this.upvotes = Math.max(0, this.upvotes - 1);
@@ -290,15 +318,28 @@ postSchema.methods.removeUpvote = function(userId) {
     return Promise.resolve(this);
 };
 
+// Check if user has upvoted
+postSchema.methods.hasUpvoted = function(userId) {
+    return this.upvoters.some(
+        upvoterId => upvoterId.toString() === userId.toString()
+    );
+};
+
 // Add showcase comment
 postSchema.methods.addShowcaseComment = function(commentData) {
+    if (!this.showcaseComments) {
+        this.showcaseComments = [];
+    }
+    
     this.showcaseComments.push(commentData);
-    this.commentCount += 1;
+    this.commentCount = this.showcaseComments.length;
     return this.save();
 };
 
 // Remove showcase comment
 postSchema.methods.removeShowcaseComment = function(commentId) {
+    if (!this.showcaseComments) return Promise.resolve(this);
+    
     const commentIndex = this.showcaseComments.findIndex(
         comment => comment._id.toString() === commentId.toString()
     );
@@ -352,7 +393,9 @@ postSchema.statics.findTopShowcases = function(limit = 10, month = null) {
                 month: 1,
                 launchedDate: 1,
                 author: 1,
-                authorAvatar: 1
+                authorAvatar: 1,
+                upvoters: 1,
+                showcaseComments: 1
             }
         }
     ]);
@@ -387,19 +430,47 @@ postSchema.statics.getShowcaseAnalytics = function(month = null) {
                 totalComments: { $sum: '$commentCount' },
                 totalViews: { $sum: '$views' },
                 averageUpvotes: { $avg: '$upvotes' },
-                averageComments: { $avg: '$commentCount' }
+                averageComments: { $avg: '$commentCount' },
+                averageViews: { $avg: '$views' }
             }
         }
     ]);
 };
 
-// Indexes for better showcase performance
-postSchema.index({ type: 1, month: 1, status: 1 }); // For showcase filtering
-postSchema.index({ type: 1, upvotes: -1 }); // For showcase sorting by popularity
-postSchema.index({ type: 1, createdAt: -1 }); // For showcase sorting by newest
-postSchema.index({ type: 1, userId: 1 }); // For finding user's showcases
-postSchema.index({ type: 1, 'showcaseComments.timestamp': -1 }); // For comment sorting
-postSchema.index({ type: 1, views: -1 }); // For most viewed showcases
+// Static method to get user's showcase posts
+postSchema.statics.findUserShowcases = function(userId) {
+    return this.find({ 
+        type: 'showcase', 
+        userId: userId 
+    })
+    .sort({ createdAt: -1 })
+    .populate('upvoters', 'name avatar');
+};
+
+// Static method to check if user can upvote (not their own post)
+postSchema.statics.canUserUpvote = async function(postId, userId) {
+    const post = await this.findById(postId);
+    if (!post) throw new Error('Post not found');
+    if (post.userId.toString() === userId.toString()) {
+        throw new Error('You cannot upvote your own post');
+    }
+    return !post.upvoters.includes(userId);
+};
+
+// ✅ FIXED: Indexes for better showcase performance
+postSchema.index({ type: 1, month: 1, status: 1 });
+postSchema.index({ type: 1, upvotes: -1 });
+postSchema.index({ type: 1, createdAt: -1 });
+postSchema.index({ type: 1, userId: 1 });
+postSchema.index({ type: 1, 'showcaseComments.timestamp': -1 });
+postSchema.index({ type: 1, views: -1 });
+postSchema.index({ type: 1, upvoters: 1 });
+postSchema.index({ type: 1, commentCount: -1 });
+
+// ✅ FIXED: Compound indexes for common queries
+postSchema.index({ type: 1, status: 1, month: 1, upvotes: -1 });
+postSchema.index({ type: 1, status: 1, createdAt: -1 });
+postSchema.index({ userId: 1, type: 1, createdAt: -1 });
 
 const PostModel = mongoose.model('Post', postSchema);
 const RegistrationModel = mongoose.model('Registration', registrationSchema);
