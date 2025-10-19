@@ -407,7 +407,7 @@ const ShowcaseComponent = ({
   const isAdmin = currentUser && currentUser.email === 'confique01@gmail.com';
   const effectiveLikedIdeas = likedIdeas.size > 0 ? likedIdeas : localLikedIdeas;
 
-  // Optimized API fetch function
+  // Enhanced API fetch function
   const apiFetch = useCallback(async (endpoint, options = {}) => {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     const headers = {
@@ -428,7 +428,7 @@ const ShowcaseComponent = ({
     const finalEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_URL}${finalEndpoint}`;
     
-    console.log(`🔗 API call: ${options.method || 'GET'} ${url}`);
+    console.log(`🔗 API call: ${options.method || 'GET'} ${url}`, options.body);
 
     try {
       const response = await fetch(url, { 
@@ -438,9 +438,20 @@ const ShowcaseComponent = ({
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
+        let errorText = 'No error message';
+        try {
+          errorText = await response.text();
+        } catch (e) {
+          console.error('Could not read error response:', e);
+        }
         console.error(`❌ API Error ${response.status}:`, errorText);
         throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      // Handle empty responses
+      const contentLength = response.headers.get('content-length');
+      if (contentLength === '0' || response.status === 204) {
+        return { ok: true, status: response.status };
       }
       
       return response;
@@ -542,7 +553,7 @@ const ShowcaseComponent = ({
     }
   }, [currentUser, apiFetch]);
 
-  // ✅ FIXED: Add showcase idea submission
+  // ✅ FIXED: Add showcase idea submission (WITH CONTENT FIELD)
   const handleAddIdeaSubmit = async (ideaData) => {
     if (!currentUser) {
       onRequireLogin();
@@ -557,6 +568,7 @@ const ShowcaseComponent = ({
         body: JSON.stringify({
           title: ideaData.title,
           description: ideaData.description,
+          content: ideaData.fullDescription || ideaData.description, // ✅ REQUIRED FIELD
           fullDescription: ideaData.fullDescription,
           websiteLink: ideaData.websiteLink,
           launchedDate: ideaData.launchedDate,
@@ -594,84 +606,54 @@ const ShowcaseComponent = ({
     }
   };
 
-  // Initialize data
-  useEffect(() => {
-    const initializeApp = async () => {
-      console.log('🚀 Initializing Showcase Component...');
-      await fetchIdeas();
-      await fetchLikedIdeas();
-    };
-
-    initializeApp();
-  }, [fetchIdeas, fetchLikedIdeas]);
-
-  const months = ['October \'25'];
-
-  const filteredIdeas = ideas.filter(idea => {
-    if (!idea || idea.month !== activeMonth) return false;
-    
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    const nameMatches = idea.name?.toLowerCase().includes(lowerSearchTerm);
-    const descriptionMatches = idea.description?.toLowerCase().includes(lowerSearchTerm);
-
-    return nameMatches || descriptionMatches;
-  }).sort((a, b) => b.upvotes - a.upvotes);
-
-  // ✅ FIXED: Upvote showcase idea
+  // ✅ FIXED: Upvote showcase idea with proper error handling
   const handleUpvoteIdea = async (ideaId) => {
     if (!currentUser) {
       onRequireLogin();
       return;
     }
 
-    const idea = ideas.find(idea => idea.id === ideaId);
-    if (!idea) {
-      console.error('❌ Idea not found for upvote:', ideaId);
-      return;
-    }
-
     console.log(`🔼 Upvoting idea ${ideaId} for user ${currentUser._id}`);
 
-    // ✅ FIXED: Let backend handle the toggle logic
-    // Just send the upvote request regardless of current state
-    
     try {
       const response = await apiFetch(`/posts/${ideaId}/upvote`, {
         method: 'PUT',
+        body: JSON.stringify({
+          userId: currentUser._id // ✅ Ensure userId is sent
+        }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Upvote failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Upvote failed with response:', errorText);
+        throw new Error(`Upvote failed: ${response.status}`);
       }
 
       const result = await response.json();
       console.log('✅ Upvote successful:', result);
       
       // ✅ FIXED: Update local state based on backend response
-      if (result.success) {
-        setIdeas(prevIdeas =>
-          prevIdeas.map(idea =>
-            idea.id === ideaId
-              ? { 
-                  ...idea, 
-                  upvotes: result.upvotes,
-                  upvoters: result.upvoters || idea.upvoters
-                }
-              : idea
-          )
-        );
+      setIdeas(prevIdeas =>
+        prevIdeas.map(idea =>
+          idea.id === ideaId
+            ? { 
+                ...idea, 
+                upvotes: result.upvotes || idea.upvotes + (result.hasUpvoted ? 1 : -1),
+                upvoters: result.upvoters || idea.upvoters
+              }
+            : idea
+        )
+      );
 
-        // Update liked ideas set
-        if (result.hasUpvoted) {
-          setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
-        } else {
-          setLocalLikedIdeas(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(ideaId);
-            return newSet;
-          });
-        }
+      // Update liked ideas set
+      if (result.hasUpvoted) {
+        setLocalLikedIdeas(prev => new Set([...prev, ideaId]));
+      } else {
+        setLocalLikedIdeas(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(ideaId);
+          return newSet;
+        });
       }
       
     } catch (error) {
@@ -705,36 +687,59 @@ const ShowcaseComponent = ({
     }
   };
 
-  // ✅ FIXED: Add comment to showcase idea
+  // ✅ FIXED: Add comment to showcase idea with proper error handling
   const handleAddComment = async (ideaId, commentText) => {
     if (!currentUser) {
       onRequireLogin();
       return;
     }
 
+    if (!commentText.trim()) {
+      throw new Error('Comment cannot be empty');
+    }
+
     console.log(`💬 Adding comment to idea ${ideaId}`);
 
+    const commentData = {
+      text: commentText.trim(),
+      author: currentUser.name,
+      authorAvatar: currentUser.avatar,
+      userId: currentUser._id,
+      timestamp: new Date().toISOString()
+    };
+
     try {
-      const response = await apiFetch(`/posts/${ideaId}/showcase-comments`, {
+      // Try main endpoint first
+      let response = await apiFetch(`/posts/${ideaId}/showcase-comments`, {
         method: 'POST',
-        body: JSON.stringify({ text: commentText }),
+        body: JSON.stringify(commentData),
       });
 
+      // If main endpoint fails, try alternative
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Comment failed: ${response.status}`);
+        console.log('🔄 Trying alternative comment endpoint...');
+        response = await apiFetch(`/posts/${ideaId}/comments`, {
+          method: 'POST',
+          body: JSON.stringify(commentData),
+        });
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Comment failed:', errorText);
+        throw new Error(`Failed to add comment: ${response.status}`);
       }
 
       const newComment = await response.json();
       console.log('✅ Comment successful:', newComment);
       
-      // ✅ FIXED: Update local state with new comment
+      // Update local state
       setIdeas(prevIdeas =>
         prevIdeas.map(idea =>
           idea.id === ideaId
             ? {
                 ...idea,
-                comments: [newComment, ...idea.comments],
+                comments: [newComment, ...(idea.comments || [])],
                 commentCount: (idea.commentCount || 0) + 1
               }
             : idea
@@ -765,6 +770,29 @@ const ShowcaseComponent = ({
     fetchIdeas();
     fetchLikedIdeas();
   };
+
+  // Initialize data
+  useEffect(() => {
+    const initializeApp = async () => {
+      console.log('🚀 Initializing Showcase Component...');
+      await fetchIdeas();
+      await fetchLikedIdeas();
+    };
+
+    initializeApp();
+  }, [fetchIdeas, fetchLikedIdeas]);
+
+  const months = ['October \'25'];
+
+  const filteredIdeas = ideas.filter(idea => {
+    if (!idea || idea.month !== activeMonth) return false;
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const nameMatches = idea.name?.toLowerCase().includes(lowerSearchTerm);
+    const descriptionMatches = idea.description?.toLowerCase().includes(lowerSearchTerm);
+
+    return nameMatches || descriptionMatches;
+  }).sort((a, b) => b.upvotes - a.upvotes);
 
   // Conditional Render: Show Project Details Page
   if (isDetailsView) {
