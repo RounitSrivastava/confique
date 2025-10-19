@@ -5,16 +5,6 @@ const Post = require('../models/Post');
 const jwt = require('jsonwebtoken');
 const { protect } = require('../middleware/auth');
 const { passport, generateTokenForGoogleUser, isGoogleOAuthConfigured } = require('../config/passport-setup');
-const rateLimit = require('express-rate-limit');
-
-// Check if express-validator is available
-let expressValidator;
-try {
-  expressValidator = require('express-validator');
-} catch (error) {
-  console.log('express-validator not available, using basic validation');
-  expressValidator = null;
-}
 
 const router = express.Router();
 
@@ -32,45 +22,6 @@ const validateEnv = () => {
 };
 
 validateEnv();
-
-// ==============================================
-// ✅ RATE LIMITING
-// ==============================================
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // More restrictive than other endpoints
-  message: {
-    success: false,
-    message: 'Too many authentication attempts, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: {
-    success: false,
-    message: 'Too many requests, please try again later.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// ==============================================
-// ✅ SECURITY MIDDLEWARE
-// ==============================================
-
-const securityHeaders = (req, res, next) => {
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-};
-
-router.use(securityHeaders);
 
 // ==============================================
 // ✅ HELPER FUNCTIONS
@@ -129,7 +80,7 @@ const normalizeAvatar = (avatar) => {
   };
 };
 
-// Basic validation functions (fallback if express-validator not available)
+// Basic validation functions
 const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -139,7 +90,6 @@ const validatePassword = (password) => {
   if (password.length < 6) {
     return 'Password must be at least 6 characters long';
   }
-  // Removed complex validation to avoid breaking existing users
   return null;
 };
 
@@ -161,7 +111,7 @@ const sanitizeInput = (req, res, next) => {
 // @desc    Register a new user with email and password
 // @route   POST /api/auth/register
 // @access  Public
-router.post('/register', authLimiter, sanitizeInput, asyncHandler(async (req, res) => {
+router.post('/register', sanitizeInput, asyncHandler(async (req, res) => {
   try {
     const { name, email, password, avatar } = req.body;
     
@@ -254,7 +204,7 @@ router.post('/register', authLimiter, sanitizeInput, asyncHandler(async (req, re
 // @desc    Authenticate user with email and password & get token
 // @route   POST /api/auth/login
 // @access  Public
-router.post('/login', authLimiter, asyncHandler(async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -385,7 +335,7 @@ if (isGoogleOAuthConfigured()) {
 // @desc    Get current user profile
 // @route   GET /api/auth/profile
 // @access  Private
-router.get('/profile', protect, generalLimiter, asyncHandler(async (req, res) => {
+router.get('/profile', protect, asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password');
     if (!user) {
@@ -421,7 +371,7 @@ router.get('/profile', protect, generalLimiter, asyncHandler(async (req, res) =>
 // @desc    Get user data for showcase (minimal profile)
 // @route   GET /api/auth/showcase-profile
 // @access  Private
-router.get('/showcase-profile', protect, generalLimiter, asyncHandler(async (req, res) => {
+router.get('/showcase-profile', protect, asyncHandler(async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
       .select('name email avatar upvotedPosts bookmarkedPosts')
@@ -462,7 +412,7 @@ router.get('/showcase-profile', protect, generalLimiter, asyncHandler(async (req
 // @desc    Check if user can submit to showcase (deadline & limits)
 // @route   GET /api/auth/can-submit-showcase
 // @access  Private
-router.get('/can-submit-showcase', protect, generalLimiter, asyncHandler(async (req, res) => {
+router.get('/can-submit-showcase', protect, asyncHandler(async (req, res) => {
   try {
     const SUBMISSION_DEADLINE = new Date('2025-10-31T23:59:59').getTime();
     const now = new Date().getTime();
@@ -498,7 +448,7 @@ router.get('/can-submit-showcase', protect, generalLimiter, asyncHandler(async (
 // @desc    Check if user exists (for password reset flow)
 // @route   POST /api/auth/check-user
 // @access  Public
-router.post('/check-user', generalLimiter, asyncHandler(async (req, res) => {
+router.post('/check-user', asyncHandler(async (req, res) => {
   try {
     const { email } = req.body;
     
@@ -544,7 +494,7 @@ router.post('/check-user', generalLimiter, asyncHandler(async (req, res) => {
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
-router.post('/logout', protect, generalLimiter, asyncHandler(async (req, res) => {
+router.post('/logout', protect, asyncHandler(async (req, res) => {
   try {
     console.log('👋 User logged out:', req.user.email);
     
@@ -562,7 +512,7 @@ router.post('/logout', protect, generalLimiter, asyncHandler(async (req, res) =>
 }));
 
 // Health check route
-router.get('/', generalLimiter, (req, res) => {
+router.get('/', (req, res) => {
   res.json({ 
     success: true,
     message: 'Auth API is working!',
