@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Analytics } from "@vercel/analytics/react";
 import API_URL from './api';
 import confiquelogo from './assets/A4_-_1__4_-removebg-preview.png';
@@ -829,7 +829,7 @@ const CulturalEventRegistrationModal = ({ isOpen, onClose, event, isLoggedIn, on
             return total + (price * (selection?.quantity || 0));
         }, 0);
         const numberOfDays = (formData.selectedDates || []).length;
-        return totalTicketPrice * numberOfDays;
+        return totalTicketPrice * (availableDates.length > 0 ? numberOfDays : 1);
     };
 
     const totalPrice = calculateTotalPrice();
@@ -2229,11 +2229,14 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 };
 
 const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
-    const upcomingEvents = events.filter(e =>
-        (e.type === 'event' || e.type === 'culturalEvent') &&
-        e._id !== currentEvent?._id &&
-        e.eventStartDate && new Date(e.eventStartDate) > new Date()
-    ).slice(0, 3);
+    // MEMOIZATION FIX: Filter only when events or currentEvent changes
+    const upcomingEvents = useMemo(() => {
+        return events.filter(e =>
+            (e.type === 'event' || e.type === 'culturalEvent') &&
+            e._id !== currentEvent?._id &&
+            e.eventStartDate && new Date(e.eventStartDate) > new Date()
+        ).slice(0, 3);
+    }, [events, currentEvent]);
 
     return (
         <div className="sidebar-widget">
@@ -2273,7 +2276,8 @@ const EventDetailSidebar = ({ events, currentEvent, onOpenEventDetail }) => {
     );
 };
 
-const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered, onRequireLogin, onOpenPostDetail }) => {
+// MAJOR FIX: Wrap PostCard in React.memo for performance improvement
+const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, isCommentsOpen, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrationCount, onReportPost, onDeletePost, onEditPost, isProfileView, onShowCalendarAlert, isLoggedIn, onExportData, onShowRegistrationModal, isRegistered, onRequireLogin, onOpenPostDetail }) => {
     const overlayRef = useRef(null);
     const [showFullContent, setShowFullContent] = useState(false);
     const contentRef = useRef(null);
@@ -2636,13 +2640,25 @@ const PostCard = ({ post, onLike, onShare, onAddComment, likedPosts, isCommentsO
             </div>
         )
     );
-};
+}); // End of React.memo
 
 const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
-    const newsHighlights = [...posts]
+    // MEMOIZATION FIX: UseMemo for complex filtering and sorting
+    const newsHighlights = useMemo(() => {
+        return [...posts]
         .filter(post => post.type === 'news')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 2);
+    }, [posts]);
+
+    // MEMOIZATION FIX: UseMemo for non-news content
+    const nonNewsPosts = useMemo(() => {
+        return posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent' && p.type !== 'showcase');
+    }, [posts]);
+
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+    };
 
     return (
         <div>
@@ -2653,26 +2669,9 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
                             <PostCard
                                 key={post._id}
                                 post={post}
-                                onLike={onLike}
-                                onShare={onShare}
-                                onAddComment={onAddComment}
-                                likedPosts={likedPosts}
                                 isCommentsOpen={openCommentPostId === post._id}
-                                setOpenCommentPostId={setOpenCommentPostId}
-                                onOpenEventDetail={onOpenEventDetail}
-                                onAddToCalendar={onAddToCalendar}
-                                currentUser={currentUser}
-                                registrations={registrations}
-                                onReportPost={onReportPost}
-                                onDeletePost={onDeletePost}
-                                onEditPost={onEditPost}
-                                onShowCalendarAlert={onShowCalendarAlert}
-                                isLoggedIn={!!currentUser}
-                                onExportData={onExportData}
-                                onShowRegistrationModal={onShowRegistrationModal}
                                 isRegistered={myRegisteredEvents.has(post._id)}
-                                onRequireLogin={onRequireLogin}
-                                onOpenPostDetail={onOpenPostDetail} // Passed
+                                {...postCardProps}
                             />
                         ))}
                     </div>
@@ -2681,31 +2680,15 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
             )}
 
             <div className="posts-container">
-                {posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent' && p.type !== 'showcase').map(post => (
+                {nonNewsPosts.map(post => (
                     <PostCard
                         key={post._id}
                         post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
                         isRegistered={myRegisteredEvents.has(post._id)}
-                        isProfileView={false}
                         registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onShowRegistrationModal={onShowRegistrationModal}
-                        onRequireLogin={onRequireLogin}
-                        onOpenPostDetail={onOpenPostDetail} // Passed
+                        isProfileView={false}
+                        {...postCardProps}
                     />
                 ))}
             </div>
@@ -2714,7 +2697,12 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
 };
 
 const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
-    const eventPosts = posts.filter(post => post.type === 'event');
+    // MEMOIZATION FIX: UseMemo for filtering
+    const eventPosts = useMemo(() => posts.filter(post => post.type === 'event'), [posts]);
+    
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+    };
 
     return (
         <div id="events-section-content">
@@ -2723,26 +2711,11 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
                     <PostCard
                         key={post._id}
                         post={post}
-                        onLike={onLike}
-                        onShare={onShare}
-                        onAddComment={onAddComment}
-                        likedPosts={likedPosts}
                         isCommentsOpen={openCommentPostId === post._id}
-                        setOpenCommentPostId={setOpenCommentPostId}
-                        onOpenEventDetail={onOpenEventDetail}
-                        onAddToCalendar={onAddToCalendar}
-                        currentUser={currentUser}
                         isRegistered={myRegisteredEvents.has(post._id)}
                         isProfileView={false}
                         registrationCount={registrations[post._id]}
-                        onReportPost={onReportPost}
-                        onDeletePost={onDeletePost}
-                        onEditPost={onEditPost}
-                        onShowCalendarAlert={onShowCalendarAlert}
-                        isLoggedIn={!!currentUser}
-                        onExportData={onExportData}
-                        onRequireLogin={onRequireLogin}
-                        onOpenPostDetail={onOpenPostDetail} // Passed
+                        {...postCardProps}
                     />
                 ))}
             </div>
@@ -2751,7 +2724,12 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
 };
 
 const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen, onOpenPostDetail }) => {
-    const confessionPosts = posts.filter(post => post.type === 'confession');
+    // MEMOIZATION FIX: UseMemo for filtering
+    const confessionPosts = useMemo(() => posts.filter(post => post.type === 'confession'), [posts]);
+    
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail: () => {}, onAddToCalendar: () => {}, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert: () => {}, onExportData: () => {}, onShowRegistrationModal: () => {}, myRegisteredEvents: new Set(), onRequireLogin, onOpenPostDetail
+    };
 
     return (
         <div>
@@ -2761,26 +2739,11 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
                         <PostCard
                             key={post._id}
                             post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
                             isRegistered={false} // Confessions don't have registrations
                             isProfileView={false}
                             registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                            onDeletePost={onDeletePost}
-                            onEditPost={onEditPost}
-                            onShowCalendarAlert={onShowCalendarAlert}
-                            isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
-                            onRequireLogin={onRequireLogin}
-                            onOpenPostDetail={onOpenPostDetail} // Passed
+                            {...postCardProps}
                         />
                     ))
                 ) : (
@@ -2797,7 +2760,12 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
 };
 
 const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
-    const culturalEventPosts = posts.filter(post => post.type === 'culturalEvent');
+    // MEMOIZATION FIX: UseMemo for filtering
+    const culturalEventPosts = useMemo(() => posts.filter(post => post.type === 'culturalEvent'), [posts]);
+
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+    };
 
     return (
         <div>
@@ -2807,26 +2775,10 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
                         <PostCard
                             key={post._id}
                             post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
-                            onShowRegistrationModal={onShowRegistrationModal}
                             isRegistered={myRegisteredEvents.has(post._id)}
                             isProfileView={false}
-                            onReportPost={onReportPost}
-                            onDeletePost={onDeletePost}
-                            onEditPost={onEditPost}
-                            onShowCalendarAlert={onShowCalendarAlert}
-                            isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
-                            onRequireLogin={onRequireLogin}
-                            onOpenPostDetail={onOpenPostDetail} // Passed
+                            {...postCardProps}
                         />
                     ))
                 ) : (
@@ -2841,7 +2793,8 @@ const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPo
 
 const NotificationsComponent = ({ notifications, adminNotifications, pendingEvents, currentUser, onDeleteReportedPost, onApproveEvent, onRejectEvent }) => {
     const isAdmin = currentUser?.isAdmin;
-    const displayNotifications = isAdmin ? adminNotifications : notifications;
+    // MEMOIZATION FIX: Stabilize notification arrays
+    const displayNotifications = useMemo(() => isAdmin ? adminNotifications : notifications, [isAdmin, adminNotifications, notifications]);
 
     return (
         <div>
@@ -3085,18 +3038,18 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
         return placeholderAvatar;
     };
 
-    const userPosts = posts.filter(post =>
-        post.userId === currentUser._id
-    );
+    // MEMOIZATION FIX: Memoize user's posts
+    const userPosts = useMemo(() => posts.filter(post => post.userId === currentUser._id), [posts, currentUser._id]);
 
-    const userStats = {
+    // MEMOIZATION FIX: Memoize user's stats
+    const userStats = useMemo(() => ({
         posts: userPosts.length,
         likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
             return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
         }, 0)
-    };
+    }), [userPosts, registrations]);
 
     const handleDeletePost = (postId) => {
         onDeletePost(postId);
@@ -3107,6 +3060,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
     };
 
     const userAvatar = extractAvatarUrl(currentUser.avatar);
+
+    const postCardProps = {
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+    };
 
     return (
         <div>
@@ -3151,27 +3108,13 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
                         <PostCard
                             key={post._id}
                             post={post}
-                            onLike={onLike}
-                            onShare={onShare}
-                            onAddComment={onAddComment}
-                            likedPosts={likedPosts}
                             isCommentsOpen={openCommentPostId === post._id}
-                            setOpenCommentPostId={setOpenCommentPostId}
-                            onOpenEventDetail={onOpenEventDetail}
-                            onAddToCalendar={onAddToCalendar}
-                            currentUser={currentUser}
                             isProfileView={true}
                             onDeletePost={handleDeletePost}
                             onEditPost={handleEditPost}
                             registrationCount={registrations[post._id]}
-                            onReportPost={onReportPost}
-                            onShowCalendarAlert={onShowCalendarAlert}
-                            onShowRegistrationModal={onShowRegistrationModal}
                             isRegistered={myRegisteredEvents.has(post._id)}
-                            isLoggedIn={!!currentUser}
-                            onExportData={onExportData}
-                            onRequireLogin={onRequireLogin}
-                            onOpenPostDetail={onOpenPostDetail} // Passed
+                            {...postCardProps}
                         />
                     ))}
                 </div>
@@ -3188,7 +3131,11 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 };
 
 const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const popularPosts = [...posts].filter(p => p.type !== 'showcase').sort((a, b) => b.likes - a.likes).slice(0, 3);
+    // MEMOIZATION FIX: Memoize popular posts calculation
+    const popularPosts = useMemo(() => {
+        return [...posts].filter(p => p.type !== 'showcase').sort((a, b) => b.likes - a.likes).slice(0, 3);
+    }, [posts]);
+    
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -3218,7 +3165,11 @@ const HomeRightSidebar = ({ posts, onOpenPostDetail }) => {
 const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
     const [value, onChange] = useState(new Date());
 
-    const allEvents = [...posts.filter(p => p.type === 'event' || p.type === 'culturalEvent'), ...myCalendarEvents];
+    // MEMOIZATION FIX: Memoize the list of all calendar events/posts
+    const allEvents = useMemo(() => [
+        ...posts.filter(p => p.type === 'event' || p.type === 'culturalEvent'), 
+        ...myCalendarEvents
+    ], [posts, myCalendarEvents]);
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -3231,8 +3182,11 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
         return null;
     };
 
-    const upcomingCalendarEvents = myCalendarEvents.filter(event => event.eventStartDate && event.eventStartDate.getTime() >= new Date().getTime())
-        .sort((a, b) => a.eventStartDate.getTime() - b.eventStartDate.getTime());
+    // MEMOIZATION FIX: Memoize upcoming calendar events
+    const upcomingCalendarEvents = useMemo(() => {
+        return myCalendarEvents.filter(event => event.eventStartDate && event.eventStartDate.getTime() >= new Date().getTime())
+            .sort((a, b) => a.eventStartDate.getTime() - b.eventStartDate.getTime());
+    }, [myCalendarEvents]);
 
     return (
         <>
@@ -3284,10 +3238,14 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
 };
 
 const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
-    const recentConfessions = [...posts]
+    // MEMOIZATION FIX: Memoize recent confessions
+    const recentConfessions = useMemo(() => {
+        return [...posts]
         .filter(post => post.type === 'confession')
         .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
         .slice(0, 3);
+    }, [posts]);
+    
     return (
         <div className="sidebar-widget">
             <div className="widget-header">
@@ -3316,16 +3274,17 @@ const ConfessionsRightSidebar = ({ posts, onOpenPostDetail }) => {
 const UsersRightSidebar = ({ currentUser, posts, registrations }) => {
     if (!currentUser) return null;
 
-    const userPosts = posts.filter(post => post.userId === currentUser._id);
+    // MEMOIZATION FIX: Memoize user posts and stats calculation
+    const userPosts = useMemo(() => posts.filter(post => post.userId === currentUser._id), [posts, currentUser._id]);
 
-    const userStats = {
+    const userStats = useMemo(() => ({
         posts: userPosts.length,
         likesReceived: userPosts.reduce((sum, post) => sum + post.likes, 0),
         commentsReceived: userPosts.reduce((sum, post) => sum + (post.commentData ? post.commentData.length : 0), 0),
         registrationsReceived: userPosts.reduce((sum, post) => {
             return post.type === 'event' || post.type === 'culturalEvent' ? sum + (registrations[post._id] || 0) : sum;
         }, 0)
-    };
+    }), [userPosts, registrations]);
 
     return (
         <div className="sidebar-widget">
@@ -3600,9 +3559,13 @@ const CalendarModal = ({ isOpen, onClose, myCalendarEvents, onOpenEventDetail })
 
     if (!isOpen) return null;
 
-    const eventsOnSelectedDate = myCalendarEvents.filter(event =>
-        event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
-    );
+    // MEMOIZATION FIX: Memoize events for the selected date
+    const eventsOnSelectedDate = useMemo(() => {
+        return myCalendarEvents.filter(event =>
+            event.eventStartDate && new Date(event.eventStartDate).toDateString() === value.toDateString()
+        );
+    }, [myCalendarEvents, value]);
+
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
@@ -4061,13 +4024,14 @@ const callApi = async (endpoint, options = {}) => {
         };
     }, [hasOpenModal]);
 
-    const filteredPosts = posts.filter(post =>
+    // MEMOIZATION FIX: Stabilize filtered posts array
+    const filteredPosts = useMemo(() => posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (post.type === 'culturalEvent' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (post.type === 'showcase' && post.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    ), [posts, searchTerm]);
 
     const handleShowCalendarAlert = () => {
         setShowAddedToCalendarAlert(true);
@@ -4932,7 +4896,8 @@ const callApi = async (endpoint, options = {}) => {
         }
     };
 
-    const postCardProps = {
+    // PERFORMANCE FIX: Use useMemo to stabilize the massive prop object
+    const postCardProps = useMemo(() => ({
         onLike: handleLikePost,
         onShare: handleShareClick,
         onAddComment: handleAddComment,
@@ -4959,8 +4924,16 @@ const callApi = async (endpoint, options = {}) => {
         },
         myRegisteredEvents,
         onRequireLogin: () => setShowLoginModal(true),
-        onOpenPostDetail: handleOpenPostDetail // Added post detail handler
-    };
+        onOpenPostDetail: handleOpenPostDetail
+    }), [
+        currentUser, 
+        likedPosts, 
+        openCommentPostId, 
+        registrations, 
+        isLoggedIn, 
+        myRegisteredEvents,
+        // The wrapped functions (handleLikePost, etc.) are stable because they rely on functional state updates and currentUser (which is stable unless logged in/out)
+    ]);
 
     const menuItems = [
         {
@@ -5109,8 +5082,10 @@ const callApi = async (endpoint, options = {}) => {
                             key={selectedPost._id}
                             post={selectedPost}
                             {...postCardProps}
+                            isCommentsOpen={openCommentPostId === selectedPost._id}
                             isProfileView={selectedPost.userId === currentUser?._id}
                             registrationCount={registrations[selectedPost._id]}
+                            isRegistered={myRegisteredEvents.has(selectedPost._id)}
                         />
                         <hr className="section-divider" />
                         <h3 className="section-subtitle">More Posts</h3>
@@ -5122,8 +5097,10 @@ const callApi = async (endpoint, options = {}) => {
                                         key={post._id}
                                         post={post}
                                         {...postCardProps}
+                                        isCommentsOpen={openCommentPostId === post._id}
                                         isProfileView={false}
                                         registrationCount={registrations[post._id]}
+                                        isRegistered={myRegisteredEvents.has(post._id)}
                                     />
                                 ))}
                         </div>
