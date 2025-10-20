@@ -397,18 +397,13 @@ const CommentItem = ({ comment, currentUser }) => {
 };
 
 // Comment Section Component - Handles displaying and adding comments
+// Comment Section Component - Handles displaying and adding comments
 const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, isLoggedIn, onRequireLogin }) => {
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
-    // CRITICAL FIX: Proper login state detection - using multiple checks
-    const actuallyLoggedIn = Boolean(
-        isLoggedIn && 
-        currentUser && 
-        currentUser._id && 
-        currentUser._id !== 'undefined' && 
-        currentUser._id !== 'null'
-    );
+    // CRITICAL FIX: Proper login state detection - using Boolean coercion
+    const actuallyLoggedIn = Boolean(isLoggedIn && currentUser && currentUser._id);
 
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
@@ -3688,16 +3683,11 @@ const App = () => {
     // CRITICAL FIX: Add loading state
     const [isLoading, setIsLoading] = useState(true);
 
-    // CRITICAL FIX: Proper login state initialization
     const [currentUser, setCurrentUser] = useState(() => {
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
         return savedUser || null;
     });
-    
-    const [isLoggedIn, setIsLoggedIn] = useState(() => {
-        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        return !!(savedUser && savedUser._id && savedUser.token);
-    });
+    const [isLoggedIn, setIsLoggedIn] = useState(!!currentUser);
 
     const [likedPosts, setLikedPosts] = useState(() => {
         const savedLikes = localStorage.getItem('likedPosts');
@@ -5419,4 +5409,3 @@ const callApi = async (endpoint, options = {}) => {
 };
 
 export default App;
-// sh
