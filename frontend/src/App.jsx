@@ -397,12 +397,13 @@ const CommentItem = ({ comment, currentUser }) => {
 };
 
 // Comment Section Component - Handles displaying and adding comments
+// Comment Section Component - Handles displaying and adding comments
 const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, isLoggedIn, onRequireLogin }) => {
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
-    // CRITICAL FIX: Proper login state detection
-    const actuallyLoggedIn = isLoggedIn && currentUser && currentUser._id;
+    // CRITICAL FIX: Proper login state detection - using Boolean coercion
+    const actuallyLoggedIn = Boolean(isLoggedIn && currentUser && currentUser._id);
 
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
@@ -418,6 +419,9 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
             setShowCommentAlert(true);
         }
     };
+
+    // Debug logging to help diagnose the issue
+    console.log('CommentSection - isLoggedIn:', isLoggedIn, 'currentUser:', currentUser, 'actuallyLoggedIn:', actuallyLoggedIn);
 
     return (
         <div className="comment-section">
