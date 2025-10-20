@@ -401,9 +401,9 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
-    // CRITICAL FIX: Proper login state detection - using multiple checks
+    // CRITICAL FIX: Proper login state detection - adding || false for robustness
     const actuallyLoggedIn = Boolean(
-        isLoggedIn && 
+        (isLoggedIn || false) && 
         currentUser && 
         currentUser._id && 
         currentUser._id !== 'undefined' && 
@@ -2462,17 +2462,17 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
 
     const handleCardClick = (e) => {
         if (isCommentsOpen) return;
-       
+        
         // CRITICAL FIX 3: Robust check for not triggering single post view
         // Check if the click originated from an interactive elements (button/link/icon/dropdown)
         const isInteractiveElement = e.target.closest('button') || 
-                                     e.target.closest('a') || 
-                                     e.target.closest('.post-options-container') ||
-                                     e.target.closest('.post-actions') || 
-                                     e.target.closest('.event-action-buttons-top') ||
-                                     e.target.closest('.show-more-button') ||
-                                     e.target.closest('.post-avatar-container');
-       
+                                           e.target.closest('a') || 
+                                           e.target.closest('.post-options-container') ||
+                                           e.target.closest('.post-actions') || 
+                                           e.target.closest('.event-action-buttons-top') ||
+                                           e.target.closest('.show-more-button') ||
+                                           e.target.closest('.post-avatar-container');
+        
         if (isInteractiveElement) return;
 
         if (post.type === 'event' || post.type === 'culturalEvent') {
@@ -2688,11 +2688,13 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
         prevProps.isRegistered === nextProps.isRegistered &&
         prevProps.registrationCount === nextProps.registrationCount &&
         prevProps.likedPosts === nextProps.likedPosts && // Compare the Set reference
-        prevProps.isLoggedIn === nextProps.isLoggedIn // CRITICAL FIX: Add isLoggedIn to comparison
+        prevProps.isLoggedIn === nextProps.isLoggedIn &&
+        // ✅ CRITICAL FIX TO RESOLVE COMMENT BOX ISSUE: Include currentUser in memoization check
+        prevProps.currentUser === nextProps.currentUser
     );
 }); // End of React.memo
 
-const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
+const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail, isLoggedIn }) => {
     // MEMOIZATION FIX: UseMemo for complex filtering and sorting
     const newsHighlights = useMemo(() => {
         return [...posts]
@@ -2706,8 +2708,10 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
         return posts.filter(p => p.type !== 'news' && p.type !== 'culturalEvent' && p.type !== 'showcase');
     }, [posts]);
 
+    // FIX: Added isLoggedIn to postCardProps to ensure CommentSection gets the correct status
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail,
+        isLoggedIn: isLoggedIn 
     };
 
     return (
@@ -2746,12 +2750,14 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     );
 };
 
-const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
+const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, myRegisteredEvents, onRequireLogin, onOpenPostDetail, isLoggedIn }) => {
     // MEMOIZATION FIX: UseMemo for filtering
     const eventPosts = useMemo(() => posts.filter(post => post.type === 'event'), [posts]);
     
+    // FIX: Added isLoggedIn to postCardProps to ensure CommentSection gets the correct status
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, myRegisteredEvents, onRequireLogin, onOpenPostDetail,
+        isLoggedIn: isLoggedIn
     };
 
     return (
@@ -2773,12 +2779,14 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     );
 };
 
-const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen, onOpenPostDetail }) => {
+const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onRequireLogin, setIsModalOpen, onOpenPostDetail, isLoggedIn }) => {
     // MEMOIZATION FIX: UseMemo for filtering
     const confessionPosts = useMemo(() => posts.filter(post => post.type === 'confession'), [posts]);
     
+    // FIX: Added isLoggedIn to postCardProps to ensure CommentSection gets the correct status
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail: () => {}, onAddToCalendar: () => {}, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert: () => {}, onExportData: () => {}, onShowRegistrationModal: () => {}, myRegisteredEvents: new Set(), onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail: () => {}, onAddToCalendar: () => {}, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert: () => {}, onExportData: () => {}, onShowRegistrationModal: () => {}, myRegisteredEvents: new Set(), onRequireLogin, onOpenPostDetail,
+        isLoggedIn: isLoggedIn
     };
 
     return (
@@ -2809,12 +2817,14 @@ const ConfessionsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts
     );
 };
 
-const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
+const CulturalEventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail, isLoggedIn }) => {
     // MEMOIZATION FIX: UseMemo for filtering
     const culturalEventPosts = useMemo(() => posts.filter(post => post.type === 'culturalEvent'), [posts]);
 
+    // FIX: Added isLoggedIn to postCardProps to ensure CommentSection gets the correct status
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail,
+        isLoggedIn: isLoggedIn
     };
 
     return (
@@ -3069,7 +3079,7 @@ const ProfileSettingsModal = ({ isOpen, onClose, onSave, currentUser }) => {
     );
 };
 
-const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail }) => {
+const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, likedPosts, openCommentPostId, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, setIsModalOpen, onDeletePost, onEditPost, registrations, onReportPost, onEditProfile, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail, isLoggedIn }) => {
     if (!currentUser) {
         return (
             <div>
@@ -3112,8 +3122,10 @@ const UsersComponent = ({ posts, currentUser, onLike, onShare, onAddComment, lik
 
     const userAvatar = extractAvatarUrl(currentUser.avatar);
 
+    // FIX: Added isLoggedIn to postCardProps to ensure CommentSection gets the correct status
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail,
+        isLoggedIn: isLoggedIn
     };
 
     return (
@@ -5049,7 +5061,7 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Home',
             icon: <Home className="nav-icon" />,
             action: () => setActiveSection('home'),
-            component: () => <HomeComponent posts={filteredPosts} {...postCardProps} />,
+            component: () => <HomeComponent posts={filteredPosts} isLoggedIn={isLoggedIn} {...postCardProps} />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
         {
@@ -5057,7 +5069,7 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Events',
             icon: <CalendarIcon className="nav-icon" />,
             action: () => setActiveSection('events'),
-            component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} {...postCardProps} />,
+            component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} isLoggedIn={isLoggedIn} {...postCardProps} />,
             rightSidebar: () => <EventsRightSidebar
                 posts={posts.filter(p => p.type === 'event')}
                 myCalendarEvents={myCalendarEvents}
@@ -5071,6 +5083,7 @@ const callApi = async (endpoint, options = {}) => {
             action: () => setActiveSection('confessions'),
             component: () => <ConfessionsComponent 
                 posts={filteredPosts.filter(post => post.type === 'confession')} 
+                isLoggedIn={isLoggedIn}
                 {...postCardProps} 
                 setIsModalOpen={setIsModalOpen} // ✅ Passed setIsModalOpen here
             />,
@@ -5081,7 +5094,7 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Cultural Events',
             icon: <Ticket className="nav-icon" />,
             action: () => setActiveSection('cultural-events'),
-            component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} {...postCardProps} />,
+            component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} isLoggedIn={isLoggedIn} {...postCardProps} />,
             rightSidebar: () => <EventsRightSidebar
                 posts={posts.filter(p => p.type === 'culturalEvent')}
                 myCalendarEvents={myCalendarEvents}
@@ -5109,7 +5122,7 @@ const callApi = async (endpoint, options = {}) => {
             label: 'Profile',
             icon: <User className="nav-icon" />,
             action: () => setActiveSection('profile'),
-            component: () => <UsersComponent posts={posts} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} setIsModalOpen={setIsModalOpen} />,
+            component: () => <UsersComponent posts={posts} isLoggedIn={isLoggedIn} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} setIsModalOpen={setIsModalOpen} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
         {
