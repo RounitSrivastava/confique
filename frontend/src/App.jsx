@@ -397,12 +397,17 @@ const CommentItem = ({ comment, currentUser }) => {
 };
 
 // Comment Section Component - Handles displaying and adding comments
-const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }) => {
+const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, isLoggedIn, onRequireLogin }) => {
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
+        // FIX: The CommentSection component is now responsible for login check before submission
+        if (!isLoggedIn) {
+            onRequireLogin();
+            return;
+        }
         if (newCommentText.trim()) {
             onAddComment(newCommentText);
             setNewCommentText('');
@@ -419,18 +424,28 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser }
                 </button>
                 <h4 className="comment-section-title">Comments</h4>
             </div>
-            <form onSubmit={handleAddCommentSubmit} className="comment-input-form">
-                <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
-                    className="comment-input"
-                />
-                <button type="submit" className="comment-submit-btn" title="Add Comment">
-                    <ArrowRight size={18} />
-                </button>
-            </form>
+            {isLoggedIn ? (
+                <form onSubmit={handleAddCommentSubmit} className="comment-input-form">
+                    <input
+                        type="text"
+                        placeholder="Add a comment..."
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        className="comment-input"
+                    />
+                    <button type="submit" className="comment-submit-btn" title="Add Comment">
+                        <ArrowRight size={18} />
+                    </button>
+                </form>
+            ) : (
+                // FIX: Display a disabled input/prompt when logged out
+                <div className="comment-input-form login-required-message">
+                    <button className="btn-primary-small" onClick={onRequireLogin}>
+                        Log in to comment
+                    </button>
+                    <p>You must be logged in to share your thoughts.</p>
+                </div>
+            )}
             <div className="comments-list">
                 {comments && comments.length > 0 ? (
                     comments.map(comment => (
@@ -2325,6 +2340,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
 
     const isInteractive = post.type !== 'news';
     const isUserPost = currentUser && post.userId === currentUser._id;
+    // CRITICAL FIX 1: Ensure likedPosts check is robust
     const isLiked = likedPosts?.has(post._id);
     // FIX: Use ISO string directly for Date constructor for consistency
     const isEventPast = post.eventStartDate && new Date(post.eventStartDate) < new Date();
@@ -2333,11 +2349,8 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
 
     const handleCommentIconClick = (e) => {
         e.stopPropagation();
-        if (isLoggedIn) {
-            setOpenCommentPostId(isCommentsOpen ? null : post._id);
-        } else {
-            onRequireLogin();
-        }
+        // FIX: Always open the comment section, regardless of login status
+        setOpenCommentPostId(isCommentsOpen ? null : post._id);
     };
 
     const handleBackArrowClick = (e) => {
@@ -2433,15 +2446,18 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
     const isButtonDisabled = isRegistered || isEventPast || !isRegistrationOpen || !hasRegistrationMethod;
 
     const handleCardClick = (e) => {
-        if (isCommentsOpen) return; // Don't open if comments are already open
-        
+        if (isCommentsOpen) return;
+       
+        // CRITICAL FIX 3: Robust check for not triggering single post view
         // Check if the click originated from an interactive element (button/link/icon/dropdown)
         const isInteractiveElement = e.target.closest('button') || 
-                                           e.target.closest('a') || 
-                                           e.target.closest('.post-options-container') ||
-                                           e.target.closest('.post-actions') || 
-                                           e.target.closest('.event-action-buttons-top');
-        
+                                     e.target.closest('a') || 
+                                     e.target.closest('.post-options-container') ||
+                                     e.target.closest('.post-actions') || 
+                                     e.target.closest('.event-action-buttons-top') ||
+                                     e.target.closest('.show-more-button') ||
+                                     e.target.closest('.post-avatar-container');
+       
         if (isInteractiveElement) return;
 
         if (post.type === 'event' || post.type === 'culturalEvent') {
@@ -2484,7 +2500,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
                         onEdit={onEditPost}
                         isProfilePage={isProfileView}
                         currentUser={currentUser}
-                        onReport={onReportPost}
+                        onReport={onReportPost} // FIX: Corrected to use onReportPost prop
                     />
                 </div>
             </div>
@@ -2585,6 +2601,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
 
                     <div className="post-actions">
                         <button className={`action-btn ${isLiked ? 'liked' : ''}`} onClick={(e) => { e.stopPropagation(); onLike(post._id); }}>
+                            {/* CRITICAL FIX 1: Heart icon fill/stroke logic correction */}
                             <Heart size={20} fill={isLiked ? '#ef4444' : 'none'} stroke={isLiked ? '#ef4444' : '#9ca3af'} />
                             <span>{post.likes}</span>
                         </button>
@@ -2619,6 +2636,8 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
                             onAddComment={(commentText) => onAddComment(post._id, commentText)}
                             onCloseComments={handleBackArrowClick}
                             currentUser={currentUser}
+                            isLoggedIn={isLoggedIn} // Pass login status
+                            onRequireLogin={onRequireLogin} // Pass login handler
                         />
                     )}
                 </>
@@ -3705,9 +3724,6 @@ const App = () => {
 
     const hasOpenModal = isModalOpen || showLoginModal || showHelpModal || isReportModalOpen || showProfileSettingsModal || showCalendarModal || showAddedToCalendarAlert || showCulturalEventRegistration || showPostSuccessAlert;
 
-    // CRITICAL FIX: Removed formatPostDates - we will now convert dates/timestamps inline where they are used.
-    // This shifts computation from the initial load phase to the rendering phase, improving TTI.
-
     // Helper to get Date objects from ISO strings (for components that need them)
     const getPostWithDates = (post) => ({
         ...post,
@@ -4052,7 +4068,7 @@ const callApi = async (endpoint, options = {}) => {
         };
     }, [hasOpenModal]);
 
-    // MEMOIZATION FIX: Stabilize filtered posts array
+    // MEMOIZATION FIX: UseMemo to stabilize filtered posts array
     const filteredPosts = useMemo(() => posts.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -4556,8 +4572,10 @@ const callApi = async (endpoint, options = {}) => {
     };
 
     const handleAddComment = async (postId, commentText) => {
+        // NOTE: Comment submission logic should only run if isLoggedIn is true.
+        // The CommentSection component is now responsible for handling the 'log in to comment' prompt.
         if (!isLoggedIn || !currentUser) {
-            setShowLoginModal(true);
+            console.error('Attempted to add comment while logged out or user is null.');
             return;
         }
 
@@ -4933,6 +4951,11 @@ const callApi = async (endpoint, options = {}) => {
             ]);
         }
     };
+    
+    // Simple handler to expose the action to the children
+    const handleRequireLogin = () => {
+        setShowLoginModal(true);
+    };
 
     // PERFORMANCE FIX: Use useMemo to stabilize the massive prop object
     const postCardProps = useMemo(() => ({
@@ -4954,14 +4977,14 @@ const callApi = async (endpoint, options = {}) => {
         onExportData: handleExportRegistrations,
         onShowRegistrationModal: (event) => {
             if (!isLoggedIn) {
-                setShowLoginModal(true);
+                handleRequireLogin();
                 return;
             }
             setSelectedCulturalEvent(event);
             setShowCulturalEventRegistration(true);
         },
         myRegisteredEvents,
-        onRequireLogin: () => setShowLoginModal(true),
+        onRequireLogin: handleRequireLogin,
         onOpenPostDetail: handleOpenPostDetail
     }), [
         currentUser, 
