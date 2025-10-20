@@ -424,7 +424,16 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
                 </button>
                 <h4 className="comment-section-title">Comments</h4>
             </div>
-            {isLoggedIn ? (
+            
+            {/* FIX: Show login prompt when not logged in */}
+            {!isLoggedIn ? (
+                <div className="comment-input-form login-required-message">
+                    <button className="btn-primary-small" onClick={onRequireLogin}>
+                        Log in to comment
+                    </button>
+                    <p>You must be logged in to share your thoughts.</p>
+                </div>
+            ) : (
                 <form onSubmit={handleAddCommentSubmit} className="comment-input-form">
                     <input
                         type="text"
@@ -437,15 +446,8 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
                         <ArrowRight size={18} />
                     </button>
                 </form>
-            ) : (
-                // FIX: Display a disabled input/prompt when logged out
-                <div className="comment-input-form login-required-message">
-                    <button className="btn-primary-small" onClick={onRequireLogin}>
-                        Log in to comment
-                    </button>
-                    <p>You must be logged in to share your thoughts.</p>
-                </div>
             )}
+            
             <div className="comments-list">
                 {comments && comments.length > 0 ? (
                     comments.map(comment => (
@@ -455,6 +457,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
                     <p className="no-comments-message">No comments yet. Be the first to comment!</p>
                 )}
             </div>
+            
             <CustomMessageModal
                 isOpen={showCommentAlert}
                 onClose={() => setShowCommentAlert(false)}
@@ -2449,7 +2452,7 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
         if (isCommentsOpen) return;
        
         // CRITICAL FIX 3: Robust check for not triggering single post view
-        // Check if the click originated from an interactive element (button/link/icon/dropdown)
+        // Check if the click originated from an interactive elements (button/link/icon/dropdown)
         const isInteractiveElement = e.target.closest('button') || 
                                      e.target.closest('a') || 
                                      e.target.closest('.post-options-container') ||
@@ -3892,14 +3895,34 @@ const callApi = async (endpoint, options = {}) => {
     const fetchLikedPosts = async (user) => {
         if (!user) {
             console.log("Not logged in, skipping fetchLikedPosts.");
+            // Keep local liked posts for logged out users
+            const savedLikes = localStorage.getItem('likedPosts');
+            if (savedLikes) {
+                setLikedPosts(new Set(JSON.parse(savedLikes)));
+            }
             return;
         }
         try {
             const res = await callApi('/users/liked-posts');
             const data = await res.json();
-            setLikedPosts(new Set(data.likedPostIds || []));
+            // Merge server likes with local likes
+            const serverLikedPosts = new Set(data.likedPostIds || []);
+            const savedLikes = localStorage.getItem('likedPosts');
+            const localLikedPosts = savedLikes ? new Set(JSON.parse(savedLikes)) : new Set();
+            
+            // Combine server and local likes
+            const combinedLikes = new Set([...serverLikedPosts, ...localLikedPosts]);
+            setLikedPosts(combinedLikes);
+            
+            // Update localStorage with combined likes
+            localStorage.setItem('likedPosts', JSON.stringify(Array.from(combinedLikes)));
         } catch (error) {
             console.error('Error fetching liked posts:', error);
+            // Fallback to local storage
+            const savedLikes = localStorage.getItem('likedPosts');
+            if (savedLikes) {
+                setLikedPosts(new Set(JSON.parse(savedLikes)));
+            }
         }
     };
 
@@ -3960,6 +3983,12 @@ const callApi = async (endpoint, options = {}) => {
     };
 
     useEffect(() => {
+        // Load liked posts from localStorage immediately on app start
+        const savedLikes = localStorage.getItem('likedPosts');
+        if (savedLikes) {
+            setLikedPosts(new Set(JSON.parse(savedLikes)));
+        }
+        
         // Call the cleanup function on app startup
         fixCorruptedUserData();
 
@@ -4522,16 +4551,9 @@ const callApi = async (endpoint, options = {}) => {
     };
 
     const handleLikePost = async (postId) => {
-        if (!isLoggedIn || !currentUser) {
-            setShowLoginModal(true);
-            return;
-        }
-
         const isCurrentlyLiked = likedPosts.has(postId);
-        const endpoint = `/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
-        const method = 'PUT';
 
-        // Optimistically update the UI
+        // Optimistically update the UI immediately
         setLikedPosts(prev => {
             const newLiked = new Set(prev);
             if (isCurrentlyLiked) {
@@ -4539,6 +4561,8 @@ const callApi = async (endpoint, options = {}) => {
             } else {
                 newLiked.add(postId);
             }
+            // Update localStorage immediately
+            localStorage.setItem('likedPosts', JSON.stringify(Array.from(newLiked)));
             return newLiked;
         });
 
@@ -4550,41 +4574,31 @@ const callApi = async (endpoint, options = {}) => {
             )
         );
 
-        try {
-            await callApi(endpoint, {
-                method,
-            });
-        } catch (error) {
-            console.error('Failed to like/unlike post:', error);
-
-            // Rollback UI update on failure
-            setLikedPosts(prev => {
-                const newLiked = new Set(prev);
-                if (isCurrentlyLiked) {
-                    newLiked.add(postId);
-                } else {
-                    newLiked.delete(postId);
-                }
-                return newLiked;
+        // If user is logged in, sync with server
+        if (isLoggedIn && currentUser) {
+            try {
+                const endpoint = `/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
+                const method = 'PUT';
+                
+                await callApi(endpoint, { method });
+                
+                // Refresh liked posts from server to ensure consistency
+                await fetchLikedPosts(currentUser);
+            } catch (error) {
+                console.error('Failed to like/unlike post:', error);
+                // Show error but don't revert UI - keep the optimistic update
+                setNotifications(prev => [
+                    {
+                        _id: Date.now().toString(),
+                        message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
+                        timestamp: new Date().toISOString(),
+                        type: 'error'
+                    },
+                    ...prev
+                ]);
             }
-            );
-            setPosts(prevPosts =>
-                prevPosts.map(post =>
-                    post._id === postId
-                        ? { ...post, likes: isCurrentlyLiked ? post.likes + 1 : post.likes - 1 }
-                        : post
-                )
-            );
-            setNotifications(prev => [
-                {
-                    _id: Date.now().toString(),
-                    message: `Failed to ${isCurrentlyLiked ? 'unlike' : 'like'} post. Please try again.`,
-                    timestamp: new Date().toISOString(),
-                    type: 'error'
-                },
-                ...prev
-            ]);
         }
+        // If user is not logged in, the like is stored only locally
     };
 
     const handleAddComment = async (postId, commentText) => {
