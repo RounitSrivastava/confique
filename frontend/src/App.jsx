@@ -267,14 +267,14 @@ const ReportPostModal = ({ isOpen, onClose, onReport, post }) => {
                         </div>
                     </form>
                 )}
+                <CustomMessageModal
+                    isOpen={showErrorAlert}
+                    onClose={() => setShowErrorAlert(false)}
+                    title="Input Required"
+                    message="Please select a reason for reporting."
+                    showConfirm={false}
+                />
             </div>
-            <CustomMessageModal
-                isOpen={showErrorAlert}
-                onClose={() => setShowErrorAlert(false)}
-                title="Input Required"
-                message="Please select a reason for reporting."
-                showConfirm={false}
-            />
         </div>
     );
 };
@@ -2437,10 +2437,10 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
         
         // Check if the click originated from an interactive element (button/link/icon/dropdown)
         const isInteractiveElement = e.target.closest('button') || 
-                                     e.target.closest('a') || 
-                                     e.target.closest('.post-options-container') ||
-                                     e.target.closest('.post-actions') || 
-                                     e.target.closest('.event-action-buttons-top');
+                                           e.target.closest('a') || 
+                                           e.target.closest('.post-options-container') ||
+                                           e.target.closest('.post-actions') || 
+                                           e.target.closest('.event-action-buttons-top');
         
         if (isInteractiveElement) return;
 
@@ -3236,12 +3236,14 @@ const EventsRightSidebar = ({ posts, myCalendarEvents, onOpenEventDetail }) => {
                                 >
                                     <h4 className="sidebar-event-title">{event.title}</h4>
                                     <div className="sidebar-event-date">
+                                        {/* FIX: Use ISO string directly for Date constructor */}
                                         {event.eventStartDate ? new Date(event.eventStartDate).toLocaleDateString('en-US', {
                                             month: 'short',
                                             day: 'numeric'
                                         }) : 'N/A'}
                                     </div>
                                     <div className="sidebar-event-time">
+                                        {/* FIX: Use ISO string directly for Date constructor */}
                                         {event.eventStartDate ? new Date(event.eventStartDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A'}
                                     </div>
                                 </div>
@@ -5324,11 +5326,12 @@ const callApi = async (endpoint, options = {}) => {
                 <main className="main-content">
                     <div className="content-padding">
                         {isLoading ? (
-                            <div className="loading-spinner-container">
-                                <p className="loading-message">Loading Feed...</p>
-                                {/* Add a simple CSS spinner for better UX if needed */}
-                                <div className="spinner"></div> 
+                            // 🚀 MODIFIED BLOCK: Implemented the custom CSS spinner
+                            <div className="loading-container">
+                                <div className="loading-spinner"></div>
+                                {/* <p>Loading Feed...</p> */}
                             </div>
+                            // 🚀 END MODIFIED BLOCK
                         ) : (
                             renderMainContent()
                         )}

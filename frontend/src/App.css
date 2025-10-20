@@ -4005,3 +4005,29 @@ body.modal-open {
     display: inline;
   }
 }
+/* Update this block in your CSS file (e.g., Showcase.css) */
+
+.loading-container {
+    /* *** New Absolute/Fixed Centering Properties *** */
+    position: fixed; /* Fixes it relative to the viewport */
+    top: 50%;
+    left: 50%;
+    /* Shifts the element back by half its own width/height for perfect center */
+    transform: translate(-50%, -50%); 
+    z-index: 1000; /* Ensure it stays on top of everything */
+    background-color: transparent; /* Assuming your background is dark */
+    
+    /* Keep existing layout styles for spinner and text positioning */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    
+    /* Remove redundant min-height/width as it now uses fixed position */
+    min-height: auto; 
+    width: auto;
+    
+    color: #9ca3af; /* Light gray text */
+}
+
+/* The rest of the .loading-spinner styles remain the same */
