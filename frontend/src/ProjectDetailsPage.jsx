@@ -153,7 +153,7 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
                 <textarea
                     value={newCommentText}
                     onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder={currentUser ? "Add a comment..." : "Log in to post your comment..."}
+                    placeholder={currentUser ? "Add a comment..." : "Add a comment..."}
                     className="comment-input-field"
                     onKeyDown={handleKeyDown}
                     // ✅ CHANGE: Allow typing (remove !currentUser check) but keep disabled while submitting
@@ -350,7 +350,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
                 >
                     <ThumbsUp 
                         size={16} 
-                        fill={isUpvoted ? '#ef4444' : 'none'}
+                        fill={isUpvoted ? 'white' : 'none'}
                         style={{ marginRight: '8px' }}
                     />
                     {isUpvoting ? '...' : (isUpvoted ? 'Upvoted' : 'Upvote')}
@@ -372,7 +372,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
                     </button>
                 ) : (
                     <div className="meta-item no-link-item">
-                        <span className="meta-date" style={{ color: '#dc3545' }}>—</span>
+                        <span className="meta-date" style={{ color: 'white' }}>—</span>
                         <span className="meta-label">No website provided</span>
                     </div>
                 )}
