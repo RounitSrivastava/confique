@@ -401,10 +401,13 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
+    // FIX: Add defensive check for login status
+    const actuallyLoggedIn = isLoggedIn && currentUser;
+
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
-        // FIX: The CommentSection component is now responsible for login check before submission
-        if (!isLoggedIn) {
+        // FIX: Use the defensive login check
+        if (!actuallyLoggedIn) {
             onRequireLogin();
             return;
         }
@@ -425,8 +428,8 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
                 <h4 className="comment-section-title">Comments</h4>
             </div>
             
-            {/* FIX: Show login prompt when not logged in */}
-            {!isLoggedIn ? (
+            {/* FIX: Use defensive login check */}
+            {!actuallyLoggedIn ? (
                 <div className="comment-input-form login-required-message">
                     <button className="btn-primary-small" onClick={onRequireLogin}>
                         Log in to comment
@@ -2694,7 +2697,7 @@ const HomeComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, openC
     }, [posts]);
 
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal, myRegisteredEvents, onRequireLogin, onOpenPostDetail
     };
 
     return (
@@ -2738,7 +2741,7 @@ const EventsComponent = ({ posts, onLike, onShare, onAddComment, likedPosts, ope
     const eventPosts = useMemo(() => posts.filter(post => post.type === 'event'), [posts]);
     
     const postCardProps = {
-        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, onRequireLogin, onOpenPostDetail
+        onLike, onShare, onAddComment, likedPosts, setOpenCommentPostId, onOpenEventDetail, onAddToCalendar, currentUser, registrations, onReportPost, onDeletePost, onEditPost, onShowCalendarAlert, onExportData, onShowRegistrationModal: () => {}, myRegisteredEvents, onRequireLogin, onOpenPostDetail
     };
 
     return (
@@ -5003,7 +5006,7 @@ const callApi = async (endpoint, options = {}) => {
         onDeletePost: handleDeletePost,
         onEditPost: handleEditPost,
         onShowCalendarAlert: handleShowCalendarAlert,
-        isLoggedIn,
+        isLoggedIn: isLoggedIn, // FIX: Added this line to fix the login to comment issue
         onExportData: handleExportRegistrations,
         onShowRegistrationModal: (event) => {
             if (!isLoggedIn) {
@@ -5021,7 +5024,7 @@ const callApi = async (endpoint, options = {}) => {
         likedPosts, 
         openCommentPostId, 
         registrations, 
-        isLoggedIn, 
+        isLoggedIn, // FIX: Added this dependency
         myRegisteredEvents,
     ]);
 
