@@ -1438,3 +1438,18 @@ body {
     font-size: 1rem;
     color: #6b7280; /* Slightly darker text for contrast on dark background */
 }
+/* Remove or update this in your CSS */
+.back-arrow-icon.hidden {
+    display: none;
+}
+
+/* Keep only this */
+.back-arrow-icon {
+    cursor: pointer;
+    color: white;
+    transition: color 0.2s;
+}
+
+.back-arrow-icon:hover {
+    color: #000;
+}

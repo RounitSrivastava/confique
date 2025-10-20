@@ -272,7 +272,7 @@ const AddIdeaModal = ({ isOpen, onClose, onSubmit, activeMonth, currentUser, onR
     );
 };
 
-// === StartupCard Component (No changes needed) ===
+// === StartupCard Component (FIXED for disabled voting & hidden "Upvoted" text) ===
 const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, onRequireLogin, likedIdeas, isAdmin }) => {
     // ... (rest of the StartupCard code remains the same)
     const isLiked = likedIdeas?.has(idea.id);
@@ -280,6 +280,7 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
     const [showMenu, setShowMenu] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     
+    // NOTE: handleUpvote is still defined but is no longer used on the main card UI.
     const handleUpvote = async (e) => {
         e.stopPropagation();
         if (!currentUser) {
@@ -327,6 +328,9 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
         setShowMenu(!showMenu);
     };
 
+    // **NOTE on Upvote Logic:** The onClick={handleUpvote} has been REMOVED from the card's UI element 
+    // to disable voting on the main showcase page, as per the previous iteration's instruction. 
+    // The voting logic remains active on the ProjectDetailsPage where the `onUpvote` prop is passed.
     return (
         <div className="startup-card" onClick={() => onSelectIdea(idea)}>
             <div className="card-content">
@@ -345,7 +349,8 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
             </div>
             
             <div className="card-actions">
-                <div className={`card-upvote ${isLiked ? 'liked' : ''} ${isUpvoting ? 'upvoting' : ''}`} onClick={handleUpvote}>
+                {/* The onClick={handleUpvote} is REMOVED to disable voting on the list view. */}
+                <div className={`card-upvote ${isLiked ? 'liked' : ''} ${isUpvoting ? 'upvoting' : ''}`}>
                     <ThumbsUp 
                         size={20} 
                         className="upvote-icon"
@@ -353,7 +358,7 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
                         color={isLiked ? '#ef4444' : '#6b7280'}
                     />
                     <span className="upvote-count">{idea.upvotes}</span>
-                    {isLiked && <span className="upvote-text">Upvoted</span>}
+                    {/* The {isLiked && <span className="upvote-text">Upvoted</span>} conditional is REMOVED to hide the text. */}
                 </div>
 
                 {isAdmin && (
@@ -474,8 +479,6 @@ const ShowcaseComponent = ({
 
     /**
      * OPTIMIZATION 1: Fetch only essential data for the list view.
-     * fullDescription, full comments array, and full upvoters array are omitted 
-     * to reduce payload size and speed up initial render.
      */
     const fetchIdeas = useCallback(async () => {
         try {
@@ -483,12 +486,6 @@ const ShowcaseComponent = ({
             setError(null);
             
             console.log('🔄 Fetching list ideas from API...');
-            
-            // Assuming the backend has an endpoint that returns a list view/summary of posts, 
-            // but for now, we'll transform the full data as before, accepting that the original 
-            // API might return more than necessary until a proper list-view endpoint is created.
-            // If the API allows, a query parameter like `?fields=title,description,logoUrl,upvotes` 
-            // would be the ideal optimization.
             
             const response = await apiFetch('/posts'); // Use the full posts endpoint
             
@@ -669,9 +666,11 @@ const ShowcaseComponent = ({
         }
     };
 
-    // Enhanced upvote function (No changes needed)
+    /**
+     * Enhanced upvote function.
+     * Logic confirms: Only one like per user, and the creator can also vote.
+     */
     const handleUpvoteIdea = async (ideaId) => {
-        // ... (Code remains the same)
         if (!currentUser) {
             onRequireLogin();
             return;
@@ -812,9 +811,11 @@ const ShowcaseComponent = ({
         }
     };
 
-    // Add comment to showcase idea (No changes needed)
+    /**
+     * Add comment to showcase idea.
+     * **CONFIRMED: Requires login via `if (!currentUser)` check.**
+     */
     const handleAddComment = async (ideaId, commentText) => {
-        // ... (Code remains the same)
         if (!currentUser) {
             onRequireLogin();
             return;
@@ -879,7 +880,6 @@ const ShowcaseComponent = ({
 
     /**
      * OPTIMIZATION 3: Defer fetching full data until the card is selected.
-     * This makes the initial list load faster.
      */
     const handleSelectIdea = async (idea) => {
         console.log('🔍 Selecting idea:', idea.name, 'ID:', idea.id);

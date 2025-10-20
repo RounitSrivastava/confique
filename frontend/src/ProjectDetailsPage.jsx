@@ -14,7 +14,7 @@ const extractAvatarUrl = (avatar) => {
     return placeholderAvatar;
 };
 
-// ✅ FIXED: Comment Section Component with proper data handling
+// ✅ REVISED: Comment Section Component with typing enabled for logged-out users
 const CommentSection = ({ initialComments = [], onNewComment, currentUser, onRequireLogin }) => {
     const [comments, setComments] = useState([]);
     const [newCommentText, setNewCommentText] = useState('');
@@ -153,16 +153,18 @@ const CommentSection = ({ initialComments = [], onNewComment, currentUser, onReq
                 <textarea
                     value={newCommentText}
                     onChange={(e) => setNewCommentText(e.target.value)}
-                    placeholder={currentUser ? "Add a comment..." : "Please log in to comment"}
+                    placeholder={currentUser ? "Add a comment..." : "Log in to post your comment..."}
                     className="comment-input-field"
                     onKeyDown={handleKeyDown}
-                    disabled={!currentUser || isSubmitting}
+                    // ✅ CHANGE: Allow typing (remove !currentUser check) but keep disabled while submitting
+                    disabled={isSubmitting} 
                     rows={1}
                 />
                 <button 
                     type="button" 
                     className="post-comment-btn-replicate" 
                     onClick={handlePostComment} 
+                    // ⚠️ NO CHANGE: This correctly disables submission if not logged in (`!currentUser`)
                     disabled={newCommentText.trim() === '' || !currentUser || isSubmitting}
                 >
                     {isSubmitting ? '...' : <ArrowRight size={28} />}
@@ -303,7 +305,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             <div className="project-details-container">
                 <h1 className="project-name">Project Not Found</h1>
                 <button className="back-button" onClick={onGoBack}>
-                    <ArrowLeft size={20} /> Back to Showcase
+                    <ArrowLeft size={20} /> 
                 </button>
             </div>
         );
@@ -324,7 +326,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
         <div className="project-details-container">
             {/* Back Button */}
             <button className="back-button" onClick={onGoBack}>
-                <ArrowLeft size={20} /> Back to Showcase
+                <ArrowLeft size={20} /> 
             </button>
 
             <div className="project-header">
