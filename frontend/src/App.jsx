@@ -401,12 +401,12 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
     const [newCommentText, setNewCommentText] = useState('');
     const [showCommentAlert, setShowCommentAlert] = useState(false);
 
-    // FIX: Add defensive check for login status
-    const actuallyLoggedIn = isLoggedIn && currentUser;
+    // CRITICAL FIX: Proper login state detection
+    const actuallyLoggedIn = isLoggedIn && currentUser && currentUser._id;
 
     const handleAddCommentSubmit = (e) => {
         e.preventDefault();
-        // FIX: Use the defensive login check
+        // CRITICAL FIX: Use proper login check
         if (!actuallyLoggedIn) {
             onRequireLogin();
             return;
@@ -428,7 +428,7 @@ const CommentSection = ({ comments, onAddComment, onCloseComments, currentUser, 
                 <h4 className="comment-section-title">Comments</h4>
             </div>
             
-            {/* FIX: Use defensive login check */}
+            {/* CRITICAL FIX: Proper conditional rendering based on login state */}
             {!actuallyLoggedIn ? (
                 <div className="comment-input-form login-required-message">
                     <button className="btn-primary-small" onClick={onRequireLogin}>
@@ -2642,8 +2642,8 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
                             onAddComment={(commentText) => onAddComment(post._id, commentText)}
                             onCloseComments={handleBackArrowClick}
                             currentUser={currentUser}
-                            isLoggedIn={isLoggedIn} // Pass login status
-                            onRequireLogin={onRequireLogin} // Pass login handler
+                            isLoggedIn={isLoggedIn} // CRITICAL FIX: Pass login status
+                            onRequireLogin={onRequireLogin} // CRITICAL FIX: Pass login handler
                         />
                     )}
                 </>
@@ -2678,7 +2678,8 @@ const PostCard = React.memo(({ post, onLike, onShare, onAddComment, likedPosts, 
         prevProps.isCommentsOpen === nextProps.isCommentsOpen &&
         prevProps.isRegistered === nextProps.isRegistered &&
         prevProps.registrationCount === nextProps.registrationCount &&
-        prevProps.likedPosts === nextProps.likedPosts // Compare the Set reference
+        prevProps.likedPosts === nextProps.likedPosts && // Compare the Set reference
+        prevProps.isLoggedIn === nextProps.isLoggedIn // CRITICAL FIX: Add isLoggedIn to comparison
     );
 }); // End of React.memo
 
@@ -5006,7 +5007,7 @@ const callApi = async (endpoint, options = {}) => {
         onDeletePost: handleDeletePost,
         onEditPost: handleEditPost,
         onShowCalendarAlert: handleShowCalendarAlert,
-        isLoggedIn: isLoggedIn, // FIX: Added this line to fix the login to comment issue
+        isLoggedIn: isLoggedIn, // CRITICAL FIX: Ensure this is included
         onExportData: handleExportRegistrations,
         onShowRegistrationModal: (event) => {
             if (!isLoggedIn) {
@@ -5024,7 +5025,7 @@ const callApi = async (endpoint, options = {}) => {
         likedPosts, 
         openCommentPostId, 
         registrations, 
-        isLoggedIn, // FIX: Added this dependency
+        isLoggedIn, // CRITICAL FIX: Ensure this dependency is included
         myRegisteredEvents,
     ]);
 
