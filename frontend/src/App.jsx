@@ -4068,14 +4068,28 @@ const callApi = async (endpoint, options = {}) => {
         };
     }, [hasOpenModal]);
 
-    // MEMOIZATION FIX: UseMemo to stabilize filtered posts array
-    const filteredPosts = useMemo(() => posts.filter(post =>
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.type === 'event' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (post.type === 'culturalEvent' && post.location?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (post.type === 'showcase' && post.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-    ), [posts, searchTerm]);
+    // CRITICAL FIX: Robust check to prevent "Cannot read properties of undefined (reading 'toLowerCase')"
+    const filteredPosts = useMemo(() => posts.filter(post => {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        
+        // Ensure post is valid and has expected properties before filtering
+        if (!post || typeof post.title !== 'string' || typeof post.content !== 'string') {
+            return false;
+        }
+
+        const titleMatch = post.title.toLowerCase().includes(lowerSearchTerm);
+        const contentMatch = post.content.toLowerCase().includes(lowerSearchTerm);
+        
+        // Use empty string coalesce (|| '') for optional properties before using toLowerCase()
+        const locationMatch = (post.type === 'event' || post.type === 'culturalEvent') && 
+                              (post.location || '').toLowerCase().includes(lowerSearchTerm);
+        
+        const showcaseTitleMatch = post.type === 'showcase' && 
+                                   (post.title || '').toLowerCase().includes(lowerSearchTerm);
+
+        return titleMatch || contentMatch || locationMatch || showcaseTitleMatch;
+
+    }), [posts, searchTerm]);
 
     const handleShowCalendarAlert = () => {
         setShowAddedToCalendarAlert(true);
@@ -4517,6 +4531,7 @@ const callApi = async (endpoint, options = {}) => {
         const endpoint = `/posts/${postId}/${isCurrentlyLiked ? 'unlike' : 'like'}`;
         const method = 'PUT';
 
+        // Optimistically update the UI
         setLikedPosts(prev => {
             const newLiked = new Set(prev);
             if (isCurrentlyLiked) {
@@ -4542,6 +4557,7 @@ const callApi = async (endpoint, options = {}) => {
         } catch (error) {
             console.error('Failed to like/unlike post:', error);
 
+            // Rollback UI update on failure
             setLikedPosts(prev => {
                 const newLiked = new Set(prev);
                 if (isCurrentlyLiked) {
