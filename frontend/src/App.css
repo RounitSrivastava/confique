@@ -4030,3 +4030,92 @@ body.modal-open {
     color: #9ca3af; /* Light gray text */
 }
 /* The rest of the .loading-spinner styles remain the same */
+/* --- FIX: UPDATED IMAGE STYLES FOR DYNAMIC HEIGHT --- */
+.post-images {
+    display: grid;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    justify-content: center;
+    width: 100%;
+    /* CRITICAL FIX: Remove fixed height or set to auto to allow content to dictate size */
+    height: auto; 
+    max-height: 500px; /* Optional: Set a max height to prevent excessively long posts */
+}
+
+/* Single image container: 
+   - Uses grid for layout consistency.
+   - Height is set to auto to flex based on the image content.
+*/
+.post-images.single {
+    grid-template-columns: 1fr;
+    height: auto; /* CRITICAL FIX: Overrides any other fixed height to be dynamic */
+}
+
+/* Double, Triple, Quad containers:
+   - For multiple images, we still maintain a constrained grid for aesthetic grouping. 
+   - If you want these to be dynamic too, you'd need a more complex masonry layout or adjust their max-height.
+   - For simplicity, keeping a fixed height/grid area for multi-image aesthetics is often preferred in feeds.
+*/
+.post-images.double {
+    grid-template-columns: repeat(2, 1fr);
+    height: 250px; /* Aesthetic constraint for multiple images */
+}
+
+.post-images.triple {
+    grid-template-columns: repeat(2, 1fr);
+    height: 350px;
+}
+
+.post-images.quad {
+    height: 350px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.post-image {
+    width: 100%;
+    /* CRITICAL FIX: Set height to auto, allowing the image's aspect ratio to determine the height */
+    height: auto; 
+    max-height: 100%; /* Ensure it respects the container max height if set */
+    object-fit: cover;
+    border-radius: 0.5rem;
+    display: block;
+}
+
+/* Special case for single image to take up its natural height */
+.post-images.single .post-image {
+    height: auto;
+    object-fit: contain; /* Often better for single images to ensure the whole picture is visible */
+    max-height: 500px; 
+}
+
+
+@media (max-width: 767px) {
+    /* Set max-height but maintain aspect ratio */
+    .post-images {
+        max-height: 300px; 
+    }
+    
+    .post-image {
+        height: auto; 
+        max-height: 300px;
+        object-fit: cover;
+    }
+    
+    .post-images.single {
+        height: auto; 
+    }
+    
+    .post-images.single .post-image {
+        max-height: 300px;
+        object-fit: contain;
+    }
+
+    .post-images.triple, .post-images.quad {
+        height: 250px; /* Maintain aesthetic constraint for multiple images on mobile */
+    }
+}
+/* END OF CORRECTED IMAGE STYLES */
