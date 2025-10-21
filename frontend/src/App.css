@@ -4030,3 +4030,79 @@ body.modal-open {
     color: #9ca3af; /* Light gray text */
 }
 /* The rest of the .loading-spinner styles remain the same */
+/* General Layout Adjustments (Ensure this is in your existing CSS) */
+.main-layout-container {
+    display: grid;
+    grid-template-columns: 250px 1fr 300px; /* Default Desktop Layout */
+    gap: 20px;
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Base style for bottom nav (hidden on desktop) */
+.bottom-nav {
+    display: none;
+}
+
+/* -------------------------------------- */
+/* Mobile/Phone Screen Styles (768px and below) */
+/* -------------------------------------- */
+@media (max-width: 768px) {
+    .main-layout-container {
+        grid-template-columns: 1fr; /* Mobile: Only Main Content */
+        padding: 0;
+    }
+
+    /* Hide the desktop sidebars on mobile */
+    .left-sidebar,
+    .right-sidebar {
+        display: none; 
+    }
+    
+    /* Adjust main content padding for fixed header and bottom nav */
+    .main-content {
+        padding-top: 60px; 
+        padding-bottom: 60px; 
+        width: 100%;
+    }
+
+    /* Show and style the fixed bottom navigation bar */
+    .bottom-nav {
+        display: flex; 
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 55px;
+        background-color: var(--color-background-card, #27272a); /* Use your theme variable */
+        border-top: 1px solid var(--color-border, #3f3f46);
+        justify-content: space-around;
+        padding: 0;
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .bottom-nav .nav-button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        font-size: 10px;
+        color: var(--color-text-secondary, #a1a1aa);
+        background: none;
+        border: none;
+        padding: 5px 0;
+        transition: color 0.2s, background-color 0.2s;
+    }
+
+    .bottom-nav .nav-button.active {
+        color: var(--color-primary, #6366f1);
+    }
+
+    .bottom-nav .nav-label {
+        margin-top: 3px;
+        line-height: 1;
+    }
+}

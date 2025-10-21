@@ -5427,6 +5427,29 @@ const callApi = async (endpoint, options = {}) => {
                     </div>
                 </aside>
             </div>
+            {/* 🚀 NEW BLOCK: Bottom Navigation for Mobile Screens */}
+        <nav className="bottom-nav">
+            {menuItems.filter(item => item.id !== 'home' && item.id !== 'profile').map(item => (
+                <button
+                    key={item.id}
+                    className={`nav-button ${activeSection === item.id ? 'active' : ''}`}
+                    onClick={() => {
+                        if (item.action) {
+                            item.action();
+                        } else {
+                            setActiveSection(item.id);
+                            setOpenCommentPostId(null);
+                            setSelectedEvent(null);
+                            setSelectedPost(null);
+                        }
+                    }}
+                >
+                    {item.icon}
+                    <span className="nav-label">{item.label}</span>
+                </button>
+            ))}
+        </nav>
+        {/* 🚀 END NEW BLOCK */}
         </div>
     );
 };
