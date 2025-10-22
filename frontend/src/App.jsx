@@ -89,19 +89,6 @@ const compressImage = (file, callback) => {
     reader.readAsDataURL(file);
 };
 
-// <--- PLACE renderContentWithLinks FUNCTION HERE --->
-const renderContentWithLinks = (content) => {
-    if (!content) return { __html: '' };
-    // Regex to find common URLs and wrap them in an anchor tag
-    const urlRegex = /(\b(https?|ftp):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/gim;
-    const linkedContent = content.replace(urlRegex, (url) => {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-    });
-    // This allows line breaks and preserves white space
-    const formattedContent = linkedContent.replace(/\n/g, '<br />');
-    return { __html: formattedContent };
-};
-
 // Error Boundary Component for robust error handling in React
 class ErrorBoundary extends React.Component {
     constructor(props) {
