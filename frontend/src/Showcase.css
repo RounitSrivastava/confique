@@ -122,7 +122,10 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.5);
+filter: none; 
+  /* Use !important as a last resort to override any other conflicting CSS, 
+     like the .features-banner filter, without having to remove it. */
+  filter: none !important;
 }
 .banner-content {
   position: relative;
@@ -476,7 +479,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: brightness(0.6);
+  filter: brightness(0.8);
 }
 /* --- REPLICATED COMMENT SECTION STYLES (Matching Screenshot) --- */
 
@@ -952,7 +955,7 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: brightness(0.6);
+    filter: brightness(0.9);
 }
 
 /* === MEDIA QUERIES FOR RESPONSIVE DESIGN === */
