@@ -359,8 +359,8 @@ const StartupCard = ({ idea, onSelectIdea, onUpvote, onDeleteIdea, currentUser, 
                     <ThumbsUp 
                         size={20} 
                         className="upvote-icon"
-                        fill={isLiked ? '#ef4444' : 'none'}
-                        color={isLiked ? '#ef4444' : '#6b7280'}
+                        fill={isLiked ? '#9c77fe' : 'none'}
+                        color={isLiked ? '#9c77fe' : '#6b7280'}
                     />
                     <span className="upvote-count">{idea.upvotes}</span>
                     {/* The {isLiked && <span className="upvote-text">Upvoted</span>} conditional is REMOVED to hide the text. */}
@@ -1571,7 +1571,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             <div className="section-divider"></div>
      
             <div className="section-features-in">
-                <h2 className="section-title">Features in</h2>
+                <h2 className="section-title">Banner</h2>
                 <div className="features-banner">
                     <img 
                         src={bannerSource} 

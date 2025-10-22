@@ -323,6 +323,7 @@ filter: none;
 /* Project Details Page */
 .project-details-container {
   padding: 0px;
+  width: 100%;
 }
 .project-header {
   display: flex;
@@ -472,15 +473,18 @@ filter: none;
   color: #fff;
 }
 .features-banner {
-  height: 400px;
-  overflow: hidden;
-  border-radius: 12px;
-  width: 100%;
-}
+ height: auto;/* Allow height to be determined by content */
+  max-height: 400px; /* Maintain a maximum size if desired */
+  aspect-ratio: 16 / 9; /* Optional: Define a common video/banner aspect ratio */
+  overflow: hidden;
+  border-radius: 12px;
+  width: 100%;
+}  
+
 .features-banner img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   filter: brightness(0.8);
 }
 /* --- REPLICATED COMMENT SECTION STYLES (Matching Screenshot) --- */
@@ -1264,8 +1268,8 @@ filter: none;
     }
 
     .post-comment-btn-replicate {
-        width: 45px;
-        height: 42px;
+        width: 55px;
+        height: 55px;
     }
 
     .comment-avatar-replicate {
