@@ -2073,7 +2073,7 @@ const EventDetailPage = ({ event, onClose, isLoggedIn, onRequireLogin, onAddToCa
 
     const handleRegistrationClick = () => {
         if (!isLoggedIn) {
-            onRequireLogin();
+            onRequireLogin(event._id, 'externalLink');
             return;
         }
 
