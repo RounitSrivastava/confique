@@ -10,6 +10,7 @@ body {
 
 .showcase-page-container, .project-details-container {
   max-width: 1000px;
+  min-width: 300px;
   margin: 0 auto;
   padding: 5px;
 }
@@ -474,6 +475,7 @@ filter: none;
   height: 400px;
   overflow: hidden;
   border-radius: 12px;
+  width: 100%;
 }
 .features-banner img {
   width: 100%;
@@ -1090,7 +1092,7 @@ filter: none;
     }
 
     .hero-banner {
-        height: 150px;
+        height: auto;
         margin-bottom: 20px;
     }
 

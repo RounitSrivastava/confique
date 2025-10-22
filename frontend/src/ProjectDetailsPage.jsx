@@ -444,7 +444,7 @@ const ProjectDetailsPage = ({ project, onGoBack, currentUser, onRequireLogin, on
             <div className="section-divider"></div>
      
             <div className="section-features-in">
-                <h2 className="section-title">Features in</h2>
+                <h2 className="section-title">Banner</h2>
                 <div className="features-banner">
                     <img 
                         src={bannerSource} 
