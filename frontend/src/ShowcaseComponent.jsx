@@ -407,7 +407,7 @@ const ShowcaseComponent = ({
     callApi,
     likedIdeas = new Set()
 }) => {
-    const [activeMonth, setActiveMonth] = useState('October \'25');
+    const [activeMonth, setActiveMonth] = useState('November \'2');
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddIdeaModalOpen, setIsAddIdeaModalOpen] = useState(false);
     const [ideas, setIdeas] = useState([]);
@@ -510,7 +510,7 @@ const ShowcaseComponent = ({
                     logo: post.logoUrl || "https://placehold.co/60x60/cccccc/000000?text=Logo",
                     banner: post.bannerUrl || "https://placehold.co/800x400/cccccc/000000?text=Banner",
                     upvotes: post.upvotes || 0,
-                    month: post.month || 'October \'25',
+                    month: post.month || 'November \'2',
                     websiteLink: post.websiteLink,
                     launchedDate: post.launchedDate,
                     commentCount: post.commentCount || (Array.isArray(post.showcaseComments) ? post.showcaseComments.length : 0),
@@ -963,7 +963,7 @@ const ShowcaseComponent = ({
         initializeApp();
     }, [fetchIdeas, fetchLikedIdeas]);
 
-    const months = ['October \'25'];
+    const months = ['November \'2'];
 
     // Use useMemo for efficient filtering and sorting (Unchanged)
     const filteredIdeas = useMemo(() => {
