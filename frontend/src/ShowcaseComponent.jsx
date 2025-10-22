@@ -3,7 +3,7 @@ import './Showcase.css';
 import { Search, X, Image as ImageIcon, ThumbsUp, AlertCircle, Trash2, MoreVertical, ArrowLeft, ExternalLink, ArrowRight } from 'lucide-react';
 
 // IMPORT YOUR BANNER IMAGE HERE
-import StartupBanner from './assets/figma_showcase1.png';
+import StartupBanner from './assets/showcase-2.png';
 
 // Default API URL for production
 const DEFAULT_API_URL = "https://confique.onrender.com";
