@@ -4119,3 +4119,121 @@ body.modal-open {
     }
 }
 /* END OF CORRECTED IMAGE STYLES */
+@media (max-width: 767px) {
+  /* Fix for Show More card overflow */
+  .post-text-container {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  .post-text {
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  .show-more-button {
+    width: auto;
+    display: inline-block;
+    white-space: nowrap;
+    margin-left: 0;
+    margin-right: auto;
+  }
+  
+  /* Ensure post content doesn't overflow */
+  .post-content {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+  
+  /* Additional constraint for post card */
+  .post-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+}
+@media (max-width: 767px) {
+  /* Comprehensive fix for Show More card overflow */
+  .post-text-container {
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .post-text {
+    width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    /* Remove any max-width constraints that might be causing issues */
+    max-width: 100% !important;
+    /* Ensure proper text rendering */
+    word-break: break-word;
+  }
+  
+  .show-more-button {
+    display: inline-block;
+    width: auto;
+    white-space: nowrap;
+    margin-top: 0.5rem;
+    /* Ensure it stays within container */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  /* Ensure post content doesn't overflow */
+  .post-content {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    /* Prevent horizontal scrolling */
+    max-width: 100%;
+  }
+  
+  /* Additional constraint for post card */
+  .post-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    /* Ensure no horizontal padding/margin issues */
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Fix for posts container to prevent any horizontal overflow */
+  .posts-container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0;
+    margin-right: 0;
+    overflow-x: hidden;
+  }
+  
+  /* Ensure main content area is properly constrained */
+  .main-content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  /* Fix for content padding */
+  .content-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
