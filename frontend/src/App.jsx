@@ -5125,27 +5125,27 @@ const callApi = async (endpoint, options = {}) => {
             component: () => <UsersComponent posts={posts} isLoggedIn={isLoggedIn} {...postCardProps} onEditProfile={() => setShowProfileSettingsModal(true)} setIsModalOpen={setIsModalOpen} />,
             rightSidebar: () => <UsersRightSidebar currentUser={currentUser} posts={posts} registrations={registrations} />,
         },
-        {
-            id: 'showcase',
-            label: 'Showcase',
-            icon: <Star className="nav-icon" />,
-            action: () => setActiveSection('showcase'),
-            component: () => (
-                <ShowcaseComponent 
-                    currentUser={currentUser}
-                    onRequireLogin={() => setShowLoginModal(true)}
-                    API_URL={API_URL}
-                    callApi={callApi} // Pass the callApi function
-                    likedIdeas={likedPosts} // Pass the liked posts state
-                />
-            ),
-            rightSidebar: () => (
-                <ShowcaseRightSidebar 
-                    posts={posts.filter(p => p.type === 'showcase')} 
-                    onOpenEventDetail={(post) => handleOpenPostDetail(post)} // Showcase items are treated like posts
-                />
-            ),
-        },
+        // {
+        //     id: 'showcase',
+        //     label: 'Showcase',
+        //     icon: <Star className="nav-icon" />,
+        //     action: () => setActiveSection('showcase'),
+        //     component: () => (
+        //         <ShowcaseComponent 
+        //             currentUser={currentUser}
+        //             onRequireLogin={() => setShowLoginModal(true)}
+        //             API_URL={API_URL}
+        //             callApi={callApi} // Pass the callApi function
+        //             likedIdeas={likedPosts} // Pass the liked posts state
+        //         />
+        //     ),
+        //     rightSidebar: () => (
+        //         <ShowcaseRightSidebar 
+        //             posts={posts.filter(p => p.type === 'showcase')} 
+        //             onOpenEventDetail={(post) => handleOpenPostDetail(post)} // Showcase items are treated like posts
+        //         />
+        //     ),
+        // },
         {
             id: 'add',
             label: 'Add',
