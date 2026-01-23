@@ -5064,18 +5064,18 @@ const callApi = async (endpoint, options = {}) => {
             component: () => <HomeComponent posts={filteredPosts} isLoggedIn={isLoggedIn} {...postCardProps} />,
             rightSidebar: () => <HomeRightSidebar posts={posts} onOpenPostDetail={handleOpenPostDetail} />,
         },
-        {
-            id: 'events',
-            label: 'Events',
-            icon: <CalendarIcon className="nav-icon" />,
-            action: () => setActiveSection('events'),
-            component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} isLoggedIn={isLoggedIn} {...postCardProps} />,
-            rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'event')}
-                myCalendarEvents={myCalendarEvents}
-                onOpenEventDetail={handleOpenEventDetail}
-            />,
-        },
+        // {
+        //     id: 'events',
+        //     label: 'Events',
+        //     icon: <CalendarIcon className="nav-icon" />,
+        //     action: () => setActiveSection('events'),
+        //     component: () => <EventsComponent posts={filteredPosts.filter(post => post.type === 'event')} isLoggedIn={isLoggedIn} {...postCardProps} />,
+        //     rightSidebar: () => <EventsRightSidebar
+        //         posts={posts.filter(p => p.type === 'event')}
+        //         myCalendarEvents={myCalendarEvents}
+        //         onOpenEventDetail={handleOpenEventDetail}
+        //     />,
+        // },
         {
             id: 'confessions',
             label: 'Consights',
@@ -5089,18 +5089,18 @@ const callApi = async (endpoint, options = {}) => {
             />,
             rightSidebar: () => <ConfessionsRightSidebar posts={posts.filter(p => p.type === 'confession')} onOpenPostDetail={handleOpenPostDetail} />,
         },
-        {
-            id: 'cultural-events',
-            label: 'Cultural Events',
-            icon: <Ticket className="nav-icon" />,
-            action: () => setActiveSection('cultural-events'),
-            component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} isLoggedIn={isLoggedIn} {...postCardProps} />,
-            rightSidebar: () => <EventsRightSidebar
-                posts={posts.filter(p => p.type === 'culturalEvent')}
-                myCalendarEvents={myCalendarEvents}
-                onOpenEventDetail={handleOpenEventDetail}
-            />,
-        },
+        // {
+        //     id: 'cultural-events',
+        //     label: 'Cultural Events',
+        //     icon: <Ticket className="nav-icon" />,
+        //     action: () => setActiveSection('cultural-events'),
+        //     component: () => <CulturalEventsComponent posts={filteredPosts.filter(post => post.type === 'culturalEvent')} isLoggedIn={isLoggedIn} {...postCardProps} />,
+        //     rightSidebar: () => <EventsRightSidebar
+        //         posts={posts.filter(p => p.type === 'culturalEvent')}
+        //         myCalendarEvents={myCalendarEvents}
+        //         onOpenEventDetail={handleOpenEventDetail}
+        //     />,
+        // },
         {
             id: 'notifications',
             label: 'Notifications',
