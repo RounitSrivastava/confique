@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 const Post = require('./models/Post'); // The path to your Post model
 // IMPORTANT: Replace this placeholder URI with your actual MongoDB connection string
-const dbUri = 'mongodb+srv://rounitkumar2702:2xwWtrQKFgW775qS@confique-db.wi8mvbm.mongodb.net/';
+const dbUri = process.env.MONGODB_URI;
 
 async function migrateData() {
   try {
